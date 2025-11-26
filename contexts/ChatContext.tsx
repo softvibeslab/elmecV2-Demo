@@ -11,6 +11,23 @@ import { useNotifications } from './NotificationContext';
 import { ChatRoom, Message, User } from '@/types/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
+/**
+ * HYBRID ARCHITECTURE NOTE:
+ *
+ * Direct chats (1:1) use Supabase (this file)
+ * Group chats can use Firebase for better real-time performance
+ *
+ * Firebase integration available in:
+ * - services/firebaseChatService.ts - Firebase Realtime DB operations
+ * - services/pushNotificationService.ts - FCM push notifications
+ * - hooks/useFirebaseChat.ts - React hook for Firebase groups
+ *
+ * To use Firebase for a group, use the useFirebaseChat hook instead.
+ */
+
+// Feature flag for Firebase groups (set to true to use Firebase for group chats)
+export const USE_FIREBASE_FOR_GROUPS = process.env.EXPO_PUBLIC_USE_FIREBASE_GROUPS === 'true';
+
 // Phase 4.1: Internal Group Chat Types
 export type InternalGroupType = 'GRUPO_VENTAS' | 'GRUPO_SOPORTE' | 'GRUPO_COTIZACION';
 

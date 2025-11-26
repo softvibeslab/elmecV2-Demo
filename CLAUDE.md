@@ -601,4 +601,100 @@ eas submit --platform all
 
 ---
 
+## Firebase Integration (Hybrid Architecture)
+
+> **Arquitectura Híbrida**: Supabase (auth, users, requests) + Firebase (chat grupal, push notifications, crashlytics)
+
+### Firebase Project Configuration
+
+| Setting | Value |
+|---------|-------|
+| **Project Name** | elmec-3ae55 |
+| **API Key** | AIzaSyCxRVxaBrRpUIYB8rw4apRc0PAF-99eBs0 |
+| **Auth Domain** | elmec-3ae55.firebaseapp.com |
+| **Database URL** | https://elmec-3ae55-default-rtdb.firebaseio.com |
+| **Project ID** | elmec-3ae55 |
+| **Storage Bucket** | elmec-3ae55.firebasestorage.app |
+| **Messaging Sender ID** | 62591188963 |
+| **App ID** | 1:62591188963:web:ae989e006edc01797baad6 |
+| **Measurement ID** | G-F8VHKPEKK5 |
+
+### Firebase Services Enabled
+
+- **Authentication**: Email/Password + Anonymous (backup)
+- **Firestore Database**: Rules configured
+- **Realtime Database**: For group chats (low latency)
+- **Cloud Messaging (FCM)**: Push notifications
+- **Analytics**: User behavior tracking
+- **Crashlytics**: Error monitoring
+
+### Hybrid Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         ELMEC V2 App                            │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────────────┐       ┌─────────────────────────────┐  │
+│  │     SUPABASE        │       │         FIREBASE            │  │
+│  │  (Primary Backend)  │       │    (Real-time Features)     │  │
+│  ├─────────────────────┤       ├─────────────────────────────┤  │
+│  │ ✓ Authentication    │       │ ✓ Group Chat (Realtime DB)  │  │
+│  │ ✓ User Management   │       │ ✓ Push Notifications (FCM)  │  │
+│  │ ✓ Requests/CRM      │       │ ✓ Crashlytics               │  │
+│  │ ✓ Direct Chats      │       │ ✓ Analytics                 │  │
+│  │ ✓ File Storage      │       │ ✓ Presence Detection        │  │
+│  └─────────────────────┘       └─────────────────────────────┘  │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Mobile Build Scripts
+
+```bash
+# Development
+npm run dev                   # Start Expo development server
+npm run validate:firebase     # Validate Firebase configuration
+
+# Android Builds
+npm run build:android         # Build Android APK (preview)
+npm run build:android:prod    # Build Android APK (production)
+npm run build:android:aab     # Build AAB for Google Play
+
+# iOS Builds
+npm run build:ios             # Build iOS IPA (preview)
+npm run build:ios:prod        # Build iOS IPA (production)
+
+# Both Platforms
+npm run build:all             # Build both platforms
+npm run build:status          # Check build status
+npm run build:download        # Download latest build
+```
+
+### Firebase Implementation Files
+
+| File | Purpose |
+|------|---------|
+| `config/firebase.ts` | Firebase initialization |
+| `services/firebaseService.ts` | Firebase CRUD operations |
+| `services/firebaseChatService.ts` | Group chat with Realtime DB |
+| `services/pushNotificationService.ts` | FCM push notifications |
+| `hooks/useFirebaseChat.ts` | Hook for group chat |
+
+### Roadmap: Firebase Features
+
+**Immediate (Phase 1)**:
+- [ ] Integrate Firebase Realtime Database for group chats
+- [ ] Add functionality to create new groups
+- [ ] Allow adding/removing group participants
+- [ ] Group-specific notifications for mentions
+
+**Medium Term (Phase 2)**:
+- [ ] Pinned messages in groups
+- [ ] Group administrators
+- [ ] Per-group permissions
+- [ ] Participant change history
+
+---
+
 *This document should be updated when significant architectural changes are made to the project.*
