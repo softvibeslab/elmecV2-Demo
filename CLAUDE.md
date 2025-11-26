@@ -448,43 +448,6 @@ export function useNew() {
 }
 ```
 
-### Adding Redux Slice (if needed)
-
-```typescript
-// store/newSlice.ts
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-
-interface NewState {
-  value: string;
-}
-
-const initialState: NewState = {
-  value: '',
-};
-
-const newSlice = createSlice({
-  name: 'new',
-  initialState,
-  reducers: {
-    setValue: (state, action: PayloadAction<string>) => {
-      state.value = action.payload;
-    },
-  },
-});
-
-export const { setValue } = newSlice.actions;
-export default newSlice.reducer;
-
-// Add to store/index.ts
-import newReducer from './newSlice';
-export const store = configureStore({
-  reducer: {
-    calculator: calculatorReducer,
-    new: newReducer,
-  },
-});
-```
-
 ### Working with Supabase
 
 ```typescript
@@ -559,25 +522,6 @@ Logger.error('Failed to fetch data', { error, context });
 
 ---
 
-## Testing Guidelines
-
-```typescript
-// Tests should be placed in __tests__/ directories or *.test.ts files
-// Use Jest for testing
-
-import { render, fireEvent } from '@testing-library/react-native';
-import { LoginScreen } from '@/app/auth/login';
-
-describe('LoginScreen', () => {
-  it('should validate email format', () => {
-    const { getByPlaceholderText, getByText } = render(<LoginScreen />);
-    // Test implementation
-  });
-});
-```
-
----
-
 ## Important Notes for AI Assistants
 
 ### Do's
@@ -604,7 +548,7 @@ describe('LoginScreen', () => {
 
 1. **Metro config**: May have react-native-reanimated conflicts - check metro.config.js
 2. **Web platform**: Some native features (camera, audio recording) are limited
-3. **Demo mode**: `app/(tabs)/requests.tsx` has demo simulation code (lines 433-467) that should be removed in production
+3. **Demo mode**: `app/(tabs)/requests.tsx` has demo simulation code that should be removed in production
 4. **Dashboard data**: `app/(tabs)/index.tsx` has hardcoded activity data that needs real queries
 
 ### Key Files to Understand
