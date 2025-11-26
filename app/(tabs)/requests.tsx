@@ -42,7 +42,19 @@ import {
   User as UserIcon,
   MessageCircle,
   Loader2,
+  Trash2,
+  Circle,
 } from 'lucide-react-native';
+
+// Traffic light status types
+type TrafficLightStatus = 'ROJO' | 'AMARILLO' | 'VERDE' | 'AZUL';
+
+interface TrafficLightInfo {
+  status: TrafficLightStatus;
+  color: string;
+  label: string;
+  description: string;
+}
 import { ActivityIndicator } from 'react-native';
 import { AdvancedSearchComponent } from '@/components/AdvancedSearchComponent';
 import { FileUploadComponent } from '@/components/FileUploadComponent';
@@ -240,6 +252,135 @@ export default function Requests() {
 
   const getAgentFullName = (agent: User) => {
     return `${agent.nombre} ${agent.apellido_paterno} ${agent.apellido_materno}`.trim();
+  };
+
+  // Traffic Light Status Logic (SLA-based colors)
+  const getTrafficLightStatus = (request: RequestWithRelations): TrafficLightInfo => {
+    const now = new Date();
+    const createdAt = new Date(request.created_at);
+    const updatedAt = new Date(request.updated_at || request.created_at);
+
+    const daysSinceCreated = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+    const daysSinceUpdated = Math.floor((now.getTime() - updatedAt.getTime()) / (1000 * 60 * 60 * 24));
+
+    // AZUL (Terminada): If status is 'resuelto' or 'cerrado'
+    if (request.estatus === 'resuelto' || request.estatus === 'cerrado') {
+      return {
+        status: 'AZUL',
+        color: '#3b82f6',
+        label: 'Terminada',
+        description: 'Solicitud completada'
+      };
+    }
+
+    // ROJO (Sin Atender): If 'nuevo' > 3 days OR 'en_proceso' > 5 days without update
+    if (request.estatus === 'nuevo' && daysSinceCreated > 3) {
+      return {
+        status: 'ROJO',
+        color: '#ef4444',
+        label: 'Sin Atender',
+        description: `${daysSinceCreated} días sin atención`
+      };
+    }
+
+    if ((request.estatus === 'en_proceso' || request.estatus === 'asignado') && daysSinceUpdated > 5) {
+      return {
+        status: 'ROJO',
+        color: '#ef4444',
+        label: 'Sin Atender',
+        description: `${daysSinceUpdated} días sin actualización`
+      };
+    }
+
+    // VERDE (En Proceso): If status is 'en_proceso' or 'asignado' (and not past limit)
+    if (request.estatus === 'en_proceso' || request.estatus === 'asignado') {
+      return {
+        status: 'VERDE',
+        color: '#10b981',
+        label: 'En Proceso',
+        description: 'Siendo atendida'
+      };
+    }
+
+    // AMARILLO (Nueva): If status is 'nuevo' (and not past the 3-day limit)
+    if (request.estatus === 'nuevo') {
+      return {
+        status: 'AMARILLO',
+        color: '#f59e0b',
+        label: 'Nueva',
+        description: 'Pendiente de asignación'
+      };
+    }
+
+    // Default for paused or unknown states
+    return {
+      status: 'AMARILLO',
+      color: '#f59e0b',
+      label: request.estatus === 'pausado' ? 'Pausada' : 'Pendiente',
+      description: request.estatus === 'pausado' ? 'En pausa temporal' : 'Estado desconocido'
+    };
+  };
+
+  const getTrafficLightIcon = (trafficLight: TrafficLightInfo) => {
+    switch (trafficLight.status) {
+      case 'ROJO':
+        return <AlertTriangle size={16} color={trafficLight.color} />;
+      case 'AMARILLO':
+        return <Clock size={16} color={trafficLight.color} />;
+      case 'VERDE':
+        return <Clock size={16} color={trafficLight.color} />;
+      case 'AZUL':
+        return <CheckCircle size={16} color={trafficLight.color} />;
+      default:
+        return <Circle size={16} color={trafficLight.color} />;
+    }
+  };
+
+  // Delete request function (only for completed requests)
+  const handleDeleteRequest = async (requestId: string, requestTitle: string) => {
+    Alert.alert(
+      'Eliminar Solicitud',
+      `¿Estás seguro de que deseas eliminar la solicitud "${requestTitle}"?\n\nEsta acción no se puede deshacer.`,
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel'
+        },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { error } = await supabaseClient
+                .from('requests')
+                .delete()
+                .eq('id', requestId);
+
+              if (error) {
+                console.error('Error deleting request:', error);
+                Alert.alert('Error', 'No se pudo eliminar la solicitud. Intenta de nuevo.');
+                return;
+              }
+
+              // Remove from local state
+              setRequests(prev => prev.filter(req => req.id !== requestId));
+
+              await sendDemoNotification(
+                'Solicitud eliminada',
+                `La solicitud "${requestTitle}" ha sido eliminada`,
+                'info',
+                { requestId }
+              );
+
+              Alert.alert('Éxito', 'Solicitud eliminada correctamente');
+            } catch (error) {
+              console.error('Error deleting request:', error);
+              Alert.alert('Error', 'No se pudo eliminar la solicitud. Intenta de nuevo.');
+            }
+          }
+        }
+      ]
+    );
   };
 
   const handleCreateRequest = async () => {
@@ -870,14 +1011,17 @@ export default function Requests() {
         </View>
       </View>
 
-      {/* Advanced Search */}
-      <View style={styles.searchSection}>
-        <AdvancedSearchComponent
-          onSearch={handleSearch}
-          onClear={handleClearSearch}
-          placeholder="Buscar solicitudes..."
-        />
-      </View>
+      {/* Advanced Search - Only visible for agents and admins */}
+      {user?.rol !== 'customer' && (
+        <View style={styles.searchSection}>
+          <AdvancedSearchComponent
+            onSearch={handleSearch}
+            onClear={handleClearSearch}
+            placeholder="Buscar solicitudes..."
+            hideSearchInput={true}
+          />
+        </View>
+      )}
 
       <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
         {filteredRequests.map(request => (
@@ -924,32 +1068,38 @@ export default function Requests() {
               }
             }}
           >
-            <View style={styles.requestHeader}>
-              <View style={styles.requestStatus}>
-                {getStatusIcon(request.estatus)}
-                <Text
-                  style={[
-                    styles.statusText,
-                    { color: getStatusColor(request.estatus) },
-                  ]}
-                >
-                  {getStatusText(request.estatus)}
-                </Text>
-                <View
-                  style={[
-                    styles.priorityBadge,
-                    { backgroundColor: getPriorityColor(request.prioridad) },
-                  ]}
-                >
-                  <Text style={styles.priorityText}>
-                    {request.prioridad.toUpperCase()}
+            {/* Traffic Light Status System */}
+            {(() => {
+              const trafficLight = getTrafficLightStatus(request);
+              return (
+                <View style={styles.requestHeader}>
+                  <View style={styles.requestStatus}>
+                    {getTrafficLightIcon(trafficLight)}
+                    <Text
+                      style={[
+                        styles.statusText,
+                        { color: trafficLight.color },
+                      ]}
+                    >
+                      {trafficLight.label}
+                    </Text>
+                    <View
+                      style={[
+                        styles.trafficLightBadge,
+                        { backgroundColor: trafficLight.color },
+                      ]}
+                    >
+                      <Text style={styles.trafficLightBadgeText}>
+                        {trafficLight.status}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={styles.requestDate}>
+                    {formatDate(request.created_at)}
                   </Text>
                 </View>
-              </View>
-              <Text style={styles.requestDate}>
-                {formatDate(request.created_at)}
-              </Text>
-            </View>
+              );
+            })()}
 
             <Text style={styles.requestTitle}>{request.titulo}</Text>
             <Text style={styles.requestMessage} numberOfLines={3}>
@@ -1012,17 +1162,34 @@ export default function Requests() {
               </View>
             )}
 
-            {/* Botón Charlar */}
-            <TouchableOpacity
-              style={styles.chatButton}
-              onPress={(e) => {
-                e.stopPropagation();
-                handleStartChat(request);
-              }}
-            >
-              <MessageCircle size={18} color="#ffffff" />
-              <Text style={styles.chatButtonText}>Charlar</Text>
-            </TouchableOpacity>
+            {/* Action Buttons */}
+            <View style={styles.actionButtonsRow}>
+              {/* Botón Charlar */}
+              <TouchableOpacity
+                style={[styles.chatButton, styles.actionButton]}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  handleStartChat(request);
+                }}
+              >
+                <MessageCircle size={18} color="#ffffff" />
+                <Text style={styles.chatButtonText}>Charlar</Text>
+              </TouchableOpacity>
+
+              {/* Delete button - Only for completed (AZUL) requests */}
+              {(request.estatus === 'resuelto' || request.estatus === 'cerrado') && (
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handleDeleteRequest(request.id, request.titulo);
+                  }}
+                >
+                  <Trash2 size={18} color="#ffffff" />
+                  <Text style={styles.deleteButtonText}>Eliminar</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </TouchableOpacity>
         ))}
 
@@ -1135,48 +1302,7 @@ export default function Requests() {
               </ScrollView>
             </View>
 
-            <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>Prioridad</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.priorityScroll}
-              >
-                {[
-                  { value: 'baja', label: 'Baja', color: '#10b981' },
-                  { value: 'media', label: 'Media', color: '#f59e0b' },
-                  { value: 'alta', label: 'Alta', color: '#ef4444' },
-                  { value: 'urgente', label: 'Urgente', color: '#dc2626' },
-                ].map(priority => (
-                  <TouchableOpacity
-                    key={priority.value}
-                    style={[
-                      styles.priorityChip,
-                      newRequest.prioridad === priority.value && {
-                        backgroundColor: priority.color,
-                        borderColor: priority.color,
-                      },
-                    ]}
-                    onPress={() =>
-                      setNewRequest(prev => ({
-                        ...prev,
-                        prioridad: priority.value as any,
-                      }))
-                    }
-                  >
-                    <Text
-                      style={[
-                        styles.priorityChipText,
-                        newRequest.prioridad === priority.value &&
-                          styles.priorityChipTextSelected,
-                      ]}
-                    >
-                      {priority.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
+            {/* Priority is set to 'media' by default and hidden from user */}
 
             {agents.length > 0 && (
               <View style={styles.formGroup}>
@@ -1513,6 +1639,47 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   chatButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+  },
+  // Traffic Light System Styles
+  trafficLightBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  trafficLightBadgeText: {
+    fontSize: 10,
+    fontFamily: 'Inter-Bold',
+    color: '#ffffff',
+  },
+  // Action Buttons Row
+  actionButtonsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+  },
+  actionButton: {
+    flex: 1,
+    marginTop: 0,
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ef4444',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  deleteButtonText: {
     color: '#ffffff',
     fontSize: 16,
     fontFamily: 'Inter-SemiBold',

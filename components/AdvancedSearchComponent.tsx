@@ -26,11 +26,12 @@ interface AdvancedSearchComponentProps {
   onClear: () => void;
   placeholder?: string;
   showFilters?: boolean;
+  hideSearchInput?: boolean;
 }
 
 export const AdvancedSearchComponent: React.FC<
   AdvancedSearchComponentProps
-> = ({ onSearch, onClear, placeholder = 'Buscar...', showFilters = true }) => {
+> = ({ onSearch, onClear, placeholder = 'Buscar...', showFilters = true, hideSearchInput = false }) => {
   const [filters, setFilters] = useState<SearchFilters>({
     query: '',
     status: [],
@@ -90,34 +91,42 @@ export const AdvancedSearchComponent: React.FC<
 
   return (
     <View style={styles.container}>
-      {/* Search Input */}
+      {/* Search Input and Filter Button */}
       <View style={styles.searchContainer}>
-        <View style={styles.searchInputContainer}>
-          <Search size={20} color="#6b7280" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder={placeholder}
-            placeholderTextColor="#9ca3af"
-            value={filters.query}
-            onChangeText={text => updateFilters('query', text)}
-            onSubmitEditing={handleSearch}
-          />
-          {filters.query.length > 0 && (
-            <TouchableOpacity onPress={() => updateFilters('query', '')}>
-              <X size={20} color="#6b7280" />
-            </TouchableOpacity>
-          )}
-        </View>
+        {!hideSearchInput && (
+          <View style={styles.searchInputContainer}>
+            <Search size={20} color="#6b7280" style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder={placeholder}
+              placeholderTextColor="#9ca3af"
+              value={filters.query}
+              onChangeText={text => updateFilters('query', text)}
+              onSubmitEditing={handleSearch}
+            />
+            {filters.query.length > 0 && (
+              <TouchableOpacity onPress={() => updateFilters('query', '')}>
+                <X size={20} color="#6b7280" />
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
         {showFilters && (
           <TouchableOpacity
             style={[
               styles.filterButton,
               showAdvanced && styles.filterButtonActive,
+              hideSearchInput && styles.filterButtonFullWidth,
             ]}
             onPress={() => setShowAdvanced(!showAdvanced)}
           >
             <Filter size={20} color={showAdvanced ? '#ffffff' : '#1e40af'} />
+            {hideSearchInput && (
+              <Text style={[styles.filterButtonText, showAdvanced && styles.filterButtonTextActive]}>
+                Filtros
+              </Text>
+            )}
           </TouchableOpacity>
         )}
       </View>
@@ -291,6 +300,21 @@ const styles = StyleSheet.create({
   },
   filterButtonActive: {
     backgroundColor: '#1e40af',
+  },
+  filterButtonFullWidth: {
+    flex: 1,
+    width: 'auto',
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 16,
+  },
+  filterButtonText: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#1e40af',
+  },
+  filterButtonTextActive: {
+    color: '#ffffff',
   },
   advancedFilters: {
     backgroundColor: '#ffffff',
