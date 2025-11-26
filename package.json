@@ -30,7 +30,15 @@
     "setup-supabase": "node scripts/setup-supabase-complete.js",
     "setup-demo": "echo 'Ejecuta la migración insert_complete_demo_data.sql en Supabase SQL Editor'",
     "android": "expo run:android",
-    "ios": "expo run:ios"
+    "ios": "expo run:ios",
+    "build:android": "eas build --platform android --profile preview",
+    "build:android:prod": "eas build --platform android --profile production",
+    "build:android:aab": "eas build --platform android --profile production --non-interactive",
+    "build:ios": "eas build --platform ios --profile preview",
+    "build:ios:prod": "eas build --platform ios --profile production",
+    "build:all": "eas build --platform all --profile preview",
+    "build:status": "eas build:list",
+    "build:download": "eas build:list --limit 1 --json"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.2.3",
