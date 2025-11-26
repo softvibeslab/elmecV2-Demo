@@ -8,12 +8,17 @@ import {
   TextInput,
   RefreshControl,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useChat } from '@/contexts/ChatContext';
+import {
+  useChat,
+  INTERNAL_GROUPS,
+  InternalGroupType,
+} from '@/contexts/ChatContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { Search, MessageCircle, Clock, Users, Plus } from 'lucide-react-native';
+import { Search, MessageCircle, Clock, Users, Plus, UsersRound } from 'lucide-react-native';
 import { ChatRoom } from '@/types/supabase';
 
 // Tipo extendido para ChatRoom con información de request
@@ -27,9 +32,45 @@ interface ChatRoomWithRequest extends ChatRoom {
 export default function ChatList() {
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
-  const { chatRooms, messages, loading, error, getRoomUnreadCount, isUserOnline } = useChat();
+  const [joiningGroup, setJoiningGroup] = useState<string | null>(null);
+  const {
+    chatRooms,
+    internalGroupRooms,
+    messages,
+    loading,
+    error,
+    getRoomUnreadCount,
+    isUserOnline,
+    joinGroupChat,
+    getAvailableGroups,
+  } = useChat();
   const { user } = useAuth();
   const router = useRouter();
+
+  // Phase 4.2: Get available groups for the current user
+  const availableGroups = getAvailableGroups();
+  const isInternalUser = user?.rol === 'agent' || user?.rol === 'admin';
+
+  // Handle joining an internal group
+  const handleJoinGroup = async (groupType: InternalGroupType) => {
+    try {
+      setJoiningGroup(groupType);
+      const roomId = await joinGroupChat(groupType);
+      router.push(`/chat/${roomId}`);
+    } catch (err: any) {
+      console.error('Error joining group:', err);
+      Alert.alert('Error', err.message || 'No se pudo unir al grupo');
+    } finally {
+      setJoiningGroup(null);
+    }
+  };
+
+  // Get group room by type
+  const getGroupRoom = (groupType: InternalGroupType) => {
+    return internalGroupRooms.find(
+      (room: any) => room.metadata?.group_type === groupType
+    );
+  };
 
   const getOtherParticipantName = (room: any) => {
     if (!room.metadata?.participant_names || !user) return 'Chat';
@@ -205,6 +246,79 @@ export default function ChatList() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
+        {/* Phase 4.2: Internal Groups Section - Only for agents and admins */}
+        {isInternalUser && availableGroups.length > 0 && (
+          <View style={styles.internalGroupsSection}>
+            <View style={styles.sectionHeader}>
+              <UsersRound size={20} color="#1e40af" />
+              <Text style={styles.sectionTitle}>Grupos Internos</Text>
+            </View>
+            <View style={styles.groupsContainer}>
+              {availableGroups.map(group => {
+                const groupRoom = getGroupRoom(group.id);
+                const unreadCount = groupRoom
+                  ? getRoomUnreadCount(groupRoom.id)
+                  : 0;
+                const isJoining = joiningGroup === group.id;
+
+                return (
+                  <TouchableOpacity
+                    key={group.id}
+                    style={[
+                      styles.groupCard,
+                      { borderLeftColor: group.color },
+                    ]}
+                    onPress={() => {
+                      if (groupRoom) {
+                        router.push(`/chat/${groupRoom.id}`);
+                      } else {
+                        handleJoinGroup(group.id);
+                      }
+                    }}
+                    disabled={isJoining}
+                  >
+                    <View style={styles.groupIconContainer}>
+                      <Text style={styles.groupIcon}>{group.icon}</Text>
+                    </View>
+                    <View style={styles.groupInfo}>
+                      <Text style={styles.groupName}>{group.name}</Text>
+                      <Text style={styles.groupDescription} numberOfLines={1}>
+                        {group.description}
+                      </Text>
+                    </View>
+                    {isJoining ? (
+                      <ActivityIndicator size="small" color="#1e40af" />
+                    ) : unreadCount > 0 ? (
+                      <View
+                        style={[
+                          styles.groupUnreadBadge,
+                          { backgroundColor: group.color },
+                        ]}
+                      >
+                        <Text style={styles.groupUnreadCount}>
+                          {unreadCount > 99 ? '99+' : unreadCount}
+                        </Text>
+                      </View>
+                    ) : !groupRoom ? (
+                      <View style={styles.joinBadge}>
+                        <Text style={styles.joinBadgeText}>Unirse</Text>
+                      </View>
+                    ) : null}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
+        {/* Chats de Solicitudes Section Header */}
+        {isInternalUser && chatRooms.length > 0 && (
+          <View style={styles.sectionHeaderSpaced}>
+            <MessageCircle size={20} color="#6b7280" />
+            <Text style={styles.sectionTitleSecondary}>Chats de Solicitudes</Text>
+          </View>
+        )}
+
         {filteredRooms.map(room => {
           const otherParticipant = getOtherParticipantName(room);
           const lastMessagePreview = getLastMessagePreview(room);
@@ -566,5 +680,98 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontFamily: 'Inter-SemiBold',
+  },
+  // Phase 4.2: Internal Groups Styles
+  internalGroupsSection: {
+    marginBottom: 24,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  sectionHeaderSpaced: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+    marginTop: 8,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: '#1e40af',
+  },
+  sectionTitleSecondary: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: '#6b7280',
+  },
+  groupsContainer: {
+    gap: 12,
+  },
+  groupCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    borderLeftWidth: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  groupIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  groupIcon: {
+    fontSize: 24,
+  },
+  groupInfo: {
+    flex: 1,
+  },
+  groupName: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: '#111827',
+    marginBottom: 2,
+  },
+  groupDescription: {
+    fontSize: 13,
+    fontFamily: 'Inter-Regular',
+    color: '#6b7280',
+  },
+  groupUnreadBadge: {
+    borderRadius: 12,
+    minWidth: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  groupUnreadCount: {
+    fontSize: 12,
+    fontFamily: 'Inter-Bold',
+    color: '#ffffff',
+  },
+  joinBadge: {
+    backgroundColor: '#eff6ff',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  joinBadgeText: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#1e40af',
   },
 });

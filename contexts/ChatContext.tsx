@@ -11,6 +11,45 @@ import { useNotifications } from './NotificationContext';
 import { ChatRoom, Message, User } from '@/types/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
+// Phase 4.1: Internal Group Chat Types
+export type InternalGroupType = 'GRUPO_VENTAS' | 'GRUPO_SOPORTE' | 'GRUPO_COTIZACION';
+
+export interface InternalGroup {
+  id: InternalGroupType;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  allowedRoles: string[];
+}
+
+export const INTERNAL_GROUPS: InternalGroup[] = [
+  {
+    id: 'GRUPO_VENTAS',
+    name: 'Grupo Ventas',
+    description: 'Canal de comunicación del equipo de ventas',
+    icon: '💼',
+    color: '#10b981',
+    allowedRoles: ['admin', 'agent'],
+  },
+  {
+    id: 'GRUPO_SOPORTE',
+    name: 'Grupo Soporte',
+    description: 'Canal de comunicación del equipo de soporte',
+    icon: '🛠️',
+    color: '#3b82f6',
+    allowedRoles: ['admin', 'agent'],
+  },
+  {
+    id: 'GRUPO_COTIZACION',
+    name: 'Grupo Cotización',
+    description: 'Canal de comunicación del equipo de cotizaciones',
+    icon: '📋',
+    color: '#f59e0b',
+    allowedRoles: ['admin', 'agent'],
+  },
+];
+
 export interface ChatMessage extends Message {
   user?: User;
   isDelivered?: boolean;
@@ -26,6 +65,7 @@ interface TypingUser {
 
 interface ChatContextType {
   chatRooms: ChatRoom[];
+  internalGroupRooms: ChatRoom[];
   messages: { [roomId: string]: ChatMessage[] };
   typingUsers: { [roomId: string]: TypingUser[] };
   onlineUsers: string[];
@@ -45,6 +85,8 @@ interface ChatContextType {
     participantName: string,
     requestId?: string
   ) => Promise<string>;
+  joinGroupChat: (groupType: InternalGroupType) => Promise<string>;
+  getAvailableGroups: () => InternalGroup[];
   markMessagesAsRead: (roomId: string) => Promise<void>;
   getChatRoom: (roomId: string) => ChatRoom | undefined;
   getUnreadCount: () => number;
@@ -71,6 +113,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
+  const [internalGroupRooms, setInternalGroupRooms] = useState<ChatRoom[]>([]);
   const [messages, setMessages] = useState<{ [roomId: string]: ChatMessage[] }>(
     {}
   );
@@ -155,7 +198,17 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         return;
       }
 
-      setChatRooms(data || []);
+      // Phase 4.1: Separate internal group rooms from regular chat rooms
+      const allRooms = data || [];
+      const groupRooms = allRooms.filter(
+        (room: any) => room.tipo === 'group' && room.metadata?.group_type
+      );
+      const regularRooms = allRooms.filter(
+        (room: any) => room.tipo !== 'group' || !room.metadata?.group_type
+      );
+
+      setChatRooms(regularRooms);
+      setInternalGroupRooms(groupRooms);
 
       // Load messages for each room (limit to prevent infinite loading)
        const roomPromises = (data || []).slice(0, 10).map(async (room: any) => {
@@ -720,6 +773,136 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  // Phase 4.1: Get available internal groups for the current user
+  const getAvailableGroups = useCallback((): InternalGroup[] => {
+    if (!user?.rol) return [];
+    return INTERNAL_GROUPS.filter(group =>
+      group.allowedRoles.includes(user.rol || '')
+    );
+  }, [user?.rol]);
+
+  // Phase 4.1: Join or create an internal group chat
+  const joinGroupChat = async (groupType: InternalGroupType): Promise<string> => {
+    if (!user || !session) throw new Error('User not authenticated');
+
+    // Check if user has access to this group
+    const group = INTERNAL_GROUPS.find(g => g.id === groupType);
+    if (!group) {
+      throw new Error('Grupo no encontrado');
+    }
+
+    if (!group.allowedRoles.includes(user.rol || '')) {
+      throw new Error('No tienes acceso a este grupo');
+    }
+
+    try {
+      console.log('Joining/creating group chat:', groupType);
+
+      // Check if group chat already exists
+      const { data: existingRooms, error: searchError } = await supabase
+        .from('chat_rooms')
+        .select('*')
+        .eq('tipo', 'group')
+        .eq('is_active', true);
+
+      if (searchError) {
+        console.error('Error searching for existing group:', searchError);
+      }
+
+      // Find existing group room by type
+      const existingRoom = existingRooms?.find(
+        (room: any) => room.metadata?.group_type === groupType
+      );
+
+      if (existingRoom) {
+        console.log('Found existing group room:', existingRoom.id);
+
+        // Check if user is already a participant
+        if (!existingRoom.participants?.includes(user.id)) {
+          // Add user to participants
+          const updatedParticipants = [...(existingRoom.participants || []), user.id];
+          const { error: updateError } = await supabaseClient
+            .from('chat_rooms')
+            .update({ participants: updatedParticipants })
+            .eq('id', existingRoom.id);
+
+          if (updateError) {
+            console.error('Error adding user to group:', updateError);
+          }
+        }
+
+        // Load messages for the room
+        if (!messages[existingRoom.id]) {
+          await loadRoomMessages(existingRoom.id);
+        }
+        setupRealtimeSubscription(existingRoom.id);
+
+        // Update local state
+        setInternalGroupRooms(prev => {
+          if (prev.find(r => r.id === existingRoom.id)) return prev;
+          return [...prev, existingRoom];
+        });
+
+        return existingRoom.id;
+      }
+
+      console.log('No existing group found, creating new one');
+
+      // Create new group chat room
+      const { data, error } = await supabaseClient
+        .from('chat_rooms')
+        .insert({
+          tipo: 'group',
+          participants: [user.id],
+          request_id: null,
+          is_active: true,
+          metadata: {
+            group_type: groupType,
+            group_name: group.name,
+            group_description: group.description,
+            group_icon: group.icon,
+            group_color: group.color,
+            created_by: user.id,
+            created_at: new Date().toISOString(),
+          },
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating group chat room:', error);
+        throw new Error(`No se pudo crear el grupo: ${error.message}`);
+      }
+
+      if (!data) {
+        throw new Error('No se recibió confirmación de la creación del grupo');
+      }
+
+      console.log('Group chat room created:', data.id);
+
+      setInternalGroupRooms(prev => [data, ...prev]);
+      setMessages(prev => ({ ...prev, [data.id]: [] }));
+      setupRealtimeSubscription(data.id);
+
+      // Send welcome message
+      try {
+        await sendMessage(
+          data.id,
+          `¡Bienvenido al ${group.name}! ${group.icon}`,
+          'system'
+        );
+      } catch (msgError) {
+        console.error('Error sending welcome message:', msgError);
+      }
+
+      return data.id;
+    } catch (error) {
+      console.error('Error joining group chat:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      throw new Error(errorMessage);
+    }
+  };
+
   const markMessagesAsRead = async (roomId: string) => {
     if (!session?.user) return;
 
@@ -937,12 +1120,15 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
     <ChatContext.Provider
       value={{
         chatRooms,
+        internalGroupRooms,
         messages,
         typingUsers,
         onlineUsers,
         sendMessage,
         sendTypingIndicator,
         createChatRoom,
+        joinGroupChat,
+        getAvailableGroups,
         markMessagesAsRead,
         getChatRoom,
         getUnreadCount,

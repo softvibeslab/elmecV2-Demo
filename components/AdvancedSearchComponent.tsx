@@ -9,7 +9,14 @@ import {
 } from 'react-native';
 import { Search, Filter, X, Calendar, User, Tag } from 'lucide-react-native';
 
-interface SearchFilters {
+// Agent/Customer option type for filter lists
+interface FilterOption {
+  id: string;
+  name: string;
+  category?: string;
+}
+
+export interface SearchFilters {
   query: string;
   status: string[];
   priority: string[];
@@ -19,6 +26,8 @@ interface SearchFilters {
   };
   assignedTo: string;
   tags: string[];
+  agentIds: string[];
+  customerIds: string[];
 }
 
 interface AdvancedSearchComponentProps {
@@ -27,11 +36,25 @@ interface AdvancedSearchComponentProps {
   placeholder?: string;
   showFilters?: boolean;
   hideSearchInput?: boolean;
+  agents?: FilterOption[];
+  customers?: FilterOption[];
+  showAgentFilter?: boolean;
+  showCustomerFilter?: boolean;
 }
 
 export const AdvancedSearchComponent: React.FC<
   AdvancedSearchComponentProps
-> = ({ onSearch, onClear, placeholder = 'Buscar...', showFilters = true, hideSearchInput = false }) => {
+> = ({
+  onSearch,
+  onClear,
+  placeholder = 'Buscar...',
+  showFilters = true,
+  hideSearchInput = false,
+  agents = [],
+  customers = [],
+  showAgentFilter = false,
+  showCustomerFilter = false,
+}) => {
   const [filters, setFilters] = useState<SearchFilters>({
     query: '',
     status: [],
@@ -39,6 +62,8 @@ export const AdvancedSearchComponent: React.FC<
     dateRange: { start: '', end: '' },
     assignedTo: '',
     tags: [],
+    agentIds: [],
+    customerIds: [],
   });
   const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -69,6 +94,8 @@ export const AdvancedSearchComponent: React.FC<
       dateRange: { start: '', end: '' },
       assignedTo: '',
       tags: [],
+      agentIds: [],
+      customerIds: [],
     });
     onClear();
   };
@@ -242,6 +269,128 @@ export const AdvancedSearchComponent: React.FC<
             </View>
           </View>
 
+          {/* Agent Filter - Phase 3.2 */}
+          {showAgentFilter && agents.length > 0 && (
+            <View style={styles.filterSection}>
+              <Text style={styles.filterLabel}>Agente:</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.filterOptions}
+              >
+                {agents.map(agent => (
+                  <TouchableOpacity
+                    key={agent.id}
+                    style={[
+                      styles.filterChip,
+                      styles.filterChipWide,
+                      filters.agentIds.includes(agent.id) && {
+                        backgroundColor: '#1e40af',
+                        borderColor: '#1e40af',
+                      },
+                    ]}
+                    onPress={() =>
+                      toggleArrayFilter(filters.agentIds, agent.id, arr =>
+                        updateFilters('agentIds', arr)
+                      )
+                    }
+                  >
+                    <User
+                      size={14}
+                      color={
+                        filters.agentIds.includes(agent.id)
+                          ? '#ffffff'
+                          : '#6b7280'
+                      }
+                    />
+                    <Text
+                      style={[
+                        styles.filterChipText,
+                        filters.agentIds.includes(agent.id) &&
+                          styles.filterChipTextActive,
+                      ]}
+                    >
+                      {agent.name}
+                    </Text>
+                    {agent.category && (
+                      <Text
+                        style={[
+                          styles.filterChipCategory,
+                          filters.agentIds.includes(agent.id) &&
+                            styles.filterChipCategoryActive,
+                        ]}
+                      >
+                        {agent.category}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* Customer Filter - Phase 3.2 */}
+          {showCustomerFilter && customers.length > 0 && (
+            <View style={styles.filterSection}>
+              <Text style={styles.filterLabel}>Cliente:</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.filterOptions}
+              >
+                {customers.map(customer => (
+                  <TouchableOpacity
+                    key={customer.id}
+                    style={[
+                      styles.filterChip,
+                      styles.filterChipWide,
+                      filters.customerIds.includes(customer.id) && {
+                        backgroundColor: '#059669',
+                        borderColor: '#059669',
+                      },
+                    ]}
+                    onPress={() =>
+                      toggleArrayFilter(
+                        filters.customerIds,
+                        customer.id,
+                        arr => updateFilters('customerIds', arr)
+                      )
+                    }
+                  >
+                    <User
+                      size={14}
+                      color={
+                        filters.customerIds.includes(customer.id)
+                          ? '#ffffff'
+                          : '#6b7280'
+                      }
+                    />
+                    <Text
+                      style={[
+                        styles.filterChipText,
+                        filters.customerIds.includes(customer.id) &&
+                          styles.filterChipTextActive,
+                      ]}
+                    >
+                      {customer.name}
+                    </Text>
+                    {customer.category && (
+                      <Text
+                        style={[
+                          styles.filterChipCategory,
+                          filters.customerIds.includes(customer.id) &&
+                            styles.filterChipCategoryActive,
+                        ]}
+                      >
+                        {customer.category}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
           {/* Action Buttons */}
           <View style={styles.actionButtons}>
             <TouchableOpacity style={styles.clearButton} onPress={handleClear}>
@@ -403,5 +552,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Inter-SemiBold',
     color: '#ffffff',
+  },
+  filterChipWide: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  filterChipCategory: {
+    fontSize: 10,
+    fontFamily: 'Inter-Regular',
+    color: '#9ca3af',
+    marginLeft: 4,
+  },
+  filterChipCategoryActive: {
+    color: 'rgba(255, 255, 255, 0.8)',
   },
 });

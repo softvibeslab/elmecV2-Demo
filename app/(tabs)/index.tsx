@@ -14,7 +14,7 @@ import { useRouter } from 'expo-router';
 import {
   Users,
   FileText,
-  Calculator,
+  Package,
   Clock,
   CircleCheck as CheckCircle,
   CircleAlert as AlertCircle,
@@ -41,11 +41,11 @@ export default function Home() {
       route: '/requests',
     },
     {
-      title: 'Calculadora',
-      description: 'Herramientas',
-      icon: Calculator,
+      title: 'Mis Pedidos',
+      description: 'Ver pedidos',
+      icon: Package,
       color: '#202B52', // Azul principal ELMEC
-      route: '/calculator',
+      route: '/profile/my-orders',
     },
   ];
 

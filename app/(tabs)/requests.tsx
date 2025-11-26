@@ -142,14 +142,20 @@ export default function Requests() {
 
   const loadAgents = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('users')
         .select(
           'id, nombre, apellido_paterno, apellido_materno, categoria, zona'
         )
         .eq('rol', 'agent')
-        .eq('activo', true)
-        .order('nombre', { ascending: true });
+        .eq('activo', true);
+
+      // Phase 3.1: Filter agents by user's zone if the user has a zone assigned
+      if (user?.zona) {
+        query = query.eq('zona', user.zona);
+      }
+
+      const { data, error } = await query.order('nombre', { ascending: true });
 
       if (error) {
         console.error('Error loading agents:', error);
@@ -852,6 +858,20 @@ export default function Requests() {
       );
     }
 
+    // Phase 3.2: Filtrar por agente
+    if (filters.agentIds && filters.agentIds.length > 0) {
+      filtered = filtered.filter(
+        req => req.agente_id && filters.agentIds.includes(req.agente_id)
+      );
+    }
+
+    // Phase 3.2: Filtrar por cliente
+    if (filters.customerIds && filters.customerIds.length > 0) {
+      filtered = filtered.filter(
+        req => req.usuario_id && filters.customerIds.includes(req.usuario_id)
+      );
+    }
+
     setFilteredRequests(filtered);
   };
 
@@ -1019,6 +1039,12 @@ export default function Requests() {
             onClear={handleClearSearch}
             placeholder="Buscar solicitudes..."
             hideSearchInput={true}
+            showAgentFilter={user?.rol === 'admin'}
+            agents={agents.map(agent => ({
+              id: agent.id,
+              name: getAgentFullName(agent),
+              category: agent.categoria || undefined,
+            }))}
           />
         </View>
       )}
