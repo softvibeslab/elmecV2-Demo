@@ -14,7 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { useChat } from '@/contexts/ChatContext';
 import { useRouter } from 'expo-router';
-  import { supabase, supabaseClient } from '@/lib/supabase';
+import { supabase, supabaseClient } from '@/lib/supabase';
 import { Request, User } from '@/types/supabase';
 
 // Tipos extendidos para las consultas con joins
@@ -62,7 +62,9 @@ import { uploadMultipleFiles, UploadResult } from '@/utils/fileUpload';
 
 export default function Requests() {
   const [requests, setRequests] = useState<RequestWithRelations[]>([]);
-  const [filteredRequests, setFilteredRequests] = useState<RequestWithRelations[]>([]);
+  const [filteredRequests, setFilteredRequests] = useState<
+    RequestWithRelations[]
+  >([]);
   const [showNewRequestModal, setShowNewRequestModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -261,13 +263,19 @@ export default function Requests() {
   };
 
   // Traffic Light Status Logic (SLA-based colors)
-  const getTrafficLightStatus = (request: RequestWithRelations): TrafficLightInfo => {
+  const getTrafficLightStatus = (
+    request: RequestWithRelations
+  ): TrafficLightInfo => {
     const now = new Date();
     const createdAt = new Date(request.created_at);
     const updatedAt = new Date(request.updated_at || request.created_at);
 
-    const daysSinceCreated = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
-    const daysSinceUpdated = Math.floor((now.getTime() - updatedAt.getTime()) / (1000 * 60 * 60 * 24));
+    const daysSinceCreated = Math.floor(
+      (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    const daysSinceUpdated = Math.floor(
+      (now.getTime() - updatedAt.getTime()) / (1000 * 60 * 60 * 24)
+    );
 
     // AZUL (Terminada): If status is 'resuelto' or 'cerrado'
     if (request.estatus === 'resuelto' || request.estatus === 'cerrado') {
@@ -275,7 +283,7 @@ export default function Requests() {
         status: 'AZUL',
         color: '#3b82f6',
         label: 'Terminada',
-        description: 'Solicitud completada'
+        description: 'Solicitud completada',
       };
     }
 
@@ -285,16 +293,19 @@ export default function Requests() {
         status: 'ROJO',
         color: '#ef4444',
         label: 'Sin Atender',
-        description: `${daysSinceCreated} días sin atención`
+        description: `${daysSinceCreated} días sin atención`,
       };
     }
 
-    if ((request.estatus === 'en_proceso' || request.estatus === 'asignado') && daysSinceUpdated > 5) {
+    if (
+      (request.estatus === 'en_proceso' || request.estatus === 'asignado') &&
+      daysSinceUpdated > 5
+    ) {
       return {
         status: 'ROJO',
         color: '#ef4444',
         label: 'Sin Atender',
-        description: `${daysSinceUpdated} días sin actualización`
+        description: `${daysSinceUpdated} días sin actualización`,
       };
     }
 
@@ -304,7 +315,7 @@ export default function Requests() {
         status: 'VERDE',
         color: '#10b981',
         label: 'En Proceso',
-        description: 'Siendo atendida'
+        description: 'Siendo atendida',
       };
     }
 
@@ -314,7 +325,7 @@ export default function Requests() {
         status: 'AMARILLO',
         color: '#f59e0b',
         label: 'Nueva',
-        description: 'Pendiente de asignación'
+        description: 'Pendiente de asignación',
       };
     }
 
@@ -323,7 +334,10 @@ export default function Requests() {
       status: 'AMARILLO',
       color: '#f59e0b',
       label: request.estatus === 'pausado' ? 'Pausada' : 'Pendiente',
-      description: request.estatus === 'pausado' ? 'En pausa temporal' : 'Estado desconocido'
+      description:
+        request.estatus === 'pausado'
+          ? 'En pausa temporal'
+          : 'Estado desconocido',
     };
   };
 
@@ -343,14 +357,17 @@ export default function Requests() {
   };
 
   // Delete request function (only for completed requests)
-  const handleDeleteRequest = async (requestId: string, requestTitle: string) => {
+  const handleDeleteRequest = async (
+    requestId: string,
+    requestTitle: string
+  ) => {
     Alert.alert(
       'Eliminar Solicitud',
       `¿Estás seguro de que deseas eliminar la solicitud "${requestTitle}"?\n\nEsta acción no se puede deshacer.`,
       [
         {
           text: 'Cancelar',
-          style: 'cancel'
+          style: 'cancel',
         },
         {
           text: 'Eliminar',
@@ -364,7 +381,10 @@ export default function Requests() {
 
               if (error) {
                 console.error('Error deleting request:', error);
-                Alert.alert('Error', 'No se pudo eliminar la solicitud. Intenta de nuevo.');
+                Alert.alert(
+                  'Error',
+                  'No se pudo eliminar la solicitud. Intenta de nuevo.'
+                );
                 return;
               }
 
@@ -381,10 +401,13 @@ export default function Requests() {
               Alert.alert('Éxito', 'Solicitud eliminada correctamente');
             } catch (error) {
               console.error('Error deleting request:', error);
-              Alert.alert('Error', 'No se pudo eliminar la solicitud. Intenta de nuevo.');
+              Alert.alert(
+                'Error',
+                'No se pudo eliminar la solicitud. Intenta de nuevo.'
+              );
             }
-          }
-        }
+          },
+        },
       ]
     );
   };
@@ -467,10 +490,14 @@ export default function Requests() {
     // Validar tamaño de cada archivo
     const maxSizeInMB = 5;
     const maxSizeInBytes = maxSizeInMB * 1024 * 1024;
-    const oversizedFiles = selectedFiles.filter(file => file.size > maxSizeInBytes);
+    const oversizedFiles = selectedFiles.filter(
+      file => file.size > maxSizeInBytes
+    );
     if (oversizedFiles.length > 0) {
       console.log('❌ Validación fallida: archivos muy grandes');
-      const fileNames = oversizedFiles.map(f => `• ${f.name} (${(f.size / (1024 * 1024)).toFixed(2)}MB)`).join('\n');
+      const fileNames = oversizedFiles
+        .map(f => `• ${f.name} (${(f.size / (1024 * 1024)).toFixed(2)}MB)`)
+        .join('\n');
       Alert.alert(
         'Archivos muy grandes',
         `Los siguientes archivos exceden el límite de ${maxSizeInMB}MB:\n\n${fileNames}\n\nPor favor selecciona archivos más pequeños.`,
@@ -519,7 +546,9 @@ export default function Requests() {
       let uploadedFiles: UploadResult[] = [];
       if (selectedFiles.length > 0) {
         try {
-          console.log(`Uploading ${selectedFiles.length} file(s) to storage...`);
+          console.log(
+            `Uploading ${selectedFiles.length} file(s) to storage...`
+          );
           uploadedFiles = await uploadMultipleFiles(
             selectedFiles,
             'request-files',
@@ -533,13 +562,26 @@ export default function Requests() {
           let errorMessage = 'No se pudieron subir los archivos adjuntos.';
           if (uploadError?.message) {
             if (uploadError.message.includes('size')) {
-              errorMessage = 'Uno o más archivos exceden el tamaño máximo permitido.';
-            } else if (uploadError.message.includes('type') || uploadError.message.includes('format')) {
-              errorMessage = 'Uno o más archivos tienen un formato no permitido.';
-            } else if (uploadError.message.includes('network') || uploadError.message.includes('connection')) {
-              errorMessage = 'Error de conexión al subir los archivos. Verifica tu conexión a internet.';
-            } else if (uploadError.message.includes('permission') || uploadError.message.includes('denied')) {
-              errorMessage = 'No tienes permisos para subir archivos. Contacta al administrador.';
+              errorMessage =
+                'Uno o más archivos exceden el tamaño máximo permitido.';
+            } else if (
+              uploadError.message.includes('type') ||
+              uploadError.message.includes('format')
+            ) {
+              errorMessage =
+                'Uno o más archivos tienen un formato no permitido.';
+            } else if (
+              uploadError.message.includes('network') ||
+              uploadError.message.includes('connection')
+            ) {
+              errorMessage =
+                'Error de conexión al subir los archivos. Verifica tu conexión a internet.';
+            } else if (
+              uploadError.message.includes('permission') ||
+              uploadError.message.includes('denied')
+            ) {
+              errorMessage =
+                'No tienes permisos para subir archivos. Contacta al administrador.';
             } else {
               errorMessage = `Error al subir archivos: ${uploadError.message}`;
             }
@@ -552,15 +594,17 @@ export default function Requests() {
               {
                 text: 'Cancelar',
                 style: 'cancel',
-                onPress: () => { setSubmitting(false); }
+                onPress: () => {
+                  setSubmitting(false);
+                },
               },
               {
                 text: 'Continuar sin archivos',
                 onPress: () => {
                   // Los archivos se limpiarán, continuar sin ellos
                   uploadedFiles = [];
-                }
-              }
+                },
+              },
             ]
           );
           setSubmitting(false);
@@ -627,45 +671,68 @@ export default function Requests() {
 
         // Analizar el tipo de error y mostrar mensaje específico
         let errorTitle = 'Error al crear solicitud';
-        let errorMessage = 'No se pudo crear la solicitud. Por favor intenta de nuevo.';
+        let errorMessage =
+          'No se pudo crear la solicitud. Por favor intenta de nuevo.';
 
         // Errores de validación de Supabase
-        if (error.code === '23502') { // NOT NULL violation
+        if (error.code === '23502') {
+          // NOT NULL violation
           errorTitle = 'Datos incompletos';
-          errorMessage = 'Algunos campos obligatorios no fueron enviados correctamente. Por favor verifica todos los campos e intenta nuevamente.';
-        } else if (error.code === '23503') { // Foreign key violation
+          errorMessage =
+            'Algunos campos obligatorios no fueron enviados correctamente. Por favor verifica todos los campos e intenta nuevamente.';
+        } else if (error.code === '23503') {
+          // Foreign key violation
           errorTitle = 'Referencia inválida';
           if (error.message.includes('agente_id')) {
-            errorMessage = 'El agente seleccionado no es válido. Por favor selecciona otro agente o deja el campo vacío.';
+            errorMessage =
+              'El agente seleccionado no es válido. Por favor selecciona otro agente o deja el campo vacío.';
           } else if (error.message.includes('usuario_id')) {
-            errorMessage = 'Tu sesión no es válida. Por favor cierra sesión y vuelve a iniciar sesión.';
+            errorMessage =
+              'Tu sesión no es válida. Por favor cierra sesión y vuelve a iniciar sesión.';
           } else {
-            errorMessage = 'Una de las referencias en la solicitud no es válida. Por favor verifica los datos.';
+            errorMessage =
+              'Una de las referencias en la solicitud no es válida. Por favor verifica los datos.';
           }
-        } else if (error.code === '23505') { // Unique violation
+        } else if (error.code === '23505') {
+          // Unique violation
           errorTitle = 'Solicitud duplicada';
-          errorMessage = 'Ya existe una solicitud similar. Por favor verifica tus solicitudes existentes.';
-        } else if (error.code === '42501' || error.message.includes('permission')) { // Permission denied
+          errorMessage =
+            'Ya existe una solicitud similar. Por favor verifica tus solicitudes existentes.';
+        } else if (
+          error.code === '42501' ||
+          error.message.includes('permission')
+        ) {
+          // Permission denied
           errorTitle = 'Permisos insuficientes';
-          errorMessage = 'No tienes permisos para crear solicitudes. Por favor contacta al administrador.';
+          errorMessage =
+            'No tienes permisos para crear solicitudes. Por favor contacta al administrador.';
         } else if (error.message.includes('titulo')) {
           errorTitle = 'Error en el título';
-          errorMessage = 'El título de la solicitud no cumple con los requisitos. Debe tener entre 5 y 200 caracteres.';
+          errorMessage =
+            'El título de la solicitud no cumple con los requisitos. Debe tener entre 5 y 200 caracteres.';
         } else if (error.message.includes('mensaje')) {
           errorTitle = 'Error en el mensaje';
-          errorMessage = 'El mensaje de la solicitud no cumple con los requisitos. Debe tener al menos 10 caracteres.';
+          errorMessage =
+            'El mensaje de la solicitud no cumple con los requisitos. Debe tener al menos 10 caracteres.';
         } else if (error.message.includes('tipo')) {
           errorTitle = 'Tipo de solicitud inválido';
-          errorMessage = 'El tipo de solicitud seleccionado no es válido. Por favor selecciona un tipo válido.';
+          errorMessage =
+            'El tipo de solicitud seleccionado no es válido. Por favor selecciona un tipo válido.';
         } else if (error.message.includes('prioridad')) {
           errorTitle = 'Prioridad inválida';
-          errorMessage = 'La prioridad seleccionada no es válida. Por favor selecciona una prioridad válida.';
-        } else if (error.message.includes('network') || error.message.includes('connection')) {
+          errorMessage =
+            'La prioridad seleccionada no es válida. Por favor selecciona una prioridad válida.';
+        } else if (
+          error.message.includes('network') ||
+          error.message.includes('connection')
+        ) {
           errorTitle = 'Error de conexión';
-          errorMessage = 'No se pudo conectar con el servidor. Por favor verifica tu conexión a internet e intenta nuevamente.';
+          errorMessage =
+            'No se pudo conectar con el servidor. Por favor verifica tu conexión a internet e intenta nuevamente.';
         } else if (error.message.includes('timeout')) {
           errorTitle = 'Tiempo de espera agotado';
-          errorMessage = 'La operación tardó demasiado tiempo. Por favor intenta nuevamente.';
+          errorMessage =
+            'La operación tardó demasiado tiempo. Por favor intenta nuevamente.';
         } else if (error.details) {
           errorMessage = `Error: ${error.message}\n\nDetalles: ${error.details}`;
         } else {
@@ -697,7 +764,10 @@ export default function Requests() {
 
       // Agregar la nueva solicitud a la lista
       setRequests(prev => {
-        console.log('Agregando solicitud a la lista. Total anterior:', prev.length);
+        console.log(
+          'Agregando solicitud a la lista. Total anterior:',
+          prev.length
+        );
         return [data as RequestWithRelations, ...prev];
       });
 
@@ -761,18 +831,28 @@ export default function Requests() {
       let errorMessage = 'Ocurrió un error inesperado al crear la solicitud.';
 
       if (error instanceof Error) {
-        if (error.message.includes('network') || error.message.includes('Failed to fetch')) {
+        if (
+          error.message.includes('network') ||
+          error.message.includes('Failed to fetch')
+        ) {
           errorTitle = 'Error de conexión';
-          errorMessage = 'No se pudo conectar con el servidor. Por favor verifica tu conexión a internet e intenta nuevamente.';
+          errorMessage =
+            'No se pudo conectar con el servidor. Por favor verifica tu conexión a internet e intenta nuevamente.';
         } else if (error.message.includes('timeout')) {
           errorTitle = 'Tiempo de espera agotado';
-          errorMessage = 'La operación tardó demasiado tiempo. Por favor intenta nuevamente.';
+          errorMessage =
+            'La operación tardó demasiado tiempo. Por favor intenta nuevamente.';
         } else if (error.message.includes('abort')) {
           errorTitle = 'Operación cancelada';
-          errorMessage = 'La operación fue cancelada. Por favor intenta nuevamente.';
-        } else if (error.message.includes('parse') || error.message.includes('JSON')) {
+          errorMessage =
+            'La operación fue cancelada. Por favor intenta nuevamente.';
+        } else if (
+          error.message.includes('parse') ||
+          error.message.includes('JSON')
+        ) {
           errorTitle = 'Error de formato';
-          errorMessage = 'Hubo un problema al procesar la respuesta del servidor. Por favor intenta nuevamente.';
+          errorMessage =
+            'Hubo un problema al procesar la respuesta del servidor. Por favor intenta nuevamente.';
         } else {
           errorMessage = `${error.message}\n\nPor favor intenta de nuevo o contacta al soporte técnico si el problema persiste.`;
         }
@@ -912,7 +992,10 @@ export default function Requests() {
       } else {
         // Si soy agente o admin, abrir chat con el cliente
         if (!request.usuario_id || !request.usuario) {
-          Alert.alert('Error', 'No se pudo encontrar el usuario de esta solicitud');
+          Alert.alert(
+            'Error',
+            'No se pudo encontrar el usuario de esta solicitud'
+          );
           return;
         }
         otherParticipantId = request.usuario_id;
@@ -1102,10 +1185,7 @@ export default function Requests() {
                   <View style={styles.requestStatus}>
                     {getTrafficLightIcon(trafficLight)}
                     <Text
-                      style={[
-                        styles.statusText,
-                        { color: trafficLight.color },
-                      ]}
+                      style={[styles.statusText, { color: trafficLight.color }]}
                     >
                       {trafficLight.label}
                     </Text>
@@ -1193,7 +1273,7 @@ export default function Requests() {
               {/* Botón Charlar */}
               <TouchableOpacity
                 style={[styles.chatButton, styles.actionButton]}
-                onPress={(e) => {
+                onPress={e => {
                   e.stopPropagation();
                   handleStartChat(request);
                 }}
@@ -1203,10 +1283,11 @@ export default function Requests() {
               </TouchableOpacity>
 
               {/* Delete button - Only for completed (AZUL) requests */}
-              {(request.estatus === 'resuelto' || request.estatus === 'cerrado') && (
+              {(request.estatus === 'resuelto' ||
+                request.estatus === 'cerrado') && (
                 <TouchableOpacity
                   style={styles.deleteButton}
-                  onPress={(e) => {
+                  onPress={e => {
                     e.stopPropagation();
                     handleDeleteRequest(request.id, request.titulo);
                   }}
@@ -1280,9 +1361,7 @@ export default function Requests() {
                 maxLength={250}
               />
               {newRequest.titulo.length > 0 && newRequest.titulo.length < 5 && (
-                <Text style={styles.validationHint}>
-                  Mínimo 5 caracteres
-                </Text>
+                <Text style={styles.validationHint}>Mínimo 5 caracteres</Text>
               )}
               {newRequest.titulo.length > 200 && (
                 <Text style={styles.validationError}>
@@ -1410,11 +1489,12 @@ export default function Requests() {
                 numberOfLines={6}
                 textAlignVertical="top"
               />
-              {newRequest.mensaje.length > 0 && newRequest.mensaje.length < 10 && (
-                <Text style={styles.validationHint}>
-                  Mínimo 10 caracteres
-                </Text>
-              )}
+              {newRequest.mensaje.length > 0 &&
+                newRequest.mensaje.length < 10 && (
+                  <Text style={styles.validationHint}>
+                    Mínimo 10 caracteres
+                  </Text>
+                )}
             </View>
 
             <TouchableOpacity

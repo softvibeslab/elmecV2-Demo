@@ -60,7 +60,11 @@ export async function uploadFileToStorage(
   folder: string = 'attachments'
 ): Promise<UploadResult | null> {
   try {
-    console.log('Starting file upload:', { name: file.name, size: file.size, type: file.type });
+    console.log('Starting file upload:', {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+    });
 
     // Validate file
     if (!file.uri || !file.name) {
@@ -130,16 +134,24 @@ export async function uploadFileToStorage(
       console.error('Supabase storage upload error:', error);
 
       // Check if bucket doesn't exist
-      if (error.message?.includes('not found') || error.message?.includes('does not exist')) {
+      if (
+        error.message?.includes('not found') ||
+        error.message?.includes('does not exist')
+      ) {
         throw new Error(
           `El bucket de almacenamiento "${bucket}" no existe. ` +
-          'Por favor contacta al administrador para configurar el almacenamiento.'
+            'Por favor contacta al administrador para configurar el almacenamiento.'
         );
       }
 
       // Check if file is too large
-      if (error.message?.includes('size') || error.message?.includes('too large')) {
-        throw new Error('El archivo es demasiado grande. Tamaño máximo permitido: 5MB');
+      if (
+        error.message?.includes('size') ||
+        error.message?.includes('too large')
+      ) {
+        throw new Error(
+          'El archivo es demasiado grande. Tamaño máximo permitido: 5MB'
+        );
       }
 
       throw new Error(`Error al subir archivo: ${error.message}`);
@@ -200,7 +212,9 @@ export async function uploadMultipleFiles(
       }
     } catch (error) {
       console.error(`Error uploading file ${file.name}:`, error);
-      errors.push(error instanceof Error ? error : new Error('Error desconocido'));
+      errors.push(
+        error instanceof Error ? error : new Error('Error desconocido')
+      );
     }
   }
 
@@ -230,9 +244,7 @@ export async function deleteFileFromStorage(
   try {
     console.log('Deleting file:', filePath);
 
-    const { error } = await supabase.storage
-      .from(bucket)
-      .remove([filePath]);
+    const { error } = await supabase.storage.from(bucket).remove([filePath]);
 
     if (error) {
       console.error('Error deleting file:', error);

@@ -38,7 +38,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     let isMounted = true;
-    
+
     // Get initial session (or skip in basic mode)
     const initializeAuth = async () => {
       try {
@@ -50,19 +50,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           return;
         }
 
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
+
         if (!isMounted) return;
-        
+
         if (error) {
           console.error('Error getting session:', error);
           setLoading(false);
           return;
         }
-        
-        console.log('🔄 Sesión inicial obtenida:', session ? 'Existe' : 'No existe');
+
+        console.log(
+          '🔄 Sesión inicial obtenida:',
+          session ? 'Existe' : 'No existe'
+        );
         setSession(session);
-        
+
         if (session?.user) {
           await loadUserProfile(session.user.id);
         } else {
@@ -81,12 +87,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     // Listen for auth changes (skip in basic mode)
     let subscription: { unsubscribe: () => void } | undefined;
     if (!BASIC_AUTH) {
-      const { data: { subscription: sub } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      const {
+        data: { subscription: sub },
+      } = supabase.auth.onAuthStateChange(async (event, session) => {
         if (!isMounted) return;
-        
-        console.log('🔄 Cambio de autenticación detectado:', event, session ? 'Sesión activa' : 'Sin sesión');
+
+        console.log(
+          '🔄 Cambio de autenticación detectado:',
+          event,
+          session ? 'Sesión activa' : 'Sin sesión'
+        );
         setSession(session);
-        
+
         if (session?.user && event !== 'TOKEN_REFRESHED') {
           await loadUserProfile(session.user.id);
         } else {
@@ -105,7 +117,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   // Computed value for authentication status
-  const isAuthenticated = BASIC_AUTH ? !!user : (!!user && !!session);
+  const isAuthenticated = BASIC_AUTH ? !!user : !!user && !!session;
 
   // Exponer funciones para debugging
   useEffect(() => {
@@ -114,7 +126,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         user,
         isAuthenticated,
         logout,
-        session
+        session,
       };
     }
   }, [user, isAuthenticated, session]);
@@ -131,7 +143,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setLoading(false);
         return;
       }
-      
+
       setLoading(true);
       const { data, error } = await supabase
         .from('users')
@@ -152,7 +164,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setLoading(false);
         throw error;
       }
-      
+
       // Set user data
       setUser(data);
 
@@ -173,7 +185,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         .catch((updateErr: any) => {
           console.error('Failed to update user status:', updateErr);
         });
-        
+
       setLoading(false);
     } catch (error) {
       console.error('Error loading user profile:', error);
@@ -229,10 +241,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         // Re-throw with more specific error information
         const enhancedError = {
           ...error,
-          code: error.message?.includes('Invalid login credentials') ? 'invalid_credentials' : error.code,
-          userMessage: error.message?.includes('Invalid login credentials') 
+          code: error.message?.includes('Invalid login credentials')
+            ? 'invalid_credentials'
+            : error.code,
+          userMessage: error.message?.includes('Invalid login credentials')
             ? 'Email o contraseña incorrectos'
-            : error.message
+            : error.message,
         };
         throw enhancedError;
       }
@@ -310,24 +324,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         // Create user profile
         const { password, ...userProfile } = userData;
         const profileData = {
-            id: authData.user.id,
-            email: authData.user.email!,
-            nombre: userProfile.nombre,
-            apellido_paterno: userProfile.apellido_paterno,
-            apellido_materno: userProfile.apellido_materno,
-            empresa: userProfile.empresa,
-            celular: userProfile.celular,
-            correo_electronico: userProfile.correo_electronico,
-            ciudad: userProfile.ciudad,
-            estado: userProfile.estado,
-            rol: 'customer' as const,
-            activo: true,
-            is_online: false,
-            last_seen: new Date().toISOString(),
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          };
-        
+          id: authData.user.id,
+          email: authData.user.email!,
+          nombre: userProfile.nombre,
+          apellido_paterno: userProfile.apellido_paterno,
+          apellido_materno: userProfile.apellido_materno,
+          empresa: userProfile.empresa,
+          celular: userProfile.celular,
+          correo_electronico: userProfile.correo_electronico,
+          ciudad: userProfile.ciudad,
+          estado: userProfile.estado,
+          rol: 'customer' as const,
+          activo: true,
+          is_online: false,
+          last_seen: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+
         const { error: profileError } = await (supabase as any)
           .from('users')
           .insert(profileData);
@@ -336,8 +350,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           console.error('Profile creation error:', profileError);
           return false;
         }
-
-
 
         return true;
       }
@@ -373,24 +385,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               .from('users')
               .update(updateData)
               .eq('id', user.id);
-            
+
             if (updateError) {
-              console.error('❌ Error updating user status on logout:', updateError);
+              console.error(
+                '❌ Error updating user status on logout:',
+                updateError
+              );
             } else {
               console.log('✅ Estado del usuario actualizado correctamente');
             }
           } catch (updateErr) {
-            console.error('❌ Failed to update user status on logout:', updateErr);
+            console.error(
+              '❌ Failed to update user status on logout:',
+              updateErr
+            );
           }
         }
 
         console.log('🚪 Cerrando sesión en Supabase...');
         const { error } = await supabase.auth.signOut();
-        
+
         // Clear local state regardless of signOut result
         setSession(null);
         setUser(null);
-        
+
         if (error) {
           console.error('❌ Logout error:', error);
         } else {

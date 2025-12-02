@@ -18,8 +18,8 @@ if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: {
     autoRefreshToken: false,
-    persistSession: false
-  }
+    persistSession: false,
+  },
 });
 
 async function findUserByEmail(email) {
@@ -54,7 +54,9 @@ async function findUserByEmail(email) {
       if (userData) {
         console.log('\n📋 En tabla users:');
         console.log(`   ID: ${userData.id}`);
-        console.log(`   Nombre: ${userData.nombre} ${userData.apellido_paterno || ''}`);
+        console.log(
+          `   Nombre: ${userData.nombre} ${userData.apellido_paterno || ''}`
+        );
         console.log(`   Rol: ${userData.rol}`);
 
         if (user.id !== userData.id) {
@@ -78,7 +80,9 @@ async function findUserByEmail(email) {
 }
 
 async function main() {
-  console.log('\n╔════════════════════════════════════════════════════════════╗');
+  console.log(
+    '\n╔════════════════════════════════════════════════════════════╗'
+  );
   console.log('║          BUSCAR USUARIOS EN SUPABASE AUTH                 ║');
   console.log('╚════════════════════════════════════════════════════════════╝');
 

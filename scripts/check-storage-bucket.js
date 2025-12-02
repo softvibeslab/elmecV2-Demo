@@ -33,7 +33,8 @@ async function checkStorageBucket() {
   try {
     // Listar todos los buckets
     console.log('\n📦 Listando buckets disponibles...');
-    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+    const { data: buckets, error: listError } =
+      await supabase.storage.listBuckets();
 
     if (listError) {
       console.error('❌ Error al listar buckets:', listError.message);
@@ -49,7 +50,9 @@ async function checkStorageBucket() {
     } else {
       console.log(`✅ Se encontraron ${buckets.length} bucket(s):`);
       buckets.forEach(bucket => {
-        console.log(`   - ${bucket.name} ${bucket.public ? '(público)' : '(privado)'}`);
+        console.log(
+          `   - ${bucket.name} ${bucket.public ? '(público)' : '(privado)'}`
+        );
       });
     }
 
@@ -76,12 +79,13 @@ async function checkStorageBucket() {
       console.log('\n✨ Todo está configurado correctamente!');
       console.log('\n📝 Siguiente paso:');
       console.log('   Ejecuta: npx expo start --clear');
-
     } else {
       console.log(`❌ El bucket '${BUCKET_NAME}' NO EXISTE`);
       console.log('\n📋 Para crear el bucket, sigue estos pasos:');
       console.log('\n1. Ve al dashboard de Supabase:');
-      console.log(`   ${supabaseUrl.replace('.supabase.co', '')}/project/default/storage/buckets`);
+      console.log(
+        `   ${supabaseUrl.replace('.supabase.co', '')}/project/default/storage/buckets`
+      );
       console.log('\n2. Haz clic en "New bucket"');
       console.log('\n3. Configura el bucket:');
       console.log(`   • Name: ${BUCKET_NAME}`);
@@ -98,13 +102,16 @@ async function checkStorageBucket() {
       console.log('\n   Política 2: "Authenticated users can upload"');
       console.log('   • Operación: INSERT');
       console.log('   • SQL:');
-      console.log(`   CREATE POLICY "Authenticated users can upload" ON storage.objects`);
+      console.log(
+        `   CREATE POLICY "Authenticated users can upload" ON storage.objects`
+      );
       console.log(`   FOR INSERT TO authenticated`);
       console.log(`   WITH CHECK (bucket_id = '${BUCKET_NAME}');`);
-      console.log('\n5. Después de crear el bucket, ejecuta este script de nuevo:');
+      console.log(
+        '\n5. Después de crear el bucket, ejecuta este script de nuevo:'
+      );
       console.log('   node scripts/check-storage-bucket.js');
     }
-
   } catch (error) {
     console.error('\n❌ Error inesperado:', error.message);
     process.exit(1);
@@ -117,7 +124,7 @@ checkStorageBucket()
     console.log('\n✅ Verificación completada\n');
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('\n❌ Error fatal:', error.message);
     process.exit(1);
   });

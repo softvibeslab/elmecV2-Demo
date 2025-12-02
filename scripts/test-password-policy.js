@@ -4,15 +4,19 @@
 require('dotenv').config();
 const { createClient } = require('@supabase/supabase-js');
 
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-const ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+const SUPABASE_URL =
+  process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+const ANON_KEY =
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // Puedes cambiar la contraseña a probar vía env TEST_PASSWORD
 const TEST_PASSWORD = process.env.TEST_PASSWORD || 'abc321';
 
 if (!SUPABASE_URL || !ANON_KEY || !SERVICE_ROLE_KEY) {
-  console.error('ERROR: Falta EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_ANON_KEY o SUPABASE_SERVICE_ROLE_KEY en .env');
+  console.error(
+    'ERROR: Falta EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_ANON_KEY o SUPABASE_SERVICE_ROLE_KEY en .env'
+  );
   process.exit(1);
 }
 
@@ -25,7 +29,9 @@ function analyzePasswordComplexity(pw) {
   const hasLower = /[a-z]/.test(pw);
   const hasDigit = /\d/.test(pw);
   const hasSpecial = /[^A-Za-z0-9]/.test(pw);
-  const isCommonPattern = /^(123456|password|qwerty|abc123|abc321|letmein|welcome)$/i.test(pw) || /abc/i.test(pw) && /123|321/.test(pw);
+  const isCommonPattern =
+    /^(123456|password|qwerty|abc123|abc321|letmein|welcome)$/i.test(pw) ||
+    (/abc/i.test(pw) && /123|321/.test(pw));
   return {
     lengthOk,
     hasUpper,
@@ -33,7 +39,13 @@ function analyzePasswordComplexity(pw) {
     hasDigit,
     hasSpecial,
     isCommonPattern,
-    recommended: lengthOk && hasUpper && hasLower && hasDigit && hasSpecial && !isCommonPattern,
+    recommended:
+      lengthOk &&
+      hasUpper &&
+      hasLower &&
+      hasDigit &&
+      hasSpecial &&
+      !isCommonPattern,
   };
 }
 
@@ -47,12 +59,14 @@ async function main() {
   console.log('Análisis básico de complejidad:', analysis);
 
   // Crear usuario con la contraseña de prueba
-  const { data: created, error: createErr } = await admin.auth.admin.createUser({
-    email,
-    password: TEST_PASSWORD,
-    email_confirm: true,
-    user_metadata: { test: true },
-  });
+  const { data: created, error: createErr } = await admin.auth.admin.createUser(
+    {
+      email,
+      password: TEST_PASSWORD,
+      email_confirm: true,
+      user_metadata: { test: true },
+    }
+  );
   if (createErr) {
     console.error('Error al crear usuario de prueba:', createErr.message);
     process.exit(1);
@@ -61,12 +75,16 @@ async function main() {
   console.log('Usuario creado:', userId);
 
   // Intentar login con anon key
-  const { data: signInData, error: signInErr } = await client.auth.signInWithPassword({
-    email,
-    password: TEST_PASSWORD,
-  });
+  const { data: signInData, error: signInErr } =
+    await client.auth.signInWithPassword({
+      email,
+      password: TEST_PASSWORD,
+    });
   if (signInErr) {
-    console.error('Error al iniciar sesión con la contraseña dada:', signInErr.message);
+    console.error(
+      'Error al iniciar sesión con la contraseña dada:',
+      signInErr.message
+    );
   } else {
     console.log('Inicio de sesión OK. Session:', Boolean(signInData?.session));
   }
@@ -75,7 +93,10 @@ async function main() {
   if (userId) {
     const { error: delErr } = await admin.auth.admin.deleteUser(userId);
     if (delErr) {
-      console.error('No se pudo eliminar el usuario de prueba:', delErr.message);
+      console.error(
+        'No se pudo eliminar el usuario de prueba:',
+        delErr.message
+      );
     } else {
       console.log('Usuario de prueba eliminado.');
     }
@@ -83,18 +104,24 @@ async function main() {
 
   console.log('\nConclusión:');
   if (signInErr) {
-    console.log('- La contraseña NO permitió inicio de sesión en este proyecto.');
+    console.log(
+      '- La contraseña NO permitió inicio de sesión en este proyecto.'
+    );
   } else {
     console.log('- La contraseña permitió inicio de sesión.');
   }
   if (!analysis.recommended) {
-    console.log('- Recomendación: usar una contraseña más fuerte (>=8 chars, mayúscula/minúscula, número y símbolo, evitar patrones comunes).');
+    console.log(
+      '- Recomendación: usar una contraseña más fuerte (>=8 chars, mayúscula/minúscula, número y símbolo, evitar patrones comunes).'
+    );
   } else {
-    console.log('- La contraseña cumple recomendaciones básicas de complejidad.');
+    console.log(
+      '- La contraseña cumple recomendaciones básicas de complejidad.'
+    );
   }
 }
 
-main().catch((e) => {
+main().catch(e => {
   console.error('Error general:', e?.message || e);
   process.exit(1);
 });

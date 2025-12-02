@@ -1,5 +1,15 @@
 import React from 'react';
-import { Platform, Modal, View, Image, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Text } from 'react-native';
+import {
+  Platform,
+  Modal,
+  View,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Dimensions,
+  Text,
+} from 'react-native';
 import { X } from 'lucide-react-native';
 
 interface ImageViewerProps {

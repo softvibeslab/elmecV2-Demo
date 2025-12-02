@@ -36,8 +36,8 @@ console.log(`   Service Key: ${supabaseServiceKey.substring(0, 20)}...\n`);
 const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   auth: {
     autoRefreshToken: false,
-    persistSession: false
-  }
+    persistSession: false,
+  },
 });
 
 // Usuarios de demo a crear
@@ -49,8 +49,8 @@ const DEMO_USERS = [
       nombre: 'Ivan',
       apellido_paterno: 'Pineda',
       apellido_materno: 'Rodriguez',
-      rol: 'admin'
-    }
+      rol: 'admin',
+    },
   },
   {
     email: 'j.gonzalez@elmec.com.mx',
@@ -59,8 +59,8 @@ const DEMO_USERS = [
       nombre: 'Javier',
       apellido_paterno: 'González',
       apellido_materno: 'Ruiz',
-      rol: 'agent'
-    }
+      rol: 'agent',
+    },
   },
   {
     email: 'cliente@gmail.com',
@@ -69,8 +69,8 @@ const DEMO_USERS = [
       nombre: 'María',
       apellido_paterno: 'López',
       apellido_materno: 'Pérez',
-      rol: 'customer'
-    }
+      rol: 'customer',
+    },
   },
   {
     email: 'rgarciavital@gmail.com',
@@ -79,9 +79,9 @@ const DEMO_USERS = [
       nombre: 'Roberto',
       apellido_paterno: 'García',
       apellido_materno: 'Vital',
-      rol: 'customer'
-    }
-  }
+      rol: 'customer',
+    },
+  },
 ];
 
 async function step1_testConnection() {
@@ -117,7 +117,8 @@ async function step2_executeMigrations() {
 
   try {
     // Leer todos los archivos SQL
-    const files = fs.readdirSync(migrationsDir)
+    const files = fs
+      .readdirSync(migrationsDir)
       .filter(f => f.endsWith('.sql'))
       .sort(); // Ejecutar en orden alfabético
 
@@ -130,17 +131,18 @@ async function step2_executeMigrations() {
       const sql = fs.readFileSync(sqlPath, 'utf8');
 
       // Ejecutar SQL usando la función RPC de Supabase
-      const { data, error } = await supabase.rpc('exec_sql', { sql_query: sql })
+      const { data, error } = await supabase
+        .rpc('exec_sql', { sql_query: sql })
         .catch(async () => {
           // Si RPC no existe, usar método directo
           return await fetch(`${supabaseUrl}/rest/v1/rpc/exec_sql`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'apikey': supabaseServiceKey,
-              'Authorization': `Bearer ${supabaseServiceKey}`
+              apikey: supabaseServiceKey,
+              Authorization: `Bearer ${supabaseServiceKey}`,
             },
-            body: JSON.stringify({ sql_query: sql })
+            body: JSON.stringify({ sql_query: sql }),
           }).then(r => r.json());
         });
 
@@ -163,10 +165,11 @@ async function step2_executeMigrations() {
 
     console.log('✅ Todas las migraciones ejecutadas exitosamente\n');
     return true;
-
   } catch (error) {
     console.error('⚠️  Nota sobre migraciones:', error.message);
-    console.log('   Las migraciones deben ejecutarse manualmente en SQL Editor');
+    console.log(
+      '   Las migraciones deben ejecutarse manualmente en SQL Editor'
+    );
     console.log('   o usar Supabase CLI. Continuando con usuarios...\n');
     return false;
   }
@@ -186,7 +189,7 @@ async function step3_createUsers() {
         email: user.email,
         password: user.password,
         email_confirm: true,
-        user_metadata: user.user_metadata
+        user_metadata: user.user_metadata,
       });
 
       if (error) {
@@ -200,13 +203,14 @@ async function step3_createUsers() {
         console.log(`         Password: ${user.password}`);
         createdUsers.push({ email: user.email, id: data.user.id });
       }
-
     } catch (error) {
       console.log(`      ❌ Error: ${error.message}`);
     }
   }
 
-  console.log(`\n✅ Proceso completado. ${createdUsers.length} usuarios nuevos\n`);
+  console.log(
+    `\n✅ Proceso completado. ${createdUsers.length} usuarios nuevos\n`
+  );
   return createdUsers;
 }
 
@@ -216,13 +220,17 @@ async function step4_verifySetup() {
   const results = {
     tables: [],
     users: 0,
-    auth_users: 0
+    auth_users: 0,
   };
 
   // Verificar tablas
   const tables = [
-    'users', 'requests', 'chat_rooms', 'messages',
-    'notifications', 'calculator_sessions'
+    'users',
+    'requests',
+    'chat_rooms',
+    'messages',
+    'notifications',
+    'calculator_sessions',
   ];
 
   console.log('   Verificando tablas:');
@@ -239,7 +247,8 @@ async function step4_verifySetup() {
 
   // Verificar usuarios en Auth
   console.log('\n   Verificando usuarios en Auth:');
-  const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+  const { data: authUsers, error: authError } =
+    await supabase.auth.admin.listUsers();
 
   if (authError) {
     console.log(`      ⚠️  Error: ${authError.message}`);
@@ -248,7 +257,9 @@ async function step4_verifySetup() {
     console.log(`      ✅ ${authUsers.users.length} usuarios en Auth`);
 
     authUsers.users.forEach(u => {
-      console.log(`         - ${u.email} (${u.user_metadata?.rol || 'sin rol'})`);
+      console.log(
+        `         - ${u.email} (${u.user_metadata?.rol || 'sin rol'})`
+      );
     });
   }
 
@@ -261,7 +272,9 @@ async function main() {
     // PASO 1: Verificar conexión
     const connected = await step1_testConnection();
     if (!connected) {
-      console.error('\n❌ No se pudo conectar a Supabase. Verifica las credenciales.\n');
+      console.error(
+        '\n❌ No se pudo conectar a Supabase. Verifica las credenciales.\n'
+      );
       process.exit(1);
     }
 
@@ -288,12 +301,13 @@ async function main() {
     });
 
     console.log('🎯 PRÓXIMOS PASOS:');
-    console.log('   1. Si las tablas NO aparecen, ejecuta las migraciones manualmente');
+    console.log(
+      '   1. Si las tablas NO aparecen, ejecuta las migraciones manualmente'
+    );
     console.log('   2. Ve a Supabase SQL Editor');
     console.log('   3. Copia y pega cada archivo .sql de supabase/migrations/');
     console.log('   4. Luego ejecuta: npm run test-supabase');
     console.log('\n✅ ¡Listo para hacer deploy en Netlify!\n');
-
   } catch (error) {
     console.error('\n❌ Error durante la configuración:', error);
     process.exit(1);

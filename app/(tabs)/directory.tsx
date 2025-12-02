@@ -1,5 +1,17 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, FlatList, TextInput, TouchableOpacity, Alert, Linking, ActivityIndicator, Image } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  FlatList,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  Linking,
+  ActivityIndicator,
+  Image,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useChat } from '@/hooks/useChat';
@@ -68,7 +80,7 @@ export default function Directory() {
       }
 
       // Filtrar el usuario actual en el frontend
-      const filteredData = (data as User[] || []).filter(
+      const filteredData = ((data as User[]) || []).filter(
         (person: User) => person.id !== currentUser?.id
       );
       setPersonnel(filteredData);
@@ -215,122 +227,128 @@ export default function Directory() {
   };
 
   // Componente memoizado para optimizar el rendimiento
-  const PersonCard = React.memo(({ person, onCall, onMessage }: {
-    person: User;
-    onCall: (phone: string) => void;
-    onMessage: (phone: string) => void;
-  }) => {
-    const photo = getVendorPhoto(person);
+  const PersonCard = React.memo(
+    ({
+      person,
+      onCall,
+      onMessage,
+    }: {
+      person: User;
+      onCall: (phone: string) => void;
+      onMessage: (phone: string) => void;
+    }) => {
+      const photo = getVendorPhoto(person);
 
-    return (
-    <View style={styles.personCard}>
-      <View style={styles.personHeader}>
-        {/* Avatar */}
-        <View style={styles.avatarContainer}>
-          {photo ? (
-            <Image source={photo} style={styles.avatar} />
-          ) : (
-            <View style={[styles.avatar, styles.avatarPlaceholder]}>
-              <Text style={styles.avatarText}>{getInitials(person)}</Text>
+      return (
+        <View style={styles.personCard}>
+          <View style={styles.personHeader}>
+            {/* Avatar */}
+            <View style={styles.avatarContainer}>
+              {photo ? (
+                <Image source={photo} style={styles.avatar} />
+              ) : (
+                <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                  <Text style={styles.avatarText}>{getInitials(person)}</Text>
+                </View>
+              )}
+              {person.is_online && (
+                <View style={styles.avatarOnlineIndicator} />
+              )}
             </View>
-          )}
-          {person.is_online && <View style={styles.avatarOnlineIndicator} />}
-        </View>
 
-        <View style={styles.personInfo}>
-          <View style={styles.nameContainer}>
-            <Text style={styles.personName}>{getFullName(person)}</Text>
-            {person.is_online && <View style={styles.onlineIndicator} />}
-          </View>
-          <Text style={styles.personRole}>
-            {getRoleDisplayName(person.rol)}
-          </Text>
-          <Text style={styles.personCompany}>{person.empresa}</Text>
-
-          <View style={styles.personMeta}>
-            {person.categoria && (
-              <View
-                style={[
-                  styles.categoryBadge,
-                  {
-                    backgroundColor: `${getCategoryColor(person.categoria)}15`,
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.categoryText,
-                    { color: getCategoryColor(person.categoria) },
-                  ]}
-                >
-                  {person.categoria}
-                </Text>
+            <View style={styles.personInfo}>
+              <View style={styles.nameContainer}>
+                <Text style={styles.personName}>{getFullName(person)}</Text>
+                {person.is_online && <View style={styles.onlineIndicator} />}
               </View>
-            )}
-            {person.zona && (
-              <View style={styles.zoneBadge}>
-                <MapPin size={12} color="#6b7280" />
-                <Text style={styles.zoneText}>{person.zona}</Text>
+              <Text style={styles.personRole}>
+                {getRoleDisplayName(person.rol)}
+              </Text>
+              <Text style={styles.personCompany}>{person.empresa}</Text>
+
+              <View style={styles.personMeta}>
+                {person.categoria && (
+                  <View
+                    style={[
+                      styles.categoryBadge,
+                      {
+                        backgroundColor: `${getCategoryColor(person.categoria)}15`,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.categoryText,
+                        { color: getCategoryColor(person.categoria) },
+                      ]}
+                    >
+                      {person.categoria}
+                    </Text>
+                  </View>
+                )}
+                {person.zona && (
+                  <View style={styles.zoneBadge}>
+                    <MapPin size={12} color="#6b7280" />
+                    <Text style={styles.zoneText}>{person.zona}</Text>
+                  </View>
+                )}
               </View>
-            )}
+            </View>
+          </View>
+
+          <View style={styles.contactInfo}>
+            <Text style={styles.contactText}>{person.correo_electronico}</Text>
+            <Text style={styles.contactText}>{person.celular}</Text>
+            <Text style={styles.contactText}>
+              {person.ciudad}, {person.estado}
+            </Text>
+          </View>
+
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => handleCall(person.celular)}
+            >
+              <Phone size={16} color="#1e40af" />
+              <Text style={styles.actionButtonText}>Llamar</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => handleWhatsApp(person.celular)}
+            >
+              <MessageCircle size={16} color="#10b981" />
+              <Text style={styles.actionButtonText}>WhatsApp</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => handleEmail(person.correo_electronico)}
+            >
+              <Mail size={16} color="#f59e0b" />
+              <Text style={styles.actionButtonText}>Email</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionButton, styles.chatButton]}
+              onPress={() => handleStartChat(person)}
+            >
+              <MessageCircle size={16} color="#8b5cf6" />
+              <Text style={styles.actionButtonText}>Chat</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => handleSendRequest(person)}
+            >
+              <Send size={16} color="#ef4444" />
+              <Text style={styles.actionButtonText}>Solicitud</Text>
+            </TouchableOpacity>
           </View>
         </View>
-      </View>
-
-      <View style={styles.contactInfo}>
-        <Text style={styles.contactText}>
-          {person.correo_electronico}
-        </Text>
-        <Text style={styles.contactText}>{person.celular}</Text>
-        <Text style={styles.contactText}>
-          {person.ciudad}, {person.estado}
-        </Text>
-      </View>
-
-      <View style={styles.actionButtons}>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => handleCall(person.celular)}
-        >
-          <Phone size={16} color="#1e40af" />
-          <Text style={styles.actionButtonText}>Llamar</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => handleWhatsApp(person.celular)}
-        >
-          <MessageCircle size={16} color="#10b981" />
-          <Text style={styles.actionButtonText}>WhatsApp</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => handleEmail(person.correo_electronico)}
-        >
-          <Mail size={16} color="#f59e0b" />
-          <Text style={styles.actionButtonText}>Email</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionButton, styles.chatButton]}
-          onPress={() => handleStartChat(person)}
-        >
-          <MessageCircle size={16} color="#8b5cf6" />
-          <Text style={styles.actionButtonText}>Chat</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => handleSendRequest(person)}
-        >
-          <Send size={16} color="#ef4444" />
-          <Text style={styles.actionButtonText}>Solicitud</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-    );
-  });
+      );
+    }
+  );
 
   const getCategoryColor = (category: string | null | undefined) => {
     switch (category) {
@@ -396,7 +414,8 @@ export default function Directory() {
       <View style={styles.header}>
         <Text style={styles.title}>Directorio</Text>
         <Text style={styles.subtitle}>
-          Mostrando {Math.min(filteredPersonnel.length, 15)} de {personnel.length} personas
+          Mostrando {Math.min(filteredPersonnel.length, 15)} de{' '}
+          {personnel.length} personas
         </Text>
       </View>
 
@@ -484,9 +503,13 @@ export default function Directory() {
 
       <FlatList
         data={filteredPersonnel.slice(0, 15)}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={item => item.id.toString()}
         renderItem={({ item: person }) => (
-          <PersonCard person={person} onCall={handleCall} onMessage={handleWhatsApp} />
+          <PersonCard
+            person={person}
+            onCall={handleCall}
+            onMessage={handleWhatsApp}
+          />
         )}
         showsVerticalScrollIndicator={false}
         removeClippedSubviews={true}

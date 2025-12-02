@@ -32,7 +32,8 @@ async function createStorageBucket() {
   try {
     // Verificar si ya existe
     console.log('🔍 Verificando si el bucket ya existe...');
-    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+    const { data: buckets, error: listError } =
+      await supabase.storage.listBuckets();
 
     if (listError) {
       console.error('❌ Error al verificar buckets:', listError.message);
@@ -50,9 +51,8 @@ async function createStorageBucket() {
     // Crear el bucket
     console.log(`📦 Creando bucket '${BUCKET_NAME}'...`);
 
-    const { data: bucket, error: createError } = await supabase.storage.createBucket(
-      BUCKET_NAME,
-      {
+    const { data: bucket, error: createError } =
+      await supabase.storage.createBucket(BUCKET_NAME, {
         public: true,
         fileSizeLimit: MAX_FILE_SIZE,
         allowedMimeTypes: [
@@ -69,15 +69,18 @@ async function createStorageBucket() {
           'application/vnd.ms-excel',
           'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ],
-      }
-    );
+      });
 
     if (createError) {
       console.error('❌ Error al crear bucket:', createError.message);
       console.log('\n⚠️  El bucket no se pudo crear automáticamente.');
-      console.log('   Esto puede deberse a que necesitas permisos de administrador.\n');
+      console.log(
+        '   Esto puede deberse a que necesitas permisos de administrador.\n'
+      );
       console.log('📋 Crea el bucket manualmente en el dashboard de Supabase:');
-      console.log(`   ${supabaseUrl.replace('.supabase.co', '')}/project/default/storage/buckets\n`);
+      console.log(
+        `   ${supabaseUrl.replace('.supabase.co', '')}/project/default/storage/buckets\n`
+      );
       console.log('Configuración del bucket:');
       console.log(`   • Name: ${BUCKET_NAME}`);
       console.log('   • Public: ✅ ACTIVADO');
@@ -89,7 +92,9 @@ async function createStorageBucket() {
     console.log(`✅ Bucket '${BUCKET_NAME}' creado exitosamente!\n`);
 
     // Mostrar instrucciones para las políticas
-    console.log('📝 IMPORTANTE: Ahora debes configurar las políticas de seguridad\n');
+    console.log(
+      '📝 IMPORTANTE: Ahora debes configurar las políticas de seguridad\n'
+    );
     console.log('Ve al dashboard de Supabase y configura estas políticas:\n');
 
     console.log('═══════════════════════════════════════════════════════');
@@ -110,15 +115,20 @@ async function createStorageBucket() {
     console.log('1. Haz clic en "New Policy" nuevamente');
     console.log('2. Selecciona "INSERT" (subir)');
     console.log('3. Pega este código SQL:\n');
-    console.log(`CREATE POLICY "Authenticated users can upload" ON storage.objects`);
+    console.log(
+      `CREATE POLICY "Authenticated users can upload" ON storage.objects`
+    );
     console.log(`FOR INSERT`);
     console.log(`TO authenticated`);
     console.log(`WITH CHECK (bucket_id = '${BUCKET_NAME}');\n`);
 
     console.log('═══════════════════════════════════════════════════════\n');
-    console.log('✨ Después de configurar las políticas, tu bucket estará listo!');
-    console.log('   Ejecuta: node scripts/check-storage-bucket.js para verificar\n');
-
+    console.log(
+      '✨ Después de configurar las políticas, tu bucket estará listo!'
+    );
+    console.log(
+      '   Ejecuta: node scripts/check-storage-bucket.js para verificar\n'
+    );
   } catch (error) {
     console.error('\n❌ Error inesperado:', error.message);
     process.exit(1);
@@ -131,7 +141,7 @@ createStorageBucket()
     console.log('✅ Script completado\n');
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('\n❌ Error fatal:', error.message);
     process.exit(1);
   });

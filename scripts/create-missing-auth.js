@@ -20,8 +20,8 @@ if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: {
     autoRefreshToken: false,
-    persistSession: false
-  }
+    persistSession: false,
+  },
 });
 
 async function createAuthForUser(email, userId) {
@@ -33,8 +33,8 @@ async function createAuthForUser(email, userId) {
       password: DEFAULT_PASSWORD,
       email_confirm: true,
       user_metadata: {
-        created_by: 'migration_script'
-      }
+        created_by: 'migration_script',
+      },
     });
 
     if (error) {
@@ -54,15 +54,23 @@ async function createAuthForUser(email, userId) {
 }
 
 async function main() {
-  console.log('\n╔════════════════════════════════════════════════════════════╗');
+  console.log(
+    '\n╔════════════════════════════════════════════════════════════╗'
+  );
   console.log('║      CREAR CUENTAS AUTH PARA USUARIOS FALTANTES          ║');
   console.log('╚════════════════════════════════════════════════════════════╝');
   console.log(`\nContraseña temporal: ${DEFAULT_PASSWORD}\n`);
 
   // Usuarios que necesitan cuenta de auth
   const usersToCreate = [
-    { email: 'i.pineda@elmec.com.mx', id: '8d4be740-a5ee-45d9-abb6-a5801cc9da6e' },
-    { email: 'j.gonzalez@elmec.com.mx', id: 'c7c81f4e-21a8-4dbb-8613-a6b31f8e3e68' }
+    {
+      email: 'i.pineda@elmec.com.mx',
+      id: '8d4be740-a5ee-45d9-abb6-a5801cc9da6e',
+    },
+    {
+      email: 'j.gonzalez@elmec.com.mx',
+      id: 'c7c81f4e-21a8-4dbb-8613-a6b31f8e3e68',
+    },
   ];
 
   let success = 0;
@@ -77,9 +85,13 @@ async function main() {
     }
   }
 
-  console.log('\n╔════════════════════════════════════════════════════════════╗');
+  console.log(
+    '\n╔════════════════════════════════════════════════════════════╗'
+  );
   console.log('║                        RESUMEN                             ║');
-  console.log('╚════════════════════════════════════════════════════════════╝\n');
+  console.log(
+    '╚════════════════════════════════════════════════════════════╝\n'
+  );
   console.log(`Total procesados: ${usersToCreate.length}`);
   console.log(`✅ Creados exitosamente: ${success}`);
   console.log(`❌ Fallidos: ${failed}`);

@@ -8,7 +8,8 @@ const fs = require('fs');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+const SUPABASE_URL =
+  process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!SUPABASE_URL) {
@@ -16,7 +17,9 @@ if (!SUPABASE_URL) {
   process.exit(1);
 }
 if (!SERVICE_ROLE_KEY) {
-  console.error('ERROR: Falta SUPABASE_SERVICE_ROLE_KEY en .env (necesario para admin)');
+  console.error(
+    'ERROR: Falta SUPABASE_SERVICE_ROLE_KEY en .env (necesario para admin)'
+  );
   process.exit(1);
 }
 
@@ -24,7 +27,10 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
 async function listUsersPage(page = 1, perPage = 200) {
   try {
-    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage });
+    const { data, error } = await supabase.auth.admin.listUsers({
+      page,
+      perPage,
+    });
     if (error) throw error;
     return data?.users || [];
   } catch (err) {
@@ -35,7 +41,7 @@ async function listUsersPage(page = 1, perPage = 200) {
 
 async function findAuthUserByEmail(email) {
   const users = await listUsersPage(1, 200);
-  return users.find((u) => u.email?.toLowerCase() === email?.toLowerCase());
+  return users.find(u => u.email?.toLowerCase() === email?.toLowerCase());
 }
 
 async function ensureAuthUser(email, metadata) {
@@ -47,7 +53,10 @@ async function ensureAuthUser(email, metadata) {
       email_confirm: false,
     });
     if (error) {
-      if (String(error.message).toLowerCase().includes('already') || String(error.message).toLowerCase().includes('exists')) {
+      if (
+        String(error.message).toLowerCase().includes('already') ||
+        String(error.message).toLowerCase().includes('exists')
+      ) {
         const existing = await findAuthUserByEmail(email);
         if (existing) return existing;
       }
@@ -72,7 +81,9 @@ async function main() {
     process.exit(1);
   }
   if (!profiles || profiles.length === 0) {
-    console.error('No se encontraron perfiles de empresa ELMEC en public.users. Ejecuta primero la migración de inserción.');
+    console.error(
+      'No se encontraron perfiles de empresa ELMEC en public.users. Ejecuta primero la migración de inserción.'
+    );
     process.exit(1);
   }
 
@@ -127,14 +138,18 @@ async function main() {
 
   const csvPath = path.join(outDir, `invites-elmec-${ts}.csv`);
   const header = 'email,name,action_link,user_id';
-  const lines = results.map(r => `${r.email},"${r.name}",${r.action_link},${r.user_id}`);
+  const lines = results.map(
+    r => `${r.email},"${r.name}",${r.action_link},${r.user_id}`
+  );
   fs.writeFileSync(csvPath, [header, ...lines].join('\n'), 'utf-8');
 
   console.log(`\nArchivos generados:\n- ${jsonPath}\n- ${csvPath}`);
-  console.log('Listo: los enlaces NO se han enviado por correo. Puedes distribuirlos manualmente cuando lo decidas.');
+  console.log(
+    'Listo: los enlaces NO se han enviado por correo. Puedes distribuirlos manualmente cuando lo decidas.'
+  );
 }
 
-main().catch((e) => {
+main().catch(e => {
   console.error('Error general:', e?.message || e);
   process.exit(1);
 });

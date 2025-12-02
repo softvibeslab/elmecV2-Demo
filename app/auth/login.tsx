@@ -43,21 +43,26 @@ export default function Login() {
       }
     } catch (error: any) {
       console.error('Login error:', error);
-      
+
       // Handle specific error types
       let errorMessage = 'Error desconocido. Intenta de nuevo.';
-      
-      if (error.message?.includes('Invalid login credentials') || 
-          error.code === 'invalid_credentials') {
-        errorMessage = 'Email o contraseña incorrectos. Verifica tus credenciales.';
+
+      if (
+        error.message?.includes('Invalid login credentials') ||
+        error.code === 'invalid_credentials'
+      ) {
+        errorMessage =
+          'Email o contraseña incorrectos. Verifica tus credenciales.';
       } else if (error.message?.includes('Email not confirmed')) {
         errorMessage = 'Debes confirmar tu email antes de iniciar sesión.';
       } else if (error.message?.includes('network') || !navigator.onLine) {
-        errorMessage = 'Error de conexión. Verifica tu internet e intenta de nuevo.';
+        errorMessage =
+          'Error de conexión. Verifica tu internet e intenta de nuevo.';
       } else if (error.message?.includes('User not found')) {
-        errorMessage = 'No existe una cuenta con este email. Verifica el email o regístrate.';
+        errorMessage =
+          'No existe una cuenta con este email. Verifica el email o regístrate.';
       }
-      
+
       Alert.alert('Error de Inicio de Sesión', errorMessage);
     } finally {
       setLoading(false);
@@ -121,26 +126,21 @@ export default function Login() {
           </View>
 
           <TouchableOpacity
-          style={[
-            styles.loginButton,
-            loading && styles.loginButtonDisabled
-          ]}
-          onPress={handleLogin}
-          disabled={loading}
-        >
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color="#FFFFFF" />
-              <Text style={[styles.loginButtonText, { marginLeft: 8 }]}>
-                Iniciando sesión...
-              </Text>
-            </View>
-          ) : (
-            <Text style={styles.loginButtonText}>
-              Iniciar Sesión
-            </Text>
-          )}
-        </TouchableOpacity>
+            style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+            onPress={handleLogin}
+            disabled={loading}
+          >
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color="#FFFFFF" />
+                <Text style={[styles.loginButtonText, { marginLeft: 8 }]}>
+                  Iniciando sesión...
+                </Text>
+              </View>
+            ) : (
+              <Text style={styles.loginButtonText}>Iniciar Sesión</Text>
+            )}
+          </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.forgotPasswordButton}

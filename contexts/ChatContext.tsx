@@ -26,10 +26,14 @@ import { RealtimeChannel } from '@supabase/supabase-js';
  */
 
 // Feature flag for Firebase groups (set to true to use Firebase for group chats)
-export const USE_FIREBASE_FOR_GROUPS = process.env.EXPO_PUBLIC_USE_FIREBASE_GROUPS === 'true';
+export const USE_FIREBASE_FOR_GROUPS =
+  process.env.EXPO_PUBLIC_USE_FIREBASE_GROUPS === 'true';
 
 // Phase 4.1: Internal Group Chat Types
-export type InternalGroupType = 'GRUPO_VENTAS' | 'GRUPO_SOPORTE' | 'GRUPO_COTIZACION';
+export type InternalGroupType =
+  | 'GRUPO_VENTAS'
+  | 'GRUPO_SOPORTE'
+  | 'GRUPO_COTIZACION';
 
 export interface InternalGroup {
   id: InternalGroupType;
@@ -143,7 +147,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
   const [realtimeChannels, setRealtimeChannels] = useState<{
     [roomId: string]: RealtimeChannel;
   }>({});
-  const [presenceChannel, setPresenceChannel] = useState<RealtimeChannel | null>(null);
+  const [presenceChannel, setPresenceChannel] =
+    useState<RealtimeChannel | null>(null);
 
   const { user, session } = useAuth();
   const { sendDemoNotification } = useNotifications();
@@ -228,23 +233,26 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
       setInternalGroupRooms(groupRooms);
 
       // Load messages for each room (limit to prevent infinite loading)
-       const roomPromises = (data || []).slice(0, 10).map(async (room: any) => {
-         try {
-           await loadRoomMessages(room.id);
-           // Only setup realtime if we have a valid, non-expired session
-           if (session?.access_token && session?.expires_at) {
-             const expiresAt = new Date(session.expires_at * 1000);
-             const now = new Date();
-             if (expiresAt > now) {
-               setupRealtimeSubscription(room.id);
-             } else {
-               console.warn('Session expired, skipping realtime setup for room:', room.id);
-             }
-           }
-         } catch (roomError) {
-           console.error(`Error loading room ${room.id}:`, roomError);
-         }
-       });
+      const roomPromises = (data || []).slice(0, 10).map(async (room: any) => {
+        try {
+          await loadRoomMessages(room.id);
+          // Only setup realtime if we have a valid, non-expired session
+          if (session?.access_token && session?.expires_at) {
+            const expiresAt = new Date(session.expires_at * 1000);
+            const now = new Date();
+            if (expiresAt > now) {
+              setupRealtimeSubscription(room.id);
+            } else {
+              console.warn(
+                'Session expired, skipping realtime setup for room:',
+                room.id
+              );
+            }
+          }
+        } catch (roomError) {
+          console.error(`Error loading room ${room.id}:`, roomError);
+        }
+      });
 
       await Promise.allSettled(roomPromises);
     } catch (error) {
@@ -394,7 +402,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
           schema: 'public',
           table: 'chat_rooms',
         },
-        async (payload) => {
+        async payload => {
           const newRoom = payload.new as ChatRoom;
 
           // Only add if current user is a participant
@@ -402,10 +410,12 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
             // Load room details with relations
             const { data: roomData } = await supabase
               .from('chat_rooms')
-              .select(`
+              .select(
+                `
                 *,
                 requests!chat_rooms_request_id_fkey(titulo, estatus)
-              `)
+              `
+              )
               .eq('id', newRoom.id)
               .single();
 
@@ -432,22 +442,23 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
           schema: 'public',
           table: 'chat_rooms',
         },
-        (payload) => {
+        payload => {
           const updatedRoom = payload.new as ChatRoom;
 
           // Update room in state
           setChatRooms(prev =>
             prev.map(room =>
-              room.id === updatedRoom.id
-                ? { ...room, ...updatedRoom }
-                : room
+              room.id === updatedRoom.id ? { ...room, ...updatedRoom } : room
             )
           );
         }
       )
       .subscribe();
 
-    setRealtimeChannels(prev => ({ ...prev, chat_rooms_global: chatRoomsChannel }));
+    setRealtimeChannels(prev => ({
+      ...prev,
+      chat_rooms_global: chatRoomsChannel,
+    }));
   };
 
   const getMessagePreview = (message: Message): string => {
@@ -587,7 +598,12 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
           [roomId]:
             prev[roomId]?.map(msg =>
               msg.localId === tempId
-                ? { ...(data as any), user: (data as any).user, isDelivered: true, isRead: false }
+                ? {
+                    ...(data as any),
+                    user: (data as any).user,
+                    isDelivered: true,
+                    isRead: false,
+                  }
                 : msg
             ) || [],
         }));
@@ -664,15 +680,26 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
       });
 
       // Validate participant exists
-      const { data: participantData, error: participantError } = await supabase
+      const { data: participantData, error: participantError } = (await supabase
         .from('users')
         .select('id, nombre, apellido_paterno, apellido_materno, activo')
         .eq('id', participantId)
-        .single();
+        .single()) as {
+        data: {
+          id: string;
+          nombre: string;
+          apellido_paterno: string;
+          apellido_materno: string;
+          activo: boolean;
+        } | null;
+        error: Error | null;
+      };
 
       if (participantError || !participantData) {
         console.error('Participant not found:', participantError);
-        throw new Error('El usuario destinatario no existe o no está disponible');
+        throw new Error(
+          'El usuario destinatario no existe o no está disponible'
+        );
       }
 
       if (!participantData.activo) {
@@ -681,10 +708,17 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
 
       // Check if chat room already exists between these participants
       // Use proper array comparison for PostgreSQL
-      const { data: existingRooms, error: searchError } = await supabase
+      const { data: existingRooms, error: searchError } = (await supabase
         .from('chat_rooms')
         .select('*')
-        .eq('is_active', true);
+        .eq('is_active', true)) as {
+        data: Array<{
+          id: string;
+          participants: string[];
+          is_active: boolean;
+        }> | null;
+        error: Error | null;
+      };
 
       if (searchError) {
         console.error('Error searching for existing rooms:', searchError);
@@ -727,8 +761,14 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       // Build participant names properly
-      const currentUserName = `${user.nombre || ''} ${user.apellido_paterno || ''} ${user.apellido_materno || ''}`.trim() || user.email || 'Usuario';
-      const otherUserName = participantName || `${participantData.nombre || ''} ${participantData.apellido_paterno || ''} ${participantData.apellido_materno || ''}`.trim() || 'Usuario';
+      const currentUserName =
+        `${user.nombre || ''} ${user.apellido_paterno || ''} ${user.apellido_materno || ''}`.trim() ||
+        user.email ||
+        'Usuario';
+      const otherUserName =
+        participantName ||
+        `${participantData.nombre || ''} ${participantData.apellido_paterno || ''} ${participantData.apellido_materno || ''}`.trim() ||
+        'Usuario';
 
       // Create new chat room
       const { data, error } = await supabaseClient
@@ -785,7 +825,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
       return data.id;
     } catch (error) {
       console.error('Error creating chat room:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Error desconocido';
       throw new Error(errorMessage);
     }
   };
@@ -799,7 +840,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [user?.rol]);
 
   // Phase 4.1: Join or create an internal group chat
-  const joinGroupChat = async (groupType: InternalGroupType): Promise<string> => {
+  const joinGroupChat = async (
+    groupType: InternalGroupType
+  ): Promise<string> => {
     if (!user || !session) throw new Error('User not authenticated');
 
     // Check if user has access to this group
@@ -816,11 +859,19 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
       console.log('Joining/creating group chat:', groupType);
 
       // Check if group chat already exists
-      const { data: existingRooms, error: searchError } = await supabase
+      const { data: existingRooms, error: searchError } = (await supabase
         .from('chat_rooms')
         .select('*')
         .eq('tipo', 'group')
-        .eq('is_active', true);
+        .eq('is_active', true)) as {
+        data: Array<{
+          id: string;
+          participants: string[];
+          is_active: boolean;
+          metadata?: { group_type?: string };
+        }> | null;
+        error: Error | null;
+      };
 
       if (searchError) {
         console.error('Error searching for existing group:', searchError);
@@ -828,7 +879,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
 
       // Find existing group room by type
       const existingRoom = existingRooms?.find(
-        (room: any) => room.metadata?.group_type === groupType
+        room => room.metadata?.group_type === groupType
       );
 
       if (existingRoom) {
@@ -837,7 +888,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         // Check if user is already a participant
         if (!existingRoom.participants?.includes(user.id)) {
           // Add user to participants
-          const updatedParticipants = [...(existingRoom.participants || []), user.id];
+          const updatedParticipants = [
+            ...(existingRoom.participants || []),
+            user.id,
+          ];
           const { error: updateError } = await supabaseClient
             .from('chat_rooms')
             .update({ participants: updatedParticipants })
@@ -857,7 +911,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         // Update local state
         setInternalGroupRooms(prev => {
           if (prev.find(r => r.id === existingRoom.id)) return prev;
-          return [...prev, existingRoom];
+          return [...prev, existingRoom as ChatRoom];
         });
 
         return existingRoom.id;
@@ -915,7 +969,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
       return data.id;
     } catch (error) {
       console.error('Error joining group chat:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Error desconocido';
       throw new Error(errorMessage);
     }
   };
@@ -1114,13 +1169,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
       .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
         console.log('User left:', leftPresences);
       })
-      .subscribe(async (status) => {
+      .subscribe(async status => {
         if (status === 'SUBSCRIBED') {
           // Track current user as online
           await channel.track({
             user_id: user.id,
             user_name: `${user.nombre} ${user.apellido_paterno}`,
-            online_at: new Date().toISOString()
+            online_at: new Date().toISOString(),
           });
           console.log('User tracked as online');
         }
@@ -1129,9 +1184,12 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
     setPresenceChannel(channel);
   }, [user]);
 
-  const isUserOnline = useCallback((userId: string): boolean => {
-    return onlineUsers.includes(userId);
-  }, [onlineUsers]);
+  const isUserOnline = useCallback(
+    (userId: string): boolean => {
+      return onlineUsers.includes(userId);
+    },
+    [onlineUsers]
+  );
 
   return (
     <ChatContext.Provider

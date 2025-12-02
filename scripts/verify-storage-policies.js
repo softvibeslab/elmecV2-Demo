@@ -25,7 +25,8 @@ async function verifyPolicies() {
   try {
     // Paso 1: Verificar que el bucket existe
     console.log('📦 Paso 1: Verificando bucket...');
-    const { data: buckets, error: bucketsError } = await adminSupabase.storage.listBuckets();
+    const { data: buckets, error: bucketsError } =
+      await adminSupabase.storage.listBuckets();
 
     if (bucketsError) {
       console.error('❌ Error al verificar buckets:', bucketsError.message);
@@ -76,7 +77,7 @@ async function verifyPolicies() {
       .from(BUCKET_NAME)
       .upload(`test/${testFileName}`, testBlob, {
         contentType: 'text/plain',
-        upsert: false
+        upsert: false,
       });
 
     if (uploadError) {
@@ -87,9 +88,7 @@ async function verifyPolicies() {
       console.log('✅ Upload funcional');
 
       // Limpiar archivo de prueba
-      await adminSupabase.storage
-        .from(BUCKET_NAME)
-        .remove([uploadData.path]);
+      await adminSupabase.storage.from(BUCKET_NAME).remove([uploadData.path]);
       console.log('   (Archivo de prueba eliminado)');
     }
 
@@ -145,7 +144,6 @@ async function verifyPolicies() {
       console.log('📖 Para más detalles, consulta:');
       console.log('   CONFIGURACION_SUPABASE.md\n');
     }
-
   } catch (error) {
     console.error('\n❌ Error durante la verificación:', error.message);
     process.exit(1);
@@ -158,7 +156,7 @@ verifyPolicies()
     console.log('✅ Verificación completada\n');
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('\n❌ Error fatal:', error.message);
     process.exit(1);
   });

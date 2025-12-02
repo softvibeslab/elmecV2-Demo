@@ -13,14 +13,26 @@ import { Platform } from 'react-native';
 
 // Firebase configuration from environment variables
 const firebaseConfig = {
-  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY || 'AIzaSyCxRVxaBrRpUIYB8rw4apRc0PAF-99eBs0',
-  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN || 'elmec-3ae55.firebaseapp.com',
-  databaseURL: process.env.EXPO_PUBLIC_FIREBASE_DATABASE_URL || 'https://elmec-3ae55-default-rtdb.firebaseio.com',
+  apiKey:
+    process.env.EXPO_PUBLIC_FIREBASE_API_KEY ||
+    'AIzaSyCxRVxaBrRpUIYB8rw4apRc0PAF-99eBs0',
+  authDomain:
+    process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN ||
+    'elmec-3ae55.firebaseapp.com',
+  databaseURL:
+    process.env.EXPO_PUBLIC_FIREBASE_DATABASE_URL ||
+    'https://elmec-3ae55-default-rtdb.firebaseio.com',
   projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || 'elmec-3ae55',
-  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET || 'elmec-3ae55.firebasestorage.app',
-  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '62591188963',
-  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID || '1:62591188963:web:ae989e006edc01797baad6',
-  measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID || 'G-F8VHKPEKK5',
+  storageBucket:
+    process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET ||
+    'elmec-3ae55.firebasestorage.app',
+  messagingSenderId:
+    process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '62591188963',
+  appId:
+    process.env.EXPO_PUBLIC_FIREBASE_APP_ID ||
+    '1:62591188963:web:ae989e006edc01797baad6',
+  measurementId:
+    process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID || 'G-F8VHKPEKK5',
 };
 
 // Initialize Firebase (singleton pattern)

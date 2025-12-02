@@ -15,7 +15,7 @@ if (window.AuthContext) {
 // Función para probar logout manualmente
 window.testLogout = async () => {
   console.log('🔄 Iniciando test de logout...');
-  
+
   try {
     // Simular el proceso de logout
     if (window.AuthContext && window.AuthContext.logout) {

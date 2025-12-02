@@ -16,9 +16,15 @@ async function setupStoragePolicies() {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !serviceRoleKey) {
-    console.error('❌ Error: Se necesita SUPABASE_SERVICE_ROLE_KEY para crear políticas');
-    console.log('   Esta clave se encuentra en: Settings → API → service_role (secret)\n');
-    console.log('⚠️  Las políticas deben configurarse manualmente en el dashboard.\n');
+    console.error(
+      '❌ Error: Se necesita SUPABASE_SERVICE_ROLE_KEY para crear políticas'
+    );
+    console.log(
+      '   Esta clave se encuentra en: Settings → API → service_role (secret)\n'
+    );
+    console.log(
+      '⚠️  Las políticas deben configurarse manualmente en el dashboard.\n'
+    );
     showManualInstructions(supabaseUrl);
     process.exit(1);
   }
@@ -102,15 +108,18 @@ async function setupStoragePolicies() {
     }
 
     if (error1 || error2 || error3 || error4) {
-      console.log('⚠️  Algunas políticas no se pudieron crear automáticamente.\n');
+      console.log(
+        '⚠️  Algunas políticas no se pudieron crear automáticamente.\n'
+      );
       showManualInstructions(supabaseUrl);
     } else {
       console.log('✨ ¡Todas las políticas se configuraron exitosamente!\n');
-      console.log('✅ El bucket está completamente configurado y listo para usar\n');
+      console.log(
+        '✅ El bucket está completamente configurado y listo para usar\n'
+      );
       console.log('📝 Siguiente paso:');
       console.log('   npx expo start --clear\n');
     }
-
   } catch (error) {
     console.error('\n❌ Error:', error.message);
     console.log('\n⚠️  Las políticas deben configurarse manualmente.\n');
@@ -124,9 +133,9 @@ function showManualInstructions(supabaseUrl) {
   console.log('📋 INSTRUCCIONES PARA CONFIGURAR POLÍTICAS MANUALMENTE');
   console.log('═══════════════════════════════════════════════════════\n');
 
-  const dashboardUrl = supabaseUrl ?
-    `${supabaseUrl.replace('.supabase.co', '')}/project/default/storage/policies` :
-    'Dashboard de Supabase → Storage → Policies';
+  const dashboardUrl = supabaseUrl
+    ? `${supabaseUrl.replace('.supabase.co', '')}/project/default/storage/policies`
+    : 'Dashboard de Supabase → Storage → Policies';
 
   console.log(`1. Ve a: ${dashboardUrl}\n`);
   console.log('2. Haz clic en "New Policy" en la tabla storage.objects\n');
@@ -179,7 +188,7 @@ setupStoragePolicies()
     console.log('✅ Script completado\n');
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('\n❌ Error fatal:', error.message);
     process.exit(1);
   });

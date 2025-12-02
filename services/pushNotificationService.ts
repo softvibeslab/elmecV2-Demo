@@ -9,6 +9,7 @@
  */
 
 import * as Notifications from 'expo-notifications';
+import { SchedulableTriggerInputTypes } from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { ref, set, get } from 'firebase/database';
@@ -19,7 +20,12 @@ export interface PushNotificationPayload {
   title: string;
   body: string;
   data?: {
-    type: 'group_message' | 'mention' | 'request_update' | 'chat_message' | 'system';
+    type:
+      | 'group_message'
+      | 'mention'
+      | 'request_update'
+      | 'chat_message'
+      | 'system';
     groupId?: string;
     messageId?: string;
     requestId?: string;
@@ -45,6 +51,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
@@ -61,12 +69,15 @@ class PushNotificationService {
     try {
       // Check if we're on a physical device
       if (!Device.isDevice) {
-        console.log('[PushNotifications] Must use physical device for Push Notifications');
+        console.log(
+          '[PushNotifications] Must use physical device for Push Notifications'
+        );
         return null;
       }
 
       // Get permission
-      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      const { status: existingStatus } =
+        await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
 
       if (existingStatus !== 'granted') {
@@ -93,7 +104,10 @@ class PushNotificationService {
       // Save token to Firebase
       await this.saveUserToken(userId, this.expoPushToken);
 
-      console.log('[PushNotifications] Initialized with token:', this.expoPushToken);
+      console.log(
+        '[PushNotifications] Initialized with token:',
+        this.expoPushToken
+      );
       return this.expoPushToken;
     } catch (error) {
       console.error('[PushNotifications] Initialization error:', error);
@@ -161,7 +175,9 @@ class PushNotificationService {
   /**
    * Get push tokens for multiple users
    */
-  async getUserTokens(userIds: string[]): Promise<{ userId: string; token: string }[]> {
+  async getUserTokens(
+    userIds: string[]
+  ): Promise<{ userId: string; token: string }[]> {
     const tokens: { userId: string; token: string }[] = [];
 
     for (const userId of userIds) {
@@ -178,7 +194,10 @@ class PushNotificationService {
    * Send push notification to a specific user
    * Note: In production, this should be done via a server-side function
    */
-  async sendToUser(userId: string, notification: PushNotificationPayload): Promise<boolean> {
+  async sendToUser(
+    userId: string,
+    notification: PushNotificationPayload
+  ): Promise<boolean> {
     try {
       const token = await this.getUserToken(userId);
       if (!token) {
@@ -189,7 +208,9 @@ class PushNotificationService {
       // Check user preferences
       const prefs = await this.getUserPreferences(userId);
       if (!this.shouldSendNotification(notification, prefs)) {
-        console.log('[PushNotifications] Notification blocked by user preferences');
+        console.log(
+          '[PushNotifications] Notification blocked by user preferences'
+        );
         return false;
       }
 
@@ -205,7 +226,10 @@ class PushNotificationService {
   /**
    * Send push notification to multiple users
    */
-  async sendToUsers(userIds: string[], notification: PushNotificationPayload): Promise<void> {
+  async sendToUsers(
+    userIds: string[],
+    notification: PushNotificationPayload
+  ): Promise<void> {
     const tokens = await this.getUserTokens(userIds);
 
     const messages = tokens.map(({ token }) => ({
@@ -356,11 +380,18 @@ class PushNotificationService {
     prefs: NotificationPreferences
   ): boolean {
     // Check quiet hours
-    if (prefs.quietHoursEnabled && prefs.quietHoursStart && prefs.quietHoursEnd) {
+    if (
+      prefs.quietHoursEnabled &&
+      prefs.quietHoursStart &&
+      prefs.quietHoursEnd
+    ) {
       const now = new Date();
       const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
-      if (currentTime >= prefs.quietHoursStart || currentTime <= prefs.quietHoursEnd) {
+      if (
+        currentTime >= prefs.quietHoursStart ||
+        currentTime <= prefs.quietHoursEnd
+      ) {
         return false;
       }
     }
@@ -395,7 +426,11 @@ class PushNotificationService {
         body: notification.body,
         data: notification.data,
       },
-      trigger: { seconds: triggerSeconds },
+      trigger: {
+        type: SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds: triggerSeconds,
+        repeats: false,
+      },
     });
   }
 
@@ -434,7 +469,8 @@ class PushNotificationService {
   addNotificationReceivedListener(
     callback: (notification: Notifications.Notification) => void
   ): void {
-    this.notificationListener = Notifications.addNotificationReceivedListener(callback);
+    this.notificationListener =
+      Notifications.addNotificationReceivedListener(callback);
   }
 
   /**
@@ -443,7 +479,8 @@ class PushNotificationService {
   addNotificationResponseListener(
     callback: (response: Notifications.NotificationResponse) => void
   ): void {
-    this.responseListener = Notifications.addNotificationResponseReceivedListener(callback);
+    this.responseListener =
+      Notifications.addNotificationResponseReceivedListener(callback);
   }
 
   /**
@@ -451,10 +488,10 @@ class PushNotificationService {
    */
   removeListeners(): void {
     if (this.notificationListener) {
-      Notifications.removeNotificationSubscription(this.notificationListener);
+      this.notificationListener.remove();
     }
     if (this.responseListener) {
-      Notifications.removeNotificationSubscription(this.responseListener);
+      this.responseListener.remove();
     }
   }
 

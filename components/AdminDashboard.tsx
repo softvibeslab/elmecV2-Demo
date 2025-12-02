@@ -75,16 +75,19 @@ export const AdminDashboard: React.FC = () => {
     }, 1000);
   }, [selectedPeriod]);
 
-  const requestsChartData: ChartData[] = useMemo(() => [
-    { label: 'Resueltas', value: stats.resolvedRequests, color: '#10b981' },
-    {
-      label: 'En proceso',
-      value:
-        stats.totalRequests - stats.resolvedRequests - stats.pendingRequests,
-      color: '#3b82f6',
-    },
-    { label: 'Pendientes', value: stats.pendingRequests, color: '#f59e0b' },
-  ], [stats.resolvedRequests, stats.totalRequests, stats.pendingRequests]);
+  const requestsChartData: ChartData[] = useMemo(
+    () => [
+      { label: 'Resueltas', value: stats.resolvedRequests, color: '#10b981' },
+      {
+        label: 'En proceso',
+        value:
+          stats.totalRequests - stats.resolvedRequests - stats.pendingRequests,
+        color: '#3b82f6',
+      },
+      { label: 'Pendientes', value: stats.pendingRequests, color: '#f59e0b' },
+    ],
+    [stats.resolvedRequests, stats.totalRequests, stats.pendingRequests]
+  );
 
   const StatCard: React.FC<{
     title: string;
@@ -97,7 +100,10 @@ export const AdminDashboard: React.FC = () => {
     <View style={styles.statCard}>
       <View style={styles.statHeader}>
         <View style={[styles.statIcon, { backgroundColor: `${color}15` }]}>
-          {React.cloneElement(icon as React.ReactElement, { size: 24, color } as any)}
+          {React.cloneElement(
+            icon as React.ReactElement,
+            { size: 24, color } as any
+          )}
         </View>
         {trend && (
           <View
@@ -130,32 +136,37 @@ export const AdminDashboard: React.FC = () => {
     </View>
   ));
 
-  const SimpleChart: React.FC<{ data: ChartData[] }> = React.memo(({ data }) => {
-    const maxValue = useMemo(() => Math.max(...data.map(d => d.value)), [data]);
-    
-    return (
-      <View style={styles.chartContainer}>
-        <Text style={styles.chartTitle}>Distribución de Solicitudes</Text>
-        <View style={styles.chartBars}>
-          {data.map((item, index) => (
-            <View key={index} style={styles.chartBarContainer}>
-              <View
-                style={[
-                  styles.chartBar,
-                  {
-                    backgroundColor: item.color,
-                    height: (item.value / maxValue) * 100,
-                  },
-                ]}
-              />
-              <Text style={styles.chartBarLabel}>{item.label}</Text>
-              <Text style={styles.chartBarValue}>{item.value}</Text>
-            </View>
-          ))}
+  const SimpleChart: React.FC<{ data: ChartData[] }> = React.memo(
+    ({ data }) => {
+      const maxValue = useMemo(
+        () => Math.max(...data.map(d => d.value)),
+        [data]
+      );
+
+      return (
+        <View style={styles.chartContainer}>
+          <Text style={styles.chartTitle}>Distribución de Solicitudes</Text>
+          <View style={styles.chartBars}>
+            {data.map((item, index) => (
+              <View key={index} style={styles.chartBarContainer}>
+                <View
+                  style={[
+                    styles.chartBar,
+                    {
+                      backgroundColor: item.color,
+                      height: (item.value / maxValue) * 100,
+                    },
+                  ]}
+                />
+                <Text style={styles.chartBarLabel}>{item.label}</Text>
+                <Text style={styles.chartBarValue}>{item.value}</Text>
+              </View>
+            ))}
+          </View>
         </View>
-      </View>
-    );
-  });
+      );
+    }
+  );
 
   if (user?.rol !== 'admin') {
     return (

@@ -1,4 +1,9 @@
-import { ErrorHandler, AppError, ErrorSeverity, ErrorCategory } from './errorHandler';
+import {
+  ErrorHandler,
+  AppError,
+  ErrorSeverity,
+  ErrorCategory,
+} from './errorHandler';
 
 // Logger configuration
 export interface LoggerConfig {
@@ -14,7 +19,7 @@ export enum LogLevel {
   INFO = 1,
   WARN = 2,
   ERROR = 3,
-  FATAL = 4
+  FATAL = 4,
 }
 
 export interface LogEntry {
@@ -32,8 +37,11 @@ export class Logger {
   private static config: LoggerConfig = {
     enableConsoleLogging: process.env.EXPO_PUBLIC_ENVIRONMENT !== 'production',
     enableRemoteLogging: process.env.EXPO_PUBLIC_ENVIRONMENT === 'production',
-    logLevel: process.env.EXPO_PUBLIC_ENVIRONMENT === 'production' ? LogLevel.WARN : LogLevel.DEBUG,
-    maxLocalLogs: 1000
+    logLevel:
+      process.env.EXPO_PUBLIC_ENVIRONMENT === 'production'
+        ? LogLevel.WARN
+        : LogLevel.DEBUG,
+    maxLocalLogs: 1000,
   };
 
   private static logs: LogEntry[] = [];
@@ -63,7 +71,12 @@ export class Logger {
     this.log(LogLevel.FATAL, message, context, data);
   }
 
-  private static log(level: LogLevel, message: string, context?: string, data?: any) {
+  private static log(
+    level: LogLevel,
+    message: string,
+    context?: string,
+    data?: any
+  ) {
     // Check if we should log this level
     if (level < this.config.logLevel) {
       return;
@@ -76,7 +89,7 @@ export class Logger {
       message,
       context,
       data,
-      sessionId: this.sessionId
+      sessionId: this.sessionId,
     };
 
     // Add to local storage
@@ -99,7 +112,7 @@ export class Logger {
 
   private static addToLocalLogs(logEntry: LogEntry) {
     this.logs.push(logEntry);
-    
+
     // Keep logs within limit
     if (this.logs.length > this.config.maxLocalLogs) {
       this.logs.shift();
@@ -138,9 +151,9 @@ export class Logger {
       await fetch(this.config.remoteEndpoint, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(logEntry)
+        body: JSON.stringify(logEntry),
       });
     } catch (error) {
       console.error('Failed to send log to remote:', error);
@@ -149,15 +162,15 @@ export class Logger {
 
   static getLogs(level?: LogLevel, limit?: number): LogEntry[] {
     let filteredLogs = this.logs;
-    
+
     if (level !== undefined) {
       filteredLogs = this.logs.filter(log => log.level >= level);
     }
-    
+
     if (limit) {
       filteredLogs = filteredLogs.slice(-limit);
     }
-    
+
     return [...filteredLogs];
   }
 
@@ -179,8 +192,8 @@ export class Logger {
         info: this.logs.filter(log => log.level === LogLevel.INFO).length,
         warn: this.logs.filter(log => log.level === LogLevel.WARN).length,
         error: this.logs.filter(log => log.level === LogLevel.ERROR).length,
-        fatal: this.logs.filter(log => log.level === LogLevel.FATAL).length
-      }
+        fatal: this.logs.filter(log => log.level === LogLevel.FATAL).length,
+      },
     };
   }
 
@@ -191,7 +204,7 @@ export class Logger {
       code: error.code,
       category: error.category,
       details: error.details,
-      retryable: error.retryable
+      retryable: error.retryable,
     });
   }
 
@@ -215,7 +228,10 @@ export class Logger {
     const startTime = Date.now();
     return () => {
       const duration = Date.now() - startTime;
-      this.info(`Timer: ${name} completed in ${duration}ms`, 'performance', { duration, name });
+      this.info(`Timer: ${name} completed in ${duration}ms`, 'performance', {
+        duration,
+        name,
+      });
     };
   }
 
@@ -224,18 +240,23 @@ export class Logger {
     this.info(`User action: ${action}`, 'user-action', {
       action,
       userId,
-      ...data
+      ...data,
     });
   }
 
   // API call logging
-  static logApiCall(method: string, url: string, status?: number, duration?: number) {
+  static logApiCall(
+    method: string,
+    url: string,
+    status?: number,
+    duration?: number
+  ) {
     const level = status && status >= 400 ? LogLevel.ERROR : LogLevel.INFO;
     this.log(level, `API ${method} ${url}`, 'api', {
       method,
       url,
       status,
-      duration
+      duration,
     });
   }
 }

@@ -55,7 +55,9 @@ export function useFirebaseChat({
 
   const [group, setGroup] = useState<FirebaseGroup | null>(null);
   const [messages, setMessages] = useState<FirebaseGroupMessage[]>([]);
-  const [typingUsers, setTypingUsers] = useState<{ id: string; name: string }[]>([]);
+  const [typingUsers, setTypingUsers] = useState<
+    { id: string; name: string }[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -86,7 +88,10 @@ export function useFirebaseChat({
         setGroup(groupData);
 
         // Load initial messages
-        const initialMessages = await firebaseChatService.getMessages(groupId, messageLimit);
+        const initialMessages = await firebaseChatService.getMessages(
+          groupId,
+          messageLimit
+        );
         setMessages(initialMessages);
         initialMessages.forEach(m => messageIdsRef.current.add(m.id));
 
@@ -157,7 +162,7 @@ export function useFirebaseChat({
     // Subscribe to typing indicators
     unsubscribeRef.current.typing = firebaseChatService.subscribeToTyping(
       groupId,
-      (users) => {
+      users => {
         // Filter out current user
         setTypingUsers(users.filter(u => u.id !== user.id));
       }
@@ -186,7 +191,10 @@ export function useFirebaseChat({
       }
 
       // Parse mentions
-      const mentions = firebaseChatService.parseMentions(message, group.participantNames);
+      const mentions = firebaseChatService.parseMentions(
+        message,
+        group.participantNames
+      );
 
       await firebaseChatService.sendMessage(groupId, {
         senderId: user.id,
@@ -268,7 +276,12 @@ export function useFirebaseChat({
   const removeReaction = useCallback(
     async (messageId: string, emoji: string) => {
       if (!user) return;
-      await firebaseChatService.removeReaction(groupId, messageId, emoji, user.id);
+      await firebaseChatService.removeReaction(
+        groupId,
+        messageId,
+        emoji,
+        user.id
+      );
     },
     [groupId, user?.id]
   );
@@ -301,9 +314,14 @@ export function useFirebaseChat({
 
     const oldestMessage = messages[0];
     // Load messages older than the oldest one we have
-    const olderMessages = await firebaseChatService.getMessages(groupId, messageLimit);
+    const olderMessages = await firebaseChatService.getMessages(
+      groupId,
+      messageLimit
+    );
     const newMessages = olderMessages.filter(
-      m => !messageIdsRef.current.has(m.id) && m.createdAt < oldestMessage.createdAt
+      m =>
+        !messageIdsRef.current.has(m.id) &&
+        m.createdAt < oldestMessage.createdAt
     );
 
     if (newMessages.length > 0) {

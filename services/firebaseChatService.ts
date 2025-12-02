@@ -179,7 +179,7 @@ class FirebaseChatService {
     if (!snapshot.exists()) return [];
 
     const groups: FirebaseGroup[] = [];
-    snapshot.forEach(child => {
+    snapshot.forEach((child: DataSnapshot) => {
       const group = child.val() as FirebaseGroup;
       if (group.participants?.includes(userId)) {
         groups.push(group);
@@ -198,7 +198,12 @@ class FirebaseChatService {
    */
   async updateGroup(
     groupId: string,
-    updates: Partial<Pick<FirebaseGroup, 'name' | 'description' | 'icon' | 'color' | 'settings'>>
+    updates: Partial<
+      Pick<
+        FirebaseGroup,
+        'name' | 'description' | 'icon' | 'color' | 'settings'
+      >
+    >
   ): Promise<void> {
     const groupRef = ref(this.db, `groups/${groupId}`);
     await update(groupRef, {
@@ -253,13 +258,17 @@ class FirebaseChatService {
     if (!group) throw new Error('Group not found');
 
     const updates: any = {
-      [`groups/${groupId}/participants`]: group.participants.filter(id => id !== userId),
+      [`groups/${groupId}/participants`]: group.participants.filter(
+        id => id !== userId
+      ),
       [`groups/${groupId}/updatedAt`]: Date.now(),
     };
 
     // Remove from admins if applicable
     if (group.admins.includes(userId)) {
-      updates[`groups/${groupId}/admins`] = group.admins.filter(id => id !== userId);
+      updates[`groups/${groupId}/admins`] = group.admins.filter(
+        id => id !== userId
+      );
     }
 
     await update(ref(this.db), updates);
@@ -355,7 +364,10 @@ class FirebaseChatService {
     // Update group's last message
     await update(ref(this.db, `groups/${groupId}`), {
       lastMessage: {
-        message: messageData.type === 'text' ? messageData.message : `[${messageData.type}]`,
+        message:
+          messageData.type === 'text'
+            ? messageData.message
+            : `[${messageData.type}]`,
         senderName: messageData.senderName,
         timestamp: Date.now(),
       },
@@ -368,15 +380,22 @@ class FirebaseChatService {
   /**
    * Get messages for a group (with pagination)
    */
-  async getMessages(groupId: string, limit: number = 50): Promise<FirebaseGroupMessage[]> {
+  async getMessages(
+    groupId: string,
+    limit: number = 50
+  ): Promise<FirebaseGroupMessage[]> {
     const messagesRef = ref(this.db, `messages/${groupId}`);
-    const messagesQuery = query(messagesRef, orderByChild('createdAt'), limitToLast(limit));
+    const messagesQuery = query(
+      messagesRef,
+      orderByChild('createdAt'),
+      limitToLast(limit)
+    );
     const snapshot = await get(messagesQuery);
 
     if (!snapshot.exists()) return [];
 
     const messages: FirebaseGroupMessage[] = [];
-    snapshot.forEach(child => {
+    snapshot.forEach((child: DataSnapshot) => {
       messages.push(child.val() as FirebaseGroupMessage);
     });
 
@@ -386,7 +405,11 @@ class FirebaseChatService {
   /**
    * Edit a message
    */
-  async editMessage(groupId: string, messageId: string, newText: string): Promise<void> {
+  async editMessage(
+    groupId: string,
+    messageId: string,
+    newText: string
+  ): Promise<void> {
     await update(ref(this.db, `messages/${groupId}/${messageId}`), {
       message: newText,
       isEdited: true,
@@ -492,11 +515,14 @@ class FirebaseChatService {
   ): () => void {
     const messagesRef = ref(this.db, `messages/${groupId}`);
 
-    const addedListener = onChildAdded(messagesRef, (snapshot: DataSnapshot) => {
-      if (snapshot.exists()) {
-        onNewMessage(snapshot.val() as FirebaseGroupMessage);
+    const addedListener = onChildAdded(
+      messagesRef,
+      (snapshot: DataSnapshot) => {
+        if (snapshot.exists()) {
+          onNewMessage(snapshot.val() as FirebaseGroupMessage);
+        }
       }
-    });
+    );
 
     const changedListener = onMessageUpdated
       ? onChildChanged(messagesRef, (snapshot: DataSnapshot) => {
@@ -535,7 +561,11 @@ class FirebaseChatService {
   /**
    * Set user presence in a group
    */
-  async setPresence(groupId: string, userId: string, isOnline: boolean): Promise<void> {
+  async setPresence(
+    groupId: string,
+    userId: string,
+    isOnline: boolean
+  ): Promise<void> {
     const presenceRef = ref(this.db, `presence/${groupId}/${userId}`);
     await set(presenceRef, {
       isOnline,
@@ -546,12 +576,15 @@ class FirebaseChatService {
   /**
    * Subscribe to presence changes in a group
    */
-  subscribeToPresence(groupId: string, onPresenceChanged: PresenceCallback): () => void {
+  subscribeToPresence(
+    groupId: string,
+    onPresenceChanged: PresenceCallback
+  ): () => void {
     const presenceRef = ref(this.db, `presence/${groupId}`);
 
     const listener = onValue(presenceRef, (snapshot: DataSnapshot) => {
       if (snapshot.exists()) {
-        snapshot.forEach(child => {
+        snapshot.forEach((child: DataSnapshot) => {
           const userId = child.key!;
           const data = child.val();
           onPresenceChanged(userId, data.isOnline);
@@ -567,7 +600,12 @@ class FirebaseChatService {
   /**
    * Set typing status
    */
-  async setTyping(groupId: string, userId: string, userName: string, isTyping: boolean): Promise<void> {
+  async setTyping(
+    groupId: string,
+    userId: string,
+    userName: string,
+    isTyping: boolean
+  ): Promise<void> {
     const typingRef = ref(this.db, `typing/${groupId}/${userId}`);
     if (isTyping) {
       await set(typingRef, {
@@ -591,7 +629,7 @@ class FirebaseChatService {
     const listener = onValue(typingRef, (snapshot: DataSnapshot) => {
       const typingUsers: { id: string; name: string }[] = [];
       if (snapshot.exists()) {
-        snapshot.forEach(child => {
+        snapshot.forEach((child: DataSnapshot) => {
           const data = child.val();
           // Only show if typing within last 10 seconds
           if (Date.now() - data.timestamp < 10000) {
@@ -613,7 +651,10 @@ class FirebaseChatService {
   /**
    * Parse mentions from message text (@username)
    */
-  parseMentions(text: string, participantNames: { [key: string]: string }): string[] {
+  parseMentions(
+    text: string,
+    participantNames: { [key: string]: string }
+  ): string[] {
     const mentionRegex = /@(\w+)/g;
     const mentions: string[] = [];
     let match;

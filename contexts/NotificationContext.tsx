@@ -11,14 +11,15 @@ import { Platform } from 'react-native';
 
 // Configure notification behavior for mobile
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    // Campos adicionales requeridos por los tipos recientes de Expo Notifications
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }) as any,
+  handleNotification: async () =>
+    ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+      // Campos adicionales requeridos por los tipos recientes de Expo Notifications
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }) as any,
 });
 
 export interface InAppNotification {
@@ -119,14 +120,10 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => {
       if (Platform.OS !== 'web') {
         if (notificationListener.current) {
-          Notifications.removeNotificationSubscription(
-            notificationListener.current
-          );
+          notificationListener.current.remove();
         }
         if (responseListener.current) {
-          Notifications.removeNotificationSubscription(
-            responseListener.current
-          );
+          responseListener.current.remove();
         }
       }
     };

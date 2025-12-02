@@ -150,7 +150,12 @@ export const AdvancedSearchComponent: React.FC<
           >
             <Filter size={20} color={showAdvanced ? '#ffffff' : '#1e40af'} />
             {hideSearchInput && (
-              <Text style={[styles.filterButtonText, showAdvanced && styles.filterButtonTextActive]}>
+              <Text
+                style={[
+                  styles.filterButtonText,
+                  showAdvanced && styles.filterButtonTextActive,
+                ]}
+              >
                 Filtros
               </Text>
             )}
@@ -350,10 +355,8 @@ export const AdvancedSearchComponent: React.FC<
                       },
                     ]}
                     onPress={() =>
-                      toggleArrayFilter(
-                        filters.customerIds,
-                        customer.id,
-                        arr => updateFilters('customerIds', arr)
+                      toggleArrayFilter(filters.customerIds, customer.id, arr =>
+                        updateFilters('customerIds', arr)
                       )
                     }
                   >

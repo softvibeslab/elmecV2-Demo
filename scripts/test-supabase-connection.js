@@ -11,7 +11,10 @@ async function testConnection() {
   console.log('Variables de entorno:');
   console.log('✅ SUPABASE_URL:', supabaseUrl ? 'Configurada' : '❌ Faltante');
   console.log('✅ ANON_KEY:', supabaseKey ? 'Configurada' : '❌ Faltante');
-  console.log('✅ SERVICE_ROLE_KEY:', serviceRoleKey ? 'Configurada' : '❌ Faltante');
+  console.log(
+    '✅ SERVICE_ROLE_KEY:',
+    serviceRoleKey ? 'Configurada' : '❌ Faltante'
+  );
   console.log('');
 
   // Probar con service role key
@@ -20,7 +23,8 @@ async function testConnection() {
   try {
     // Test 1: Listar buckets
     console.log('Test 1: Listando buckets...');
-    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+    const { data: buckets, error: bucketsError } =
+      await supabase.storage.listBuckets();
 
     if (bucketsError) {
       console.log('❌ Error:', bucketsError.message);
@@ -51,10 +55,14 @@ async function testConnection() {
     } else {
       console.log('✅ Base de datos accesible');
     }
-
   } catch (error) {
     console.log('❌ Error de conexión:', error.message);
   }
 }
 
-testConnection().then(() => process.exit(0)).catch(e => { console.error(e); process.exit(1); });
+testConnection()
+  .then(() => process.exit(0))
+  .catch(e => {
+    console.error(e);
+    process.exit(1);
+  });

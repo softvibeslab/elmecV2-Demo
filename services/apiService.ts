@@ -283,7 +283,7 @@ export async function getListRequestCustomer(
   console.log('getListRequestCustomer');
   const url = nextPage ? nextPage : URLs.BASE + URLs.CUSTOMER_REQUEST_LIST;
   try {
-    let parametros: { [key: string]: any } = {};
+    const parametros: { [key: string]: any } = {};
     if (usuario !== undefined) {
       parametros.usuario = usuario;
     }
@@ -340,7 +340,7 @@ export async function getListRequestAgent(
 
   const url = nextPage ? nextPage : URLs.BASE + URLs.AGENT_REQUEST_LIST;
   try {
-    let parametros: { [key: string]: any } = {};
+    const parametros: { [key: string]: any } = {};
     if (agente !== undefined) {
       parametros.agente = agente;
     }
@@ -473,7 +473,7 @@ export async function getCustomerCountNewRequests(token: string) {
 }
 
 export async function getAgentCountNewRequests(token: string, id: number) {
-  let parametros: { [key: string]: any } = {
+  const parametros: { [key: string]: any } = {
     usuario: id,
   };
   // console.log("user id.- " + id)
@@ -842,9 +842,7 @@ async function getAgentDetail(token: string, id: number) {
   }
 }
 
-export async function getPaginadoAgentDirectory(
-  token: string
-): Promise<{
+export async function getPaginadoAgentDirectory(token: string): Promise<{
   results: AgentList[];
   count: number;
   next: string;
@@ -971,7 +969,7 @@ export async function getListChats(
   solicitudChatID: number,
   lastId: number | null
 ) {
-  let parametros: { [key: string]: any } = {
+  const parametros: { [key: string]: any } = {
     solicitud_chat: solicitudChatID,
   };
   if (lastId !== null) {

@@ -1,4 +1,10 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useMemo,
+} from 'react';
 import {
   View,
   Text,
@@ -294,7 +300,9 @@ export default function ChatRoom() {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
-  const [playingAudio, setPlayingAudio] = useState<{ [key: string]: Audio.Sound }>({});
+  const [playingAudio, setPlayingAudio] = useState<{
+    [key: string]: Audio.Sound;
+  }>({});
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<ChatMessage | null>(
@@ -307,11 +315,15 @@ export default function ChatRoom() {
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(
     null
   );
-  const [timer, setTimer] = useState<ReturnType<typeof setInterval> | null>(null);
+  const [timer, setTimer] = useState<ReturnType<typeof setInterval> | null>(
+    null
+  );
   const [isTyping, setIsTyping] = useState(false);
   const [imageViewerVisible, setImageViewerVisible] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [imageViewerImages, setImageViewerImages] = useState<{ uri: string }[]>([]);
+  const [imageViewerImages, setImageViewerImages] = useState<{ uri: string }[]>(
+    []
+  );
 
   const chatRoom = getChatRoom(roomId!);
   const roomMessages = messages[roomId!] || [];
@@ -338,23 +350,23 @@ export default function ChatRoom() {
       }, 1000);
       setTimer(newTimer);
     } else {
-        setRecordingDuration(0);
-        if (timer) {
-          clearInterval(timer);
-          setTimer(null);
-        }
+      setRecordingDuration(0);
+      if (timer) {
+        clearInterval(timer);
+        setTimer(null);
       }
+    }
 
-      return () => {
-        if (timer) clearInterval(timer);
-      };
-    }, [isRecording, timer]);
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [isRecording, timer]);
 
   // Cleanup audio on unmount
   useEffect(() => {
     return () => {
       // Stop and unload all playing audio
-      Object.values(playingAudio).forEach(async (sound) => {
+      Object.values(playingAudio).forEach(async sound => {
         try {
           await sound.stopAsync();
           await sound.unloadAsync();
@@ -362,7 +374,7 @@ export default function ChatRoom() {
           console.error('Error cleaning up audio:', error);
         }
       });
-      
+
       // Stop recording if active
       if (recording) {
         recording.stopAndUnloadAsync().catch(console.error);
@@ -448,7 +460,7 @@ export default function ChatRoom() {
             uri: asset.uri,
             name: asset.fileName || `imagen_${Date.now()}.jpg`,
             type: asset.type || 'image/jpeg',
-            size: asset.fileSize || 0
+            size: asset.fileSize || 0,
           },
           'request-files',
           `chat/${roomId}`
@@ -464,7 +476,7 @@ export default function ChatRoom() {
           roomId!,
           'Imagen enviada',
           'image',
-          uploadResult.url,  // ✅ Public URL
+          uploadResult.url, // ✅ Public URL
           uploadResult.name,
           uploadResult.size
         );
@@ -475,9 +487,7 @@ export default function ChatRoom() {
       console.error('Error uploading image:', error);
       Alert.alert(
         'Error',
-        error instanceof Error
-          ? error.message
-          : 'No se pudo enviar la imagen'
+        error instanceof Error ? error.message : 'No se pudo enviar la imagen'
       );
     }
     setShowAttachmentMenu(false);
@@ -511,7 +521,7 @@ export default function ChatRoom() {
             uri: asset.uri,
             name: asset.fileName || `foto_${Date.now()}.jpg`,
             type: asset.type || 'image/jpeg',
-            size: asset.fileSize || 0
+            size: asset.fileSize || 0,
           },
           'request-files',
           `chat/${roomId}`
@@ -527,7 +537,7 @@ export default function ChatRoom() {
           roomId!,
           'Foto tomada',
           'image',
-          uploadResult.url,  // ✅ Public URL
+          uploadResult.url, // ✅ Public URL
           uploadResult.name,
           uploadResult.size
         );
@@ -538,9 +548,7 @@ export default function ChatRoom() {
       console.error('Error uploading photo:', error);
       Alert.alert(
         'Error',
-        error instanceof Error
-          ? error.message
-          : 'No se pudo enviar la foto'
+        error instanceof Error ? error.message : 'No se pudo enviar la foto'
       );
     }
     setShowAttachmentMenu(false);
@@ -564,7 +572,7 @@ export default function ChatRoom() {
             uri: asset.uri,
             name: asset.name,
             type: asset.mimeType || 'application/octet-stream',
-            size: asset.size || 0
+            size: asset.size || 0,
           },
           'request-files',
           `chat/${roomId}`
@@ -580,7 +588,7 @@ export default function ChatRoom() {
           roomId!,
           'Archivo enviado',
           'file',
-          uploadResult.url,  // ✅ Public URL
+          uploadResult.url, // ✅ Public URL
           uploadResult.name,
           uploadResult.size
         );
@@ -635,7 +643,7 @@ export default function ChatRoom() {
                 uri: uri,
                 name: fileName,
                 type: 'audio/m4a',
-                size: audioInfo.size || 0
+                size: audioInfo.size || 0,
               },
               'request-files',
               `chat/${roomId}`
@@ -652,7 +660,7 @@ export default function ChatRoom() {
               roomId!,
               'Audio enviado',
               'audio',
-              uploadResult.url,  // ✅ Public URL from Supabase Storage
+              uploadResult.url, // ✅ Public URL from Supabase Storage
               uploadResult.name,
               uploadResult.size,
               recordingDuration
@@ -749,11 +757,11 @@ export default function ChatRoom() {
           { uri: audioUrl },
           { shouldPlay: true }
         );
-        
+
         setPlayingAudio(prev => ({ ...prev, [messageId]: sound }));
-        
+
         // Remove from playing state when finished
-        sound.setOnPlaybackStatusUpdate((status) => {
+        sound.setOnPlaybackStatusUpdate(status => {
           if (status.isLoaded && status.didJustFinish) {
             setPlayingAudio(prev => {
               const newState = { ...prev };
@@ -889,10 +897,7 @@ export default function ChatRoom() {
       if (isSharingAvailable) {
         await Sharing.shareAsync(result.uri);
       } else {
-        Alert.alert(
-          'Descarga completa',
-          `Archivo guardado en: ${result.uri}`
-        );
+        Alert.alert('Descarga completa', `Archivo guardado en: ${result.uri}`);
       }
     } catch (error) {
       console.error('Error downloading file:', error);
@@ -1011,9 +1016,12 @@ export default function ChatRoom() {
               {/* Audio message */}
               {message.type === 'audio' && (
                 <View style={styles.audioMessage}>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.playButton}
-                    onPress={() => message.file_url && handlePlayAudio(message.id, message.file_url)}
+                    onPress={() =>
+                      message.file_url &&
+                      handlePlayAudio(message.id, message.file_url)
+                    }
                   >
                     {playingAudio[message.id] ? (
                       <Pause
@@ -1038,8 +1046,8 @@ export default function ChatRoom() {
                             backgroundColor: isOwnMessage
                               ? 'rgba(255,255,255,0.7)'
                               : playingAudio[message.id]
-                              ? '#10b981'
-                              : '#3b82f6',
+                                ? '#10b981'
+                                : '#3b82f6',
                           },
                         ]}
                       />
@@ -1245,7 +1253,7 @@ export default function ChatRoom() {
           ref={scrollViewRef}
           style={styles.messagesContainer}
           data={roomMessages}
-          keyExtractor={(item) => item.id}
+          keyExtractor={item => item.id}
           renderItem={({ item, index }) => renderMessage(item, index)}
           showsVerticalScrollIndicator={false}
           removeClippedSubviews={true}
@@ -1266,7 +1274,9 @@ export default function ChatRoom() {
               style={styles.loadMoreButton}
               onPress={() => loadMoreMessages(roomId!)}
             >
-              <Text style={styles.loadMoreText}>Cargar mensajes anteriores</Text>
+              <Text style={styles.loadMoreText}>
+                Cargar mensajes anteriores
+              </Text>
             </TouchableOpacity>
           }
           ListFooterComponent={renderTypingIndicator}
@@ -1456,16 +1466,16 @@ export default function ChatRoom() {
               onPress={handleVoiceRecording}
             >
               {isRecording ? (
-                    <View style={styles.recordingIndicator}>
-                      <View style={styles.recordingDot} />
-                      <MicOff size={18} color="#ffffff" />
-                      <Text style={styles.recordingTime}>
-                        {formatDuration(recordingDuration)}
-                      </Text>
-                    </View>
-                  ) : (
-                    <Mic size={20} color="#ffffff" />
-                  )}
+                <View style={styles.recordingIndicator}>
+                  <View style={styles.recordingDot} />
+                  <MicOff size={18} color="#ffffff" />
+                  <Text style={styles.recordingTime}>
+                    {formatDuration(recordingDuration)}
+                  </Text>
+                </View>
+              ) : (
+                <Mic size={20} color="#ffffff" />
+              )}
             </TouchableOpacity>
           )}
         </View>

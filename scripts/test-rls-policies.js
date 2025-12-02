@@ -22,12 +22,12 @@ const colors = {
 };
 
 const log = {
-  info: (msg) => console.log(`${colors.blue}ℹ${colors.reset} ${msg}`),
-  success: (msg) => console.log(`${colors.green}✓${colors.reset} ${msg}`),
-  error: (msg) => console.log(`${colors.red}✗${colors.reset} ${msg}`),
-  warning: (msg) => console.log(`${colors.yellow}⚠${colors.reset} ${msg}`),
-  step: (msg) => console.log(`${colors.cyan}▶${colors.reset} ${msg}`),
-  test: (msg) => console.log(`  ${colors.bright}TEST:${colors.reset} ${msg}`),
+  info: msg => console.log(`${colors.blue}ℹ${colors.reset} ${msg}`),
+  success: msg => console.log(`${colors.green}✓${colors.reset} ${msg}`),
+  error: msg => console.log(`${colors.red}✗${colors.reset} ${msg}`),
+  warning: msg => console.log(`${colors.yellow}⚠${colors.reset} ${msg}`),
+  step: msg => console.log(`${colors.cyan}▶${colors.reset} ${msg}`),
+  test: msg => console.log(`  ${colors.bright}TEST:${colors.reset} ${msg}`),
 };
 
 // Credenciales de usuarios de prueba
@@ -65,7 +65,10 @@ async function runTests() {
 
   try {
     // Login como usuario normal
-    const { data: { user }, error: loginError } = await supabase.auth.signInWithPassword({
+    const {
+      data: { user },
+      error: loginError,
+    } = await supabase.auth.signInWithPassword({
       email: TEST_USERS.usuario.email,
       password: TEST_USERS.usuario.password,
     });
@@ -81,10 +84,14 @@ async function runTests() {
     if (queryError) throw queryError;
 
     // Verificar que todas las solicitudes pertenecen al usuario
-    const allOwnRequests = requests.every(r => r.usuario_id === user.id || r.agente_id === user.id);
+    const allOwnRequests = requests.every(
+      r => r.usuario_id === user.id || r.agente_id === user.id
+    );
 
     if (allOwnRequests) {
-      log.success(`Solo ve sus propias solicitudes (${requests.length} encontradas)`);
+      log.success(
+        `Solo ve sus propias solicitudes (${requests.length} encontradas)`
+      );
       testsPassed++;
     } else {
       log.error('Ve solicitudes de otros usuarios - RLS FALLÓ');
@@ -92,7 +99,6 @@ async function runTests() {
     }
 
     await supabase.auth.signOut();
-
   } catch (error) {
     log.error(`Error: ${error.message}`);
     testsFailed++;
@@ -108,7 +114,10 @@ async function runTests() {
 
   try {
     // Login como usuario
-    const { data: { user }, error: loginError } = await supabase.auth.signInWithPassword({
+    const {
+      data: { user },
+      error: loginError,
+    } = await supabase.auth.signInWithPassword({
       email: TEST_USERS.usuario.email,
       password: TEST_USERS.usuario.password,
     });
@@ -131,14 +140,15 @@ async function runTests() {
 
     if (insertError) throw insertError;
 
-    log.success(`Solicitud creada exitosamente (ID: ${newRequest.id.substring(0, 8)}...)`);
+    log.success(
+      `Solicitud creada exitosamente (ID: ${newRequest.id.substring(0, 8)}...)`
+    );
     testsPassed++;
 
     // Limpiar - eliminar solicitud de prueba (solo si somos admin después)
     // await supabase.from('requests').delete().eq('id', newRequest.id);
 
     await supabase.auth.signOut();
-
   } catch (error) {
     log.error(`Error: ${error.message}`);
     testsFailed++;
@@ -154,7 +164,10 @@ async function runTests() {
 
   try {
     // Login como usuario
-    const { data: { user }, error: loginError } = await supabase.auth.signInWithPassword({
+    const {
+      data: { user },
+      error: loginError,
+    } = await supabase.auth.signInWithPassword({
       email: TEST_USERS.usuario.email,
       password: TEST_USERS.usuario.password,
     });
@@ -185,7 +198,6 @@ async function runTests() {
     }
 
     await supabase.auth.signOut();
-
   } catch (error) {
     // Error esperado
     log.success('RLS bloqueó correctamente (excepción lanzada)');
@@ -202,7 +214,10 @@ async function runTests() {
 
   try {
     // Login como agente (asumiendo que s.vazquez es agente)
-    const { data: { user }, error: loginError } = await supabase.auth.signInWithPassword({
+    const {
+      data: { user },
+      error: loginError,
+    } = await supabase.auth.signInWithPassword({
       email: TEST_USERS.agente.email,
       password: TEST_USERS.agente.password,
     });
@@ -219,11 +234,12 @@ async function runTests() {
 
     if (queryError) throw queryError;
 
-    log.success(`Agente puede ver ${unassignedRequests.length} solicitudes sin asignar`);
+    log.success(
+      `Agente puede ver ${unassignedRequests.length} solicitudes sin asignar`
+    );
     testsPassed++;
 
     await supabase.auth.signOut();
-
   } catch (error) {
     log.error(`Error: ${error.message}`);
     testsFailed++;
@@ -239,7 +255,10 @@ async function runTests() {
 
   try {
     // Login como usuario
-    const { data: { user }, error: loginError } = await supabase.auth.signInWithPassword({
+    const {
+      data: { user },
+      error: loginError,
+    } = await supabase.auth.signInWithPassword({
       email: TEST_USERS.usuario.email,
       password: TEST_USERS.usuario.password,
     });
@@ -254,8 +273,8 @@ async function runTests() {
     if (queryError) throw queryError;
 
     // Verificar que NO ve solicitudes de otros (solo las suyas o asignadas a él)
-    const hasOthersRequests = allRequests.some(r =>
-      r.usuario_id !== user.id && r.agente_id !== user.id
+    const hasOthersRequests = allRequests.some(
+      r => r.usuario_id !== user.id && r.agente_id !== user.id
     );
 
     if (!hasOthersRequests) {
@@ -267,7 +286,6 @@ async function runTests() {
     }
 
     await supabase.auth.signOut();
-
   } catch (error) {
     log.error(`Error: ${error.message}`);
     testsFailed++;
@@ -278,12 +296,17 @@ async function runTests() {
   // ========================================================================
   // TEST 6: Usuario puede actualizar solo sus solicitudes no asignadas
   // ========================================================================
-  log.step('TEST 6: Usuario puede actualizar solo sus solicitudes no asignadas\n');
+  log.step(
+    'TEST 6: Usuario puede actualizar solo sus solicitudes no asignadas\n'
+  );
   testsTotal++;
 
   try {
     // Login como usuario
-    const { data: { user }, error: loginError } = await supabase.auth.signInWithPassword({
+    const {
+      data: { user },
+      error: loginError,
+    } = await supabase.auth.signInWithPassword({
       email: TEST_USERS.usuario.email,
       password: TEST_USERS.usuario.password,
     });
@@ -310,18 +333,23 @@ async function runTests() {
         .eq('id', requestId);
 
       if (updateError) {
-        log.error(`No pudo actualizar su propia solicitud: ${updateError.message}`);
+        log.error(
+          `No pudo actualizar su propia solicitud: ${updateError.message}`
+        );
         testsFailed++;
       } else {
-        log.success('Usuario puede actualizar su propia solicitud no asignada ✓');
+        log.success(
+          'Usuario puede actualizar su propia solicitud no asignada ✓'
+        );
         testsPassed++;
       }
     } else {
-      log.warning('No hay solicitudes propias para probar actualización (test skipped)');
+      log.warning(
+        'No hay solicitudes propias para probar actualización (test skipped)'
+      );
     }
 
     await supabase.auth.signOut();
-
   } catch (error) {
     log.error(`Error: ${error.message}`);
     testsFailed++;
@@ -343,11 +371,15 @@ async function runTests() {
 
   const percentage = ((testsPassed / testsTotal) * 100).toFixed(1);
   if (testsPassed === testsTotal) {
-    console.log(`${colors.green}${colors.bright}✓ TODOS LOS TESTS PASARON (${percentage}%)${colors.reset}`);
+    console.log(
+      `${colors.green}${colors.bright}✓ TODOS LOS TESTS PASARON (${percentage}%)${colors.reset}`
+    );
     console.log('');
     console.log('RLS Policies están funcionando correctamente ✓');
   } else {
-    console.log(`${colors.yellow}⚠ ALGUNOS TESTS FALLARON (${percentage}% pasó)${colors.reset}`);
+    console.log(
+      `${colors.yellow}⚠ ALGUNOS TESTS FALLARON (${percentage}% pasó)${colors.reset}`
+    );
     console.log('');
     console.log('Revisar errores arriba y verificar policies en Supabase.');
   }

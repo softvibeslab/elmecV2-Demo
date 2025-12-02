@@ -49,7 +49,7 @@ export interface Request {
 
 export interface ChatRoom {
   id: string;
-  tipo: 'support' | 'sales' | 'general';
+  tipo: 'support' | 'sales' | 'general' | 'group';
   participants: string[];
   request_id?: string;
   created_at: string;

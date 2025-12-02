@@ -18,7 +18,14 @@ import {
   InternalGroupType,
 } from '@/contexts/ChatContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { Search, MessageCircle, Clock, Users, Plus, UsersRound } from 'lucide-react-native';
+import {
+  Search,
+  MessageCircle,
+  Clock,
+  Users,
+  Plus,
+  UsersRound,
+} from 'lucide-react-native';
 import { ChatRoom } from '@/types/supabase';
 
 // Tipo extendido para ChatRoom con información de request
@@ -264,10 +271,7 @@ export default function ChatList() {
                 return (
                   <TouchableOpacity
                     key={group.id}
-                    style={[
-                      styles.groupCard,
-                      { borderLeftColor: group.color },
-                    ]}
+                    style={[styles.groupCard, { borderLeftColor: group.color }]}
                     onPress={() => {
                       if (groupRoom) {
                         router.push(`/chat/${groupRoom.id}`);
@@ -315,7 +319,9 @@ export default function ChatList() {
         {isInternalUser && chatRooms.length > 0 && (
           <View style={styles.sectionHeaderSpaced}>
             <MessageCircle size={20} color="#6b7280" />
-            <Text style={styles.sectionTitleSecondary}>Chats de Solicitudes</Text>
+            <Text style={styles.sectionTitleSecondary}>
+              Chats de Solicitudes
+            </Text>
           </View>
         )}
 
@@ -343,7 +349,9 @@ export default function ChatList() {
                 </View>
                 {(() => {
                   const otherUserId = getOtherParticipantId(room);
-                  const online = otherUserId ? isUserOnline(otherUserId) : false;
+                  const online = otherUserId
+                    ? isUserOnline(otherUserId)
+                    : false;
                   return (
                     <View
                       style={[

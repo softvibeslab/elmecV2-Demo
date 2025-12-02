@@ -10,7 +10,13 @@ import {
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
-import { Upload, File, Image as ImageIcon, X, Camera } from 'lucide-react-native';
+import {
+  Upload,
+  File,
+  Image as ImageIcon,
+  X,
+  Camera,
+} from 'lucide-react-native';
 
 interface FileUploadComponentProps {
   onFileSelected: (file: {

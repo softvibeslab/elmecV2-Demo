@@ -17,7 +17,9 @@ const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('❌ Error: Variables de entorno no configuradas');
-  console.error('Verifica que EXPO_PUBLIC_SUPABASE_URL y EXPO_PUBLIC_SUPABASE_ANON_KEY estén en .env');
+  console.error(
+    'Verifica que EXPO_PUBLIC_SUPABASE_URL y EXPO_PUBLIC_SUPABASE_ANON_KEY estén en .env'
+  );
   process.exit(1);
 }
 
@@ -71,11 +73,15 @@ async function testRequestCreation() {
   let testAgent = null;
   if (!agentsError && agents && agents.length > 0) {
     testAgent = agents[0];
-    console.log(`✅ Agente encontrado: ${testAgent.nombre} ${testAgent.apellido_paterno}`);
+    console.log(
+      `✅ Agente encontrado: ${testAgent.nombre} ${testAgent.apellido_paterno}`
+    );
     console.log(`   ID: ${testAgent.id}`);
     console.log(`   Categoría: ${testAgent.categoria}\n`);
   } else {
-    console.log('⚠️  No se encontró agente. La solicitud se creará sin agente asignado.\n');
+    console.log(
+      '⚠️  No se encontró agente. La solicitud se creará sin agente asignado.\n'
+    );
   }
 
   // 4. Crear solicitud de prueba
@@ -83,7 +89,8 @@ async function testRequestCreation() {
 
   const requestData = {
     titulo: `Prueba de solicitud - ${new Date().toISOString()}`,
-    mensaje: 'Esta es una solicitud de prueba creada por el script de testing. Verifica que todo funcione correctamente.',
+    mensaje:
+      'Esta es una solicitud de prueba creada por el script de testing. Verifica que todo funcione correctamente.',
     tipo: 1, // Ventas
     prioridad: 'media',
     estatus: 'nuevo',
@@ -104,11 +111,13 @@ async function testRequestCreation() {
   const { data: newRequest, error: createError } = await supabase
     .from('requests')
     .insert(requestData)
-    .select(`
+    .select(
+      `
       *,
       usuario:users!requests_usuario_id_fkey(nombre, apellido_paterno, apellido_materno, empresa),
       agente:users!requests_agente_id_fkey(nombre, apellido_paterno, apellido_materno, categoria)
-    `)
+    `
+    )
     .single();
 
   if (createError) {
@@ -118,8 +127,12 @@ async function testRequestCreation() {
     if (createError.code === '42501') {
       console.log('\n💡 Error de permisos RLS. Posibles causas:');
       console.log('   1. Las políticas RLS no están aplicadas correctamente');
-      console.log('   2. El usuario no tiene permisos para insertar en la tabla requests');
-      console.log('   3. La política "authenticated_users_can_create_requests" no existe o está mal configurada');
+      console.log(
+        '   2. El usuario no tiene permisos para insertar en la tabla requests'
+      );
+      console.log(
+        '   3. La política "authenticated_users_can_create_requests" no existe o está mal configurada'
+      );
       console.log('\n🔧 Solución sugerida:');
       console.log('   Ejecuta las migraciones RLS:');
       console.log('   node scripts/apply-rls-migration.js');
@@ -133,7 +146,9 @@ async function testRequestCreation() {
   console.log(`   Estado: ${newRequest.estatus}`);
   console.log(`   Prioridad: ${newRequest.prioridad}`);
   if (newRequest.agente) {
-    console.log(`   Agente: ${newRequest.agente.nombre} ${newRequest.agente.apellido_paterno}`);
+    console.log(
+      `   Agente: ${newRequest.agente.nombre} ${newRequest.agente.apellido_paterno}`
+    );
   } else {
     console.log('   Agente: Sin asignar');
   }
@@ -162,7 +177,10 @@ async function testRequestCreation() {
     .eq('id', newRequest.id);
 
   if (deleteError) {
-    console.warn('⚠️  No se pudo eliminar la solicitud de prueba:', deleteError.message);
+    console.warn(
+      '⚠️  No se pudo eliminar la solicitud de prueba:',
+      deleteError.message
+    );
     console.log(`   Elimínala manualmente: ID ${newRequest.id}`);
   } else {
     console.log('✅ Solicitud de prueba eliminada\n');
@@ -186,7 +204,7 @@ testRequestCreation()
     console.log('✅ Script finalizado');
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('❌ Error inesperado:', error);
     process.exit(1);
   });

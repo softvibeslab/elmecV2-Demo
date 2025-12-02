@@ -63,7 +63,7 @@ function skip(testId, description, reason) {
 }
 
 // Helper para sleep
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 // ============================================
 // 1. MÓDULO DE AUTENTICACIÓN (12 casos)
@@ -90,7 +90,11 @@ async function testAuthentication() {
       throw new Error('No se recibió usuario');
     }
   } catch (error) {
-    fail('TC-AUTH-001', 'Login exitoso con credenciales válidas', error.message);
+    fail(
+      'TC-AUTH-001',
+      'Login exitoso con credenciales válidas',
+      error.message
+    );
   }
 
   // TC-AUTH-002: Login fallido con email inválido
@@ -127,7 +131,11 @@ async function testAuthentication() {
     }
   } catch (error) {
     if (error.message.includes('Debería')) {
-      fail('TC-AUTH-003', 'Login fallido con password incorrecta', error.message);
+      fail(
+        'TC-AUTH-003',
+        'Login fallido con password incorrecta',
+        error.message
+      );
     } else {
       pass('TC-AUTH-003', 'Login fallido con password incorrecta detectado');
     }
@@ -216,7 +224,11 @@ async function testAuthentication() {
   }
 
   // TC-AUTH-010: Registro de nuevo usuario
-  skip('TC-AUTH-010', 'Registro de nuevo usuario', 'Evitar crear usuarios de prueba');
+  skip(
+    'TC-AUTH-010',
+    'Registro de nuevo usuario',
+    'Evitar crear usuarios de prueba'
+  );
 
   // TC-AUTH-011: Recuperación de contraseña
   skip('TC-AUTH-011', 'Recuperación de contraseña', 'Feature no implementada');
@@ -300,17 +312,33 @@ async function testRequests() {
       pass('TC-REQ-003', 'Validar longitud mínima de título');
     } else {
       // En Supabase la validación debe hacerse en frontend
-      skip('TC-REQ-003', 'Validar longitud mínima de título', 'Validación en frontend');
+      skip(
+        'TC-REQ-003',
+        'Validar longitud mínima de título',
+        'Validación en frontend'
+      );
     }
   } catch (error) {
-    skip('TC-REQ-003', 'Validar longitud mínima de título', 'Validación en frontend');
+    skip(
+      'TC-REQ-003',
+      'Validar longitud mínima de título',
+      'Validación en frontend'
+    );
   }
 
   // TC-REQ-004: Validar longitud máxima de título (200 chars)
-  skip('TC-REQ-004', 'Validar longitud máxima de título', 'Validación en frontend');
+  skip(
+    'TC-REQ-004',
+    'Validar longitud máxima de título',
+    'Validación en frontend'
+  );
 
   // TC-REQ-005: Validar longitud mínima de mensaje (10 chars)
-  skip('TC-REQ-005', 'Validar longitud mínima de mensaje', 'Validación en frontend');
+  skip(
+    'TC-REQ-005',
+    'Validar longitud mínima de mensaje',
+    'Validación en frontend'
+  );
 
   // TC-REQ-006: Ver lista de solicitudes propias (customer)
   try {
@@ -322,7 +350,10 @@ async function testRequests() {
 
     if (error) throw error;
     if (Array.isArray(data)) {
-      pass('TC-REQ-006', `Ver lista de solicitudes propias (${data.length} encontradas)`);
+      pass(
+        'TC-REQ-006',
+        `Ver lista de solicitudes propias (${data.length} encontradas)`
+      );
     } else {
       throw new Error('No se recibió array de solicitudes');
     }
@@ -331,10 +362,18 @@ async function testRequests() {
   }
 
   // TC-REQ-007: Ver solicitudes asignadas (agent)
-  skip('TC-REQ-007', 'Ver solicitudes asignadas', 'Requiere usuario con rol agent');
+  skip(
+    'TC-REQ-007',
+    'Ver solicitudes asignadas',
+    'Requiere usuario con rol agent'
+  );
 
   // TC-REQ-008: Ver todas las solicitudes (admin)
-  skip('TC-REQ-008', 'Ver todas las solicitudes', 'Requiere usuario con rol admin');
+  skip(
+    'TC-REQ-008',
+    'Ver todas las solicitudes',
+    'Requiere usuario con rol admin'
+  );
 
   // TC-REQ-009: Actualizar estado a "asignado"
   if (testRequestId) {
@@ -350,7 +389,11 @@ async function testRequests() {
       fail('TC-REQ-009', 'Actualizar estado a "asignado"', error.message);
     }
   } else {
-    skip('TC-REQ-009', 'Actualizar estado a "asignado"', 'No hay solicitud de prueba');
+    skip(
+      'TC-REQ-009',
+      'Actualizar estado a "asignado"',
+      'No hay solicitud de prueba'
+    );
   }
 
   // TC-REQ-010: Actualizar estado a "en_proceso"
@@ -367,7 +410,11 @@ async function testRequests() {
       fail('TC-REQ-010', 'Actualizar estado a "en_proceso"', error.message);
     }
   } else {
-    skip('TC-REQ-010', 'Actualizar estado a "en_proceso"', 'No hay solicitud de prueba');
+    skip(
+      'TC-REQ-010',
+      'Actualizar estado a "en_proceso"',
+      'No hay solicitud de prueba'
+    );
   }
 
   // TC-REQ-011: Actualizar estado a "resuelto"
@@ -384,7 +431,11 @@ async function testRequests() {
       fail('TC-REQ-011', 'Actualizar estado a "resuelto"', error.message);
     }
   } else {
-    skip('TC-REQ-011', 'Actualizar estado a "resuelto"', 'No hay solicitud de prueba');
+    skip(
+      'TC-REQ-011',
+      'Actualizar estado a "resuelto"',
+      'No hay solicitud de prueba'
+    );
   }
 
   // TC-REQ-012: Actualizar estado a "resuelto" (completado)
@@ -472,7 +523,10 @@ async function testChat() {
       .eq('is_active', true);
 
     if (error) throw error;
-    pass('TC-CHAT-002', `Ver lista de chats activos (${data.length} encontrados)`);
+    pass(
+      'TC-CHAT-002',
+      `Ver lista de chats activos (${data.length} encontrados)`
+    );
   } catch (error) {
     fail('TC-CHAT-002', 'Ver lista de chats activos', error.message);
   }
@@ -492,7 +546,11 @@ async function testChat() {
       fail('TC-CHAT-003', 'Abrir sala de chat existente', error.message);
     }
   } else {
-    skip('TC-CHAT-003', 'Abrir sala de chat existente', 'No hay chat de prueba');
+    skip(
+      'TC-CHAT-003',
+      'Abrir sala de chat existente',
+      'No hay chat de prueba'
+    );
   }
 
   // TC-CHAT-004: Enviar mensaje de texto
@@ -574,7 +632,10 @@ async function testNotifications() {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    pass('TC-NOTIF-002', `Ver lista de notificaciones (${data.length} encontradas)`);
+    pass(
+      'TC-NOTIF-002',
+      `Ver lista de notificaciones (${data.length} encontradas)`
+    );
   } catch (error) {
     fail('TC-NOTIF-002', 'Ver lista de notificaciones', error.message);
   }
@@ -615,7 +676,11 @@ async function testCalculator() {
   // TC-CALC-001 al TC-CALC-015: Operaciones de calculadora
   for (let i = 1; i <= 15; i++) {
     const id = i < 10 ? `0${i}` : `${i}`;
-    skip(`TC-CALC-${id}`, `Caso de prueba CALC-${id}`, 'Prueba de UI/Lógica frontend');
+    skip(
+      `TC-CALC-${id}`,
+      `Caso de prueba CALC-${id}`,
+      'Prueba de UI/Lógica frontend'
+    );
   }
 }
 
@@ -635,7 +700,10 @@ async function testDirectory() {
       .order('nombre', { ascending: true });
 
     if (error) throw error;
-    pass('TC-DIR-001', `Ver lista completa de usuarios (${data.length} encontrados)`);
+    pass(
+      'TC-DIR-001',
+      `Ver lista completa de usuarios (${data.length} encontrados)`
+    );
   } catch (error) {
     fail('TC-DIR-001', 'Ver lista completa de agentes', error.message);
   }
@@ -649,7 +717,10 @@ async function testDirectory() {
       .eq('zona', 'Norte');
 
     if (error) throw error;
-    pass('TC-DIR-002', `Filtrar por zona (${data.length} encontrados en Norte)`);
+    pass(
+      'TC-DIR-002',
+      `Filtrar por zona (${data.length} encontrados en Norte)`
+    );
   } catch (error) {
     fail('TC-DIR-002', 'Filtrar por zona geográfica', error.message);
   }
@@ -663,7 +734,10 @@ async function testDirectory() {
       .eq('categoria', 'Agentes de venta');
 
     if (error) throw error;
-    pass('TC-DIR-003', `Filtrar por categoría (${data.length} agentes de venta)`);
+    pass(
+      'TC-DIR-003',
+      `Filtrar por categoría (${data.length} agentes de venta)`
+    );
   } catch (error) {
     fail('TC-DIR-003', 'Filtrar por categoría', error.message);
   }
@@ -694,10 +768,22 @@ async function testSettings() {
 // ============================================
 
 async function main() {
-  log('\n╔══════════════════════════════════════════════════════════════╗', 'cyan');
-  log('║   EJECUCIÓN AUTOMÁTICA DE MATRIZ DE PRUEBAS - ELMEC v2      ║', 'cyan');
-  log('║                     213 Casos de Prueba                      ║', 'cyan');
-  log('╚══════════════════════════════════════════════════════════════╝', 'cyan');
+  log(
+    '\n╔══════════════════════════════════════════════════════════════╗',
+    'cyan'
+  );
+  log(
+    '║   EJECUCIÓN AUTOMÁTICA DE MATRIZ DE PRUEBAS - ELMEC v2      ║',
+    'cyan'
+  );
+  log(
+    '║                     213 Casos de Prueba                      ║',
+    'cyan'
+  );
+  log(
+    '╚══════════════════════════════════════════════════════════════╝',
+    'cyan'
+  );
   log('\nIniciando ejecución...', 'blue');
 
   const startTime = Date.now();
@@ -718,18 +804,31 @@ async function main() {
   const duration = ((endTime - startTime) / 1000).toFixed(2);
 
   // Reporte final
-  log('\n╔══════════════════════════════════════════════════════════════╗', 'cyan');
-  log('║                    REPORTE FINAL DE PRUEBAS                  ║', 'cyan');
-  log('╚══════════════════════════════════════════════════════════════╝', 'cyan');
+  log(
+    '\n╔══════════════════════════════════════════════════════════════╗',
+    'cyan'
+  );
+  log(
+    '║                    REPORTE FINAL DE PRUEBAS                  ║',
+    'cyan'
+  );
+  log(
+    '╚══════════════════════════════════════════════════════════════╝',
+    'cyan'
+  );
 
   log(`\n📊 ESTADÍSTICAS:`, 'blue');
   log(`   Total de casos:     ${results.total}`);
   log(`   ✅ Pasaron:         ${results.passed}`, 'green');
-  log(`   ❌ Fallaron:        ${results.failed}`, results.failed > 0 ? 'red' : 'green');
+  log(
+    `   ❌ Fallaron:        ${results.failed}`,
+    results.failed > 0 ? 'red' : 'green'
+  );
   log(`   ⏭️  Omitidos:        ${results.skipped}`, 'yellow');
   log(`   ⏱️  Duración:        ${duration}s`, 'blue');
 
-  const passRate = results.total > 0 ? ((results.passed / results.total) * 100).toFixed(2) : 0;
+  const passRate =
+    results.total > 0 ? ((results.passed / results.total) * 100).toFixed(2) : 0;
   log(`\n📈 Tasa de éxito: ${passRate}%`, passRate >= 90 ? 'green' : 'yellow');
 
   if (results.errors.length > 0) {
@@ -741,7 +840,9 @@ async function main() {
   }
 
   log('\n✅ Ejecución completada', 'green');
-  log(`\nReporte guardado en: ./test-results-${new Date().toISOString().split('T')[0]}.log\n`);
+  log(
+    `\nReporte guardado en: ./test-results-${new Date().toISOString().split('T')[0]}.log\n`
+  );
 
   // Código de salida
   process.exit(results.failed > 0 ? 1 : 0);

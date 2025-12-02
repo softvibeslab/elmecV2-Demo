@@ -16,7 +16,9 @@ async function executeMigration() {
 
   if (!supabaseUrl || !serviceRoleKey) {
     console.error('❌ Error: Variables de entorno no configuradas');
-    console.log('   Se requiere EXPO_PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY');
+    console.log(
+      '   Se requiere EXPO_PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY'
+    );
     process.exit(1);
   }
 
@@ -32,11 +34,13 @@ async function executeMigration() {
       sql: `
         ALTER TABLE requests
         ADD COLUMN IF NOT EXISTS archivos TEXT[] DEFAULT NULL;
-      `
+      `,
     });
 
     if (archivosError && !archivosError.message.includes('already exists')) {
-      console.log('⚠️  Método RPC no disponible, intentando método alternativo...');
+      console.log(
+        '⚠️  Método RPC no disponible, intentando método alternativo...'
+      );
       // Si RPC no funciona, intentamos crear directamente (esto puede fallar)
     } else {
       console.log('✅ Columna "archivos" agregada');
@@ -52,11 +56,13 @@ async function executeMigration() {
         ALTER TABLE requests
         ADD COLUMN IF NOT EXISTS feedback TEXT DEFAULT NULL,
         ADD COLUMN IF NOT EXISTS rating INTEGER DEFAULT NULL;
-      `
+      `,
     });
 
     if (feedbackError && !feedbackError.message.includes('already exists')) {
-      console.log('⚠️  Método RPC no disponible, intentando método alternativo...');
+      console.log(
+        '⚠️  Método RPC no disponible, intentando método alternativo...'
+      );
     } else {
       console.log('✅ Columnas "feedback" y "rating" agregadas');
     }
@@ -88,10 +94,16 @@ async function executeMigration() {
     console.log(`  rating: ${hasRating ? '✅' : '❌'}`);
 
     if (!hasArchivos || !hasFeedback || !hasRating) {
-      console.log('\n⚠️  Algunas columnas no se pudieron agregar automáticamente.');
-      console.log('\n📋 Por favor, ejecuta este SQL manualmente en Supabase Dashboard:');
+      console.log(
+        '\n⚠️  Algunas columnas no se pudieron agregar automáticamente.'
+      );
+      console.log(
+        '\n📋 Por favor, ejecuta este SQL manualmente en Supabase Dashboard:'
+      );
       console.log('\n' + '═'.repeat(70));
-      console.log(fs.readFileSync(path.join(__dirname, 'add-missing-columns.sql'), 'utf8'));
+      console.log(
+        fs.readFileSync(path.join(__dirname, 'add-missing-columns.sql'), 'utf8')
+      );
       console.log('═'.repeat(70));
       console.log('\nPasos:');
       console.log('1. Ve a https://app.supabase.com');
@@ -109,7 +121,6 @@ async function executeMigration() {
     console.log('\n📝 Siguiente paso:');
     console.log('   node scripts/test-requests-crud.js');
     console.log('\nDeberías ver 14/14 tests pasando (100% de éxito)');
-
   } catch (error) {
     console.error('\n❌ Error durante la migración:', error.message);
     console.log('\n📋 Ejecuta el SQL manualmente en Supabase Dashboard:');
@@ -124,7 +135,7 @@ executeMigration()
     console.log('\n✅ Script completado\n');
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('\n❌ Error fatal:', error.message);
     process.exit(1);
   });

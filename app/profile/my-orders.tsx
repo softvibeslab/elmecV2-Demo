@@ -183,9 +183,8 @@ export default function MyOrders() {
     pending: orders.filter(o =>
       ['nuevo', 'asignado', 'en_proceso'].includes(o.estatus)
     ).length,
-    completed: orders.filter(o =>
-      ['resuelto', 'cerrado'].includes(o.estatus)
-    ).length,
+    completed: orders.filter(o => ['resuelto', 'cerrado'].includes(o.estatus))
+      .length,
   };
 
   if (loading) {
@@ -289,7 +288,9 @@ export default function MyOrders() {
                     </Text>
                   </View>
                   <View style={styles.typeBadge}>
-                    <Text style={styles.typeText}>{getTypeLabel(order.tipo)}</Text>
+                    <Text style={styles.typeText}>
+                      {getTypeLabel(order.tipo)}
+                    </Text>
                   </View>
                 </View>
 
