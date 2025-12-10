@@ -4,18 +4,27 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useRef,
 } from 'react';
 import { supabase, supabaseClient } from '@/lib/supabase';
 import { useAuth } from './AuthContext';
 import { useNotifications } from './NotificationContext';
-import { ChatRoom, Message, User } from '@/types/supabase';
+import { ChatRoom, Message, User, ChatRoomMember } from '@/types/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
+
+// Constantes para reintentos y reconexión
+const MAX_RETRY_ATTEMPTS = 3;
+const RETRY_DELAY_MS = 1000;
+const RECONNECT_DELAY_MS = 2000;
+const MAX_RECONNECT_DELAY_MS = 30000;
 
 export interface ChatMessage extends Message {
   user?: User;
   isDelivered?: boolean;
   isRead?: boolean;
   localId?: string; // Para optimistic updates
+  deliveryStatus?: 'pending' | 'sent' | 'delivered' | 'read' | 'failed';
+  retryCount?: number;
 }
 
 interface TypingUser {
@@ -24,11 +33,28 @@ interface TypingUser {
   timestamp: number;
 }
 
+// Cola de mensajes pendientes para garantía de entrega
+interface PendingMessage {
+  id: string;
+  roomId: string;
+  message: string;
+  type: Message['type'];
+  fileUrl?: string;
+  fileName?: string;
+  fileSize?: number;
+  audioDuration?: number;
+  replyTo?: string;
+  retryCount: number;
+  createdAt: number;
+}
+
 interface ChatContextType {
   chatRooms: ChatRoom[];
   messages: { [roomId: string]: ChatMessage[] };
   typingUsers: { [roomId: string]: TypingUser[] };
   onlineUsers: string[];
+  connectionStatus: 'connected' | 'connecting' | 'disconnected';
+  // Mensajes
   sendMessage: (
     roomId: string,
     message: string,
@@ -40,21 +66,44 @@ interface ChatContextType {
     replyTo?: string
   ) => Promise<void>;
   sendTypingIndicator: (roomId: string, isTyping: boolean) => void;
+  markMessagesAsRead: (roomId: string) => Promise<void>;
+  loadMoreMessages: (roomId: string) => Promise<void>;
+  deleteMessage: (messageId: string) => Promise<void>;
+  editMessage: (messageId: string, newMessage: string) => Promise<void>;
+  retryFailedMessage: (localId: string) => Promise<void>;
+  // Chat rooms (1:1)
   createChatRoom: (
     participantId: string,
     participantName: string,
     requestId?: string
   ) => Promise<string>;
-  markMessagesAsRead: (roomId: string) => Promise<void>;
   getChatRoom: (roomId: string) => ChatRoom | undefined;
+  // Chat grupal
+  createGroupChat: (
+    name: string,
+    participantIds: string[],
+    description?: string,
+    avatarUrl?: string
+  ) => Promise<string>;
+  addGroupParticipants: (roomId: string, participantIds: string[]) => Promise<void>;
+  removeGroupParticipant: (roomId: string, participantId: string) => Promise<void>;
+  leaveGroup: (roomId: string) => Promise<void>;
+  updateGroupInfo: (
+    roomId: string,
+    updates: { name?: string; description?: string; avatarUrl?: string }
+  ) => Promise<void>;
+  promoteToAdmin: (roomId: string, userId: string) => Promise<void>;
+  getGroupMembers: (roomId: string) => Promise<ChatRoomMember[]>;
+  isGroupAdmin: (roomId: string) => boolean;
+  // Utilidades
   getUnreadCount: () => number;
   getRoomUnreadCount: (roomId: string) => number;
-  loadMoreMessages: (roomId: string) => Promise<void>;
-  deleteMessage: (messageId: string) => Promise<void>;
-  editMessage: (messageId: string, newMessage: string) => Promise<void>;
   isUserOnline: (userId: string) => boolean;
+  getMessageDeliveryStatus: (messageId: string) => 'pending' | 'sent' | 'delivered' | 'read' | 'failed';
+  // Estado
   loading: boolean;
   error: string | null;
+  pendingMessagesCount: number;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -85,8 +134,118 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
   }>({});
   const [presenceChannel, setPresenceChannel] = useState<RealtimeChannel | null>(null);
 
+  // Nuevos estados para garantía de entrega
+  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'disconnected'>('disconnected');
+  const [pendingMessages, setPendingMessages] = useState<PendingMessage[]>([]);
+  const reconnectAttempts = useRef(0);
+  const reconnectTimer = useRef<NodeJS.Timeout | null>(null);
+  const messageQueue = useRef<PendingMessage[]>([]);
+  const isProcessingQueue = useRef(false);
+
   const { user, session } = useAuth();
   const { sendDemoNotification } = useNotifications();
+
+  // Generar ID único para mensajes del cliente (para deduplicación)
+  const generateClientMessageId = useCallback(() => {
+    return `${user?.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }, [user?.id]);
+
+  // Reconexión con exponential backoff
+  const scheduleReconnect = useCallback(() => {
+    if (reconnectTimer.current) {
+      clearTimeout(reconnectTimer.current);
+    }
+
+    const delay = Math.min(
+      RECONNECT_DELAY_MS * Math.pow(2, reconnectAttempts.current),
+      MAX_RECONNECT_DELAY_MS
+    );
+
+    console.log(`🔄 Reconectando en ${delay}ms (intento ${reconnectAttempts.current + 1})`);
+
+    reconnectTimer.current = setTimeout(() => {
+      reconnectAttempts.current += 1;
+      setConnectionStatus('connecting');
+      loadChatRooms();
+    }, delay);
+  }, []);
+
+  // Procesar cola de mensajes pendientes
+  const processMessageQueue = useCallback(async () => {
+    if (isProcessingQueue.current || messageQueue.current.length === 0 || connectionStatus !== 'connected') {
+      return;
+    }
+
+    isProcessingQueue.current = true;
+
+    while (messageQueue.current.length > 0) {
+      const pendingMsg = messageQueue.current[0];
+
+      if (pendingMsg.retryCount >= MAX_RETRY_ATTEMPTS) {
+        // Marcar como fallido
+        setMessages(prev => ({
+          ...prev,
+          [pendingMsg.roomId]: prev[pendingMsg.roomId]?.map(msg =>
+            msg.localId === pendingMsg.id
+              ? { ...msg, deliveryStatus: 'failed' as const }
+              : msg
+          ) || [],
+        }));
+        messageQueue.current.shift();
+        continue;
+      }
+
+      try {
+        const { data, error } = await supabaseClient
+          .from('messages')
+          .insert({
+            chat_room_id: pendingMsg.roomId,
+            sender_id: user?.id,
+            sender_name: `${user?.nombre} ${user?.apellido_paterno}`,
+            message: pendingMsg.message,
+            type: pendingMsg.type,
+            file_url: pendingMsg.fileUrl,
+            file_name: pendingMsg.fileName,
+            file_size: pendingMsg.fileSize,
+            audio_duration: pendingMsg.audioDuration,
+            reply_to: pendingMsg.replyTo,
+            client_message_id: pendingMsg.id,
+            status: 'sent',
+            is_deleted: false,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        // Actualizar mensaje local con ID real
+        setMessages(prev => ({
+          ...prev,
+          [pendingMsg.roomId]: prev[pendingMsg.roomId]?.map(msg =>
+            msg.localId === pendingMsg.id
+              ? { ...msg, ...data, deliveryStatus: 'sent' as const, id: data.id }
+              : msg
+          ) || [],
+        }));
+
+        messageQueue.current.shift();
+      } catch (err) {
+        console.error('Error enviando mensaje:', err);
+        pendingMsg.retryCount += 1;
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * pendingMsg.retryCount));
+      }
+    }
+
+    isProcessingQueue.current = false;
+    setPendingMessages([...messageQueue.current]);
+  }, [connectionStatus, user]);
+
+  // Efecto para procesar cola cuando cambia el estado de conexión
+  useEffect(() => {
+    if (connectionStatus === 'connected') {
+      processMessageQueue();
+    }
+  }, [connectionStatus, processMessageQueue]);
 
   useEffect(() => {
     if (session?.user) {
@@ -933,6 +1092,443 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
     return onlineUsers.includes(userId);
   }, [onlineUsers]);
 
+  // ============================================================================
+  // FUNCIONES DE CHAT GRUPAL
+  // ============================================================================
+
+  // Crear chat grupal
+  const createGroupChat = async (
+    name: string,
+    participantIds: string[],
+    description?: string,
+    avatarUrl?: string
+  ): Promise<string> => {
+    if (!user || !session) throw new Error('Usuario no autenticado');
+
+    if (participantIds.length < 2) {
+      throw new Error('Un grupo necesita al menos 3 participantes');
+    }
+
+    // Agregar el creador si no está
+    const allParticipants = participantIds.includes(user.id)
+      ? participantIds
+      : [...participantIds, user.id];
+
+    try {
+      console.log('Creando grupo:', { name, participantCount: allParticipants.length });
+
+      const { data, error } = await supabaseClient
+        .from('chat_rooms')
+        .insert({
+          name,
+          description,
+          avatar_url: avatarUrl,
+          tipo: 'group',
+          is_group: true,
+          participants: allParticipants,
+          admin_ids: [user.id],
+          created_by: user.id,
+          is_active: true,
+          metadata: {
+            participant_count: allParticipants.length,
+            created_at: new Date().toISOString(),
+          },
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Agregar miembros a chat_room_members
+      const memberInserts = allParticipants.map(pId => ({
+        chat_room_id: data.id,
+        user_id: pId,
+        role: pId === user.id ? 'admin' : 'member',
+        added_by: user.id,
+      }));
+
+      await supabaseClient.from('chat_room_members').insert(memberInserts);
+
+      // Actualizar estado local
+      setChatRooms(prev => [data, ...prev]);
+      setMessages(prev => ({ ...prev, [data.id]: [] }));
+      setupRealtimeSubscription(data.id);
+
+      // Enviar mensaje de sistema
+      await sendMessage(
+        data.id,
+        `🎉 Grupo "${name}" creado`,
+        'system'
+      );
+
+      console.log('Grupo creado exitosamente:', data.id);
+      return data.id;
+    } catch (error) {
+      console.error('Error creando grupo:', error);
+      throw new Error('No se pudo crear el grupo');
+    }
+  };
+
+  // Agregar participantes al grupo
+  const addGroupParticipants = async (roomId: string, participantIds: string[]): Promise<void> => {
+    if (!user) throw new Error('Usuario no autenticado');
+
+    const room = chatRooms.find(r => r.id === roomId);
+    if (!room || !room.is_group) {
+      throw new Error('Esta acción solo es válida para grupos');
+    }
+
+    if (!room.admin_ids?.includes(user.id)) {
+      throw new Error('Solo los administradores pueden agregar participantes');
+    }
+
+    try {
+      // Filtrar participantes que ya están en el grupo
+      const currentParticipants = room.participants || [];
+      const newParticipants = participantIds.filter(id => !currentParticipants.includes(id));
+
+      if (newParticipants.length === 0) {
+        throw new Error('Todos los usuarios seleccionados ya están en el grupo');
+      }
+
+      // Actualizar chat_rooms
+      const { error } = await supabaseClient
+        .from('chat_rooms')
+        .update({
+          participants: [...currentParticipants, ...newParticipants],
+          metadata: {
+            ...room.metadata,
+            participant_count: currentParticipants.length + newParticipants.length,
+          },
+        })
+        .eq('id', roomId);
+
+      if (error) throw error;
+
+      // Agregar a chat_room_members
+      const memberInserts = newParticipants.map(pId => ({
+        chat_room_id: roomId,
+        user_id: pId,
+        role: 'member',
+        added_by: user.id,
+      }));
+
+      await supabaseClient.from('chat_room_members').insert(memberInserts);
+
+      // Actualizar estado local
+      setChatRooms(prev =>
+        prev.map(r =>
+          r.id === roomId
+            ? {
+                ...r,
+                participants: [...currentParticipants, ...newParticipants],
+              }
+            : r
+        )
+      );
+
+      // Mensaje de sistema
+      await sendMessage(
+        roomId,
+        `👥 ${user.nombre} agregó ${newParticipants.length} participante(s) al grupo`,
+        'system'
+      );
+
+    } catch (error) {
+      console.error('Error agregando participantes:', error);
+      throw error;
+    }
+  };
+
+  // Remover participante del grupo
+  const removeGroupParticipant = async (roomId: string, participantId: string): Promise<void> => {
+    if (!user) throw new Error('Usuario no autenticado');
+
+    const room = chatRooms.find(r => r.id === roomId);
+    if (!room || !room.is_group) {
+      throw new Error('Esta acción solo es válida para grupos');
+    }
+
+    if (!room.admin_ids?.includes(user.id)) {
+      throw new Error('Solo los administradores pueden remover participantes');
+    }
+
+    try {
+      const newParticipants = room.participants.filter(id => id !== participantId);
+      const newAdmins = room.admin_ids?.filter(id => id !== participantId) || [];
+
+      const { error } = await supabaseClient
+        .from('chat_rooms')
+        .update({
+          participants: newParticipants,
+          admin_ids: newAdmins,
+          metadata: {
+            ...room.metadata,
+            participant_count: newParticipants.length,
+          },
+        })
+        .eq('id', roomId);
+
+      if (error) throw error;
+
+      // Eliminar de chat_room_members
+      await supabaseClient
+        .from('chat_room_members')
+        .delete()
+        .eq('chat_room_id', roomId)
+        .eq('user_id', participantId);
+
+      // Actualizar estado local
+      setChatRooms(prev =>
+        prev.map(r =>
+          r.id === roomId
+            ? { ...r, participants: newParticipants, admin_ids: newAdmins }
+            : r
+        )
+      );
+
+      await sendMessage(roomId, `👤 Un participante fue removido del grupo`, 'system');
+
+    } catch (error) {
+      console.error('Error removiendo participante:', error);
+      throw error;
+    }
+  };
+
+  // Salir del grupo
+  const leaveGroup = async (roomId: string): Promise<void> => {
+    if (!user) throw new Error('Usuario no autenticado');
+
+    const room = chatRooms.find(r => r.id === roomId);
+    if (!room || !room.is_group) {
+      throw new Error('Esta acción solo es válida para grupos');
+    }
+
+    try {
+      const newParticipants = room.participants.filter(id => id !== user.id);
+      let newAdmins = room.admin_ids?.filter(id => id !== user.id) || [];
+
+      // Si no quedan admins, promover al primer miembro
+      if (newAdmins.length === 0 && newParticipants.length > 0) {
+        newAdmins = [newParticipants[0]];
+        await supabaseClient
+          .from('chat_room_members')
+          .update({ role: 'admin' })
+          .eq('chat_room_id', roomId)
+          .eq('user_id', newParticipants[0]);
+      }
+
+      const { error } = await supabaseClient
+        .from('chat_rooms')
+        .update({
+          participants: newParticipants,
+          admin_ids: newAdmins,
+          metadata: {
+            ...room.metadata,
+            participant_count: newParticipants.length,
+          },
+        })
+        .eq('id', roomId);
+
+      if (error) throw error;
+
+      await supabaseClient
+        .from('chat_room_members')
+        .delete()
+        .eq('chat_room_id', roomId)
+        .eq('user_id', user.id);
+
+      // Enviar mensaje antes de salir
+      await sendMessage(roomId, `👋 ${user.nombre} salió del grupo`, 'system');
+
+      // Remover de estado local
+      setChatRooms(prev => prev.filter(r => r.id !== roomId));
+      setMessages(prev => {
+        const newMessages = { ...prev };
+        delete newMessages[roomId];
+        return newMessages;
+      });
+
+    } catch (error) {
+      console.error('Error saliendo del grupo:', error);
+      throw error;
+    }
+  };
+
+  // Actualizar información del grupo
+  const updateGroupInfo = async (
+    roomId: string,
+    updates: { name?: string; description?: string; avatarUrl?: string }
+  ): Promise<void> => {
+    if (!user) throw new Error('Usuario no autenticado');
+
+    const room = chatRooms.find(r => r.id === roomId);
+    if (!room || !room.is_group) {
+      throw new Error('Esta acción solo es válida para grupos');
+    }
+
+    if (!room.admin_ids?.includes(user.id)) {
+      throw new Error('Solo los administradores pueden editar el grupo');
+    }
+
+    try {
+      const { error } = await supabaseClient
+        .from('chat_rooms')
+        .update({
+          name: updates.name ?? room.name,
+          description: updates.description ?? room.description,
+          avatar_url: updates.avatarUrl ?? room.avatar_url,
+        })
+        .eq('id', roomId);
+
+      if (error) throw error;
+
+      setChatRooms(prev =>
+        prev.map(r =>
+          r.id === roomId
+            ? {
+                ...r,
+                name: updates.name ?? r.name,
+                description: updates.description ?? r.description,
+                avatar_url: updates.avatarUrl ?? r.avatar_url,
+              }
+            : r
+        )
+      );
+
+      if (updates.name) {
+        await sendMessage(roomId, `✏️ ${user.nombre} cambió el nombre del grupo a "${updates.name}"`, 'system');
+      }
+
+    } catch (error) {
+      console.error('Error actualizando grupo:', error);
+      throw error;
+    }
+  };
+
+  // Promover a administrador
+  const promoteToAdmin = async (roomId: string, userId: string): Promise<void> => {
+    if (!user) throw new Error('Usuario no autenticado');
+
+    const room = chatRooms.find(r => r.id === roomId);
+    if (!room || !room.is_group) {
+      throw new Error('Esta acción solo es válida para grupos');
+    }
+
+    if (!room.admin_ids?.includes(user.id)) {
+      throw new Error('Solo los administradores pueden promover usuarios');
+    }
+
+    try {
+      const newAdmins = [...(room.admin_ids || []), userId];
+
+      const { error } = await supabaseClient
+        .from('chat_rooms')
+        .update({ admin_ids: newAdmins })
+        .eq('id', roomId);
+
+      if (error) throw error;
+
+      await supabaseClient
+        .from('chat_room_members')
+        .update({ role: 'admin' })
+        .eq('chat_room_id', roomId)
+        .eq('user_id', userId);
+
+      setChatRooms(prev =>
+        prev.map(r => (r.id === roomId ? { ...r, admin_ids: newAdmins } : r))
+      );
+
+      await sendMessage(roomId, `⭐ Un usuario fue promovido a administrador`, 'system');
+
+    } catch (error) {
+      console.error('Error promoviendo admin:', error);
+      throw error;
+    }
+  };
+
+  // Obtener miembros del grupo
+  const getGroupMembers = async (roomId: string): Promise<ChatRoomMember[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('chat_room_members')
+        .select(`
+          *,
+          user:users(id, nombre, apellido_paterno, apellido_materno, foto, is_online)
+        `)
+        .eq('chat_room_id', roomId);
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error obteniendo miembros:', error);
+      return [];
+    }
+  };
+
+  // Verificar si es admin del grupo
+  const isGroupAdmin = useCallback((roomId: string): boolean => {
+    if (!user) return false;
+    const room = chatRooms.find(r => r.id === roomId);
+    return room?.admin_ids?.includes(user.id) || false;
+  }, [chatRooms, user]);
+
+  // Obtener estado de entrega de mensaje
+  const getMessageDeliveryStatus = useCallback((messageId: string): 'pending' | 'sent' | 'delivered' | 'read' | 'failed' => {
+    for (const roomMessages of Object.values(messages)) {
+      const msg = roomMessages.find(m => m.id === messageId || m.localId === messageId);
+      if (msg) {
+        return msg.deliveryStatus || msg.status || 'sent';
+      }
+    }
+    return 'sent';
+  }, [messages]);
+
+  // Reintentar mensaje fallido
+  const retryFailedMessage = async (localId: string): Promise<void> => {
+    // Encontrar el mensaje fallido
+    let foundMessage: ChatMessage | null = null;
+    let foundRoomId: string | null = null;
+
+    for (const [roomId, roomMessages] of Object.entries(messages)) {
+      const msg = roomMessages.find(m => m.localId === localId && m.deliveryStatus === 'failed');
+      if (msg) {
+        foundMessage = msg;
+        foundRoomId = roomId;
+        break;
+      }
+    }
+
+    if (!foundMessage || !foundRoomId) {
+      throw new Error('Mensaje no encontrado');
+    }
+
+    // Marcar como pendiente
+    setMessages(prev => ({
+      ...prev,
+      [foundRoomId!]: prev[foundRoomId!]?.map(msg =>
+        msg.localId === localId ? { ...msg, deliveryStatus: 'pending' as const, retryCount: 0 } : msg
+      ) || [],
+    }));
+
+    // Agregar a cola de reintentos
+    messageQueue.current.push({
+      id: localId,
+      roomId: foundRoomId,
+      message: foundMessage.message,
+      type: foundMessage.type,
+      fileUrl: foundMessage.file_url,
+      fileName: foundMessage.file_name,
+      fileSize: foundMessage.file_size,
+      audioDuration: foundMessage.audio_duration,
+      replyTo: foundMessage.reply_to,
+      retryCount: 0,
+      createdAt: Date.now(),
+    });
+
+    processMessageQueue();
+  };
+
   return (
     <ChatContext.Provider
       value={{
@@ -940,19 +1536,36 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         messages,
         typingUsers,
         onlineUsers,
+        connectionStatus,
+        // Mensajes
         sendMessage,
         sendTypingIndicator,
-        createChatRoom,
         markMessagesAsRead,
-        getChatRoom,
-        getUnreadCount,
-        getRoomUnreadCount,
         loadMoreMessages,
         deleteMessage,
         editMessage,
+        retryFailedMessage,
+        // Chat rooms
+        createChatRoom,
+        getChatRoom,
+        // Chat grupal
+        createGroupChat,
+        addGroupParticipants,
+        removeGroupParticipant,
+        leaveGroup,
+        updateGroupInfo,
+        promoteToAdmin,
+        getGroupMembers,
+        isGroupAdmin,
+        // Utilidades
+        getUnreadCount,
+        getRoomUnreadCount,
         isUserOnline,
+        getMessageDeliveryStatus,
+        // Estado
         loading,
         error,
+        pendingMessagesCount: pendingMessages.length,
       }}
     >
       {children}

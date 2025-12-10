@@ -13,8 +13,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useChat } from '@/contexts/ChatContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { Search, MessageCircle, Clock, Users, Plus } from 'lucide-react-native';
+import { Search, MessageCircle, Clock, Users, Plus, UsersRound, Wifi, WifiOff } from 'lucide-react-native';
 import { ChatRoom } from '@/types/supabase';
+import CreateGroupChat from '@/components/CreateGroupChat';
 
 // Tipo extendido para ChatRoom con información de request
 interface ChatRoomWithRequest extends ChatRoom {
@@ -27,9 +28,18 @@ interface ChatRoomWithRequest extends ChatRoom {
 export default function ChatList() {
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
-  const { chatRooms, messages, loading, error, getRoomUnreadCount, isUserOnline } = useChat();
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const { chatRooms, messages, loading, error, getRoomUnreadCount, isUserOnline, connectionStatus } = useChat();
   const { user } = useAuth();
   const router = useRouter();
+
+  // Separar chats grupales de 1:1
+  const groupChats = chatRooms.filter(room => room.is_group);
+  const directChats = chatRooms.filter(room => !room.is_group);
+
+  const handleGroupCreated = (roomId: string) => {
+    router.push(`/chat/${roomId}`);
+  };
 
   const getOtherParticipantName = (room: any) => {
     if (!room.metadata?.participant_names || !user) return 'Chat';
@@ -58,9 +68,33 @@ export default function ChatList() {
   };
 
   const filteredRooms = chatRooms.filter(room => {
+    if (room.is_group) {
+      return room.name?.toLowerCase().includes(searchQuery.toLowerCase());
+    }
     const otherParticipant = getOtherParticipantName(room);
     return otherParticipant.toLowerCase().includes(searchQuery.toLowerCase());
   });
+
+  // Obtener nombre para mostrar en la lista
+  const getRoomDisplayName = (room: ChatRoom) => {
+    if (room.is_group) {
+      return room.name || 'Grupo';
+    }
+    return getOtherParticipantName(room);
+  };
+
+  // Obtener iniciales para el avatar
+  const getRoomInitials = (room: ChatRoom) => {
+    if (room.is_group) {
+      return room.name?.substring(0, 2).toUpperCase() || 'GR';
+    }
+    return getOtherParticipantInitials(getOtherParticipantName(room));
+  };
+
+  // Obtener participantes del grupo
+  const getGroupParticipantCount = (room: ChatRoom) => {
+    return room.participants?.length || 0;
+  };
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -167,21 +201,56 @@ export default function ChatList() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Modal para crear grupo */}
+      <CreateGroupChat
+        visible={showCreateGroup}
+        onClose={() => setShowCreateGroup(false)}
+        onGroupCreated={handleGroupCreated}
+      />
+
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <View>
-            <Text style={styles.title}>Chats</Text>
+            <View style={styles.titleRow}>
+              <Text style={styles.title}>Chats</Text>
+              {/* Indicador de conexion */}
+              <View style={[
+                styles.connectionIndicator,
+                connectionStatus === 'connected' && styles.connectionConnected,
+                connectionStatus === 'connecting' && styles.connectionConnecting,
+                connectionStatus === 'disconnected' && styles.connectionDisconnected,
+              ]}>
+                {connectionStatus === 'connected' ? (
+                  <Wifi size={12} color="#10b981" />
+                ) : connectionStatus === 'connecting' ? (
+                  <ActivityIndicator size="small" color="#f59e0b" />
+                ) : (
+                  <WifiOff size={12} color="#ef4444" />
+                )}
+              </View>
+            </View>
             <Text style={styles.subtitle}>
-              {chatRooms.length} conversación
+              {chatRooms.length} conversacion
               {chatRooms.length !== 1 ? 'es' : ''}
+              {groupChats.length > 0 && ` (${groupChats.length} grupo${groupChats.length !== 1 ? 's' : ''})`}
             </Text>
           </View>
-          <TouchableOpacity
-            style={styles.newChatButton}
-            onPress={() => router.push('/directory')}
-          >
-            <Plus size={20} color="#ffffff" />
-          </TouchableOpacity>
+          <View style={styles.headerButtons}>
+            {/* Boton crear grupo */}
+            <TouchableOpacity
+              style={styles.createGroupButton}
+              onPress={() => setShowCreateGroup(true)}
+            >
+              <UsersRound size={20} color="#1e40af" />
+            </TouchableOpacity>
+            {/* Boton nuevo chat */}
+            <TouchableOpacity
+              style={styles.newChatButton}
+              onPress={() => router.push('/directory')}
+            >
+              <Plus size={20} color="#ffffff" />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
@@ -206,11 +275,13 @@ export default function ChatList() {
         }
       >
         {filteredRooms.map(room => {
-          const otherParticipant = getOtherParticipantName(room);
+          const displayName = getRoomDisplayName(room);
+          const initials = getRoomInitials(room);
           const lastMessagePreview = getLastMessagePreview(room);
           const unreadCount = getRoomUnreadCount(room.id);
           const lastMessageTime =
             room.last_message?.created_at || room.updated_at;
+          const isGroup = room.is_group;
 
           return (
             <TouchableOpacity
@@ -222,12 +293,14 @@ export default function ChatList() {
               onPress={() => router.push(`/chat/${room.id}`)}
             >
               <View style={styles.avatarContainer}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>
-                    {getOtherParticipantInitials(otherParticipant)}
-                  </Text>
+                <View style={[styles.avatar, isGroup && styles.groupAvatar]}>
+                  {isGroup ? (
+                    <UsersRound size={24} color="#ffffff" />
+                  ) : (
+                    <Text style={styles.avatarText}>{initials}</Text>
+                  )}
                 </View>
-                {(() => {
+                {!isGroup && (() => {
                   const otherUserId = getOtherParticipantId(room);
                   const online = otherUserId ? isUserOnline(otherUserId) : false;
                   return (
@@ -241,18 +314,33 @@ export default function ChatList() {
                     />
                   );
                 })()}
+                {isGroup && (
+                  <View style={styles.groupBadge}>
+                    <Text style={styles.groupBadgeText}>
+                      {getGroupParticipantCount(room)}
+                    </Text>
+                  </View>
+                )}
               </View>
 
               <View style={styles.chatContent}>
                 <View style={styles.chatHeader}>
-                  <Text
-                    style={[
-                      styles.participantName,
-                      unreadCount > 0 && styles.participantNameUnread,
-                    ]}
-                  >
-                    {otherParticipant}
-                  </Text>
+                  <View style={styles.nameContainer}>
+                    <Text
+                      style={[
+                        styles.participantName,
+                        unreadCount > 0 && styles.participantNameUnread,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {displayName}
+                    </Text>
+                    {isGroup && (
+                      <View style={styles.groupTag}>
+                        <Text style={styles.groupTagText}>Grupo</Text>
+                      </View>
+                    )}
+                  </View>
                   <Text style={styles.timestamp}>
                     {formatTime(lastMessageTime)}
                   </Text>
@@ -331,6 +419,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   title: {
     fontSize: 28,
     fontFamily: 'Inter-Bold',
@@ -341,6 +434,33 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Inter-Regular',
     color: '#6b7280',
+  },
+  connectionIndicator: {
+    padding: 4,
+    borderRadius: 12,
+  },
+  connectionConnected: {
+    backgroundColor: '#d1fae5',
+  },
+  connectionConnecting: {
+    backgroundColor: '#fef3c7',
+  },
+  connectionDisconnected: {
+    backgroundColor: '#fee2e2',
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  createGroupButton: {
+    width: 40,
+    height: 40,
+    backgroundColor: '#eff6ff',
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
   },
   newChatButton: {
     width: 40,
@@ -464,6 +584,27 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: '#ffffff',
   },
+  groupAvatar: {
+    backgroundColor: '#7c3aed',
+  },
+  groupBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#1e40af',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#ffffff',
+  },
+  groupBadgeText: {
+    fontSize: 10,
+    fontFamily: 'Inter-Bold',
+    color: '#ffffff',
+  },
   chatContent: {
     flex: 1,
   },
@@ -473,11 +614,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
+  nameContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  groupTag: {
+    backgroundColor: '#ede9fe',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  groupTagText: {
+    fontSize: 10,
+    fontFamily: 'Inter-SemiBold',
+    color: '#7c3aed',
+  },
   participantName: {
     fontSize: 16,
     fontFamily: 'Inter-SemiBold',
     color: '#111827',
-    flex: 1,
+    flexShrink: 1,
   },
   participantNameUnread: {
     color: '#1f2937',
