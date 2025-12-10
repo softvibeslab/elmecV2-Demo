@@ -59,6 +59,35 @@ Chat uses Supabase Realtime subscriptions for:
 - New messages (INSERT on `messages` table)
 - Message updates (UPDATE on `messages` table)
 - Typing indicators
+- Message delivery status updates
+
+### Group Chat System
+Group chats support up to 256 participants with:
+- Admin/moderator/member roles
+- Group settings (mute, admin-only messaging)
+- Participant management (add, remove, promote)
+- Visual differentiation in chat list (purple avatar, participant count badge)
+
+Key components:
+- `components/CreateGroupChat.tsx` - Modal for creating groups
+- `components/MessageStatus.tsx` - WhatsApp-like delivery indicators
+
+### Message Delivery Guarantees (WhatsApp-like)
+The chat system implements reliable message delivery:
+
+**Status Flow:** `pending` → `sent` → `delivered` → `read` → (or `failed`)
+
+**Features:**
+- Client-side message deduplication via `client_message_id`
+- Offline message queue with automatic sync on reconnect
+- Exponential backoff for retry attempts (max 3 retries)
+- Visual status indicators (clock, single check, double check gray/blue)
+- Connection status indicator in chat list header
+
+**ChatContext API for delivery:**
+- `retryFailedMessage(messageId)` - Retry a failed message
+- `getMessageDeliveryStatus(messageId)` - Get current status
+- `connectionStatus` - Current connection state
 
 ## Code Style
 
@@ -79,9 +108,22 @@ EXPO_PUBLIC_BASIC_AUTH=true|false   # Enable for dev without Supabase Auth
 
 ## Database
 
-Tables: `users`, `requests`, `chat_rooms`, `messages`, `notifications`
+**Core Tables:** `users`, `requests`, `chat_rooms`, `messages`, `notifications`
+
+**Group Chat & Delivery Tables:**
+- `chat_room_members` - Group membership with roles (admin/moderator/member)
+- `message_receipts` - Per-user delivery/read timestamps
+- `message_queue` - Offline message queue for guaranteed delivery
+
+**Key PostgreSQL Functions:**
+- `send_message_guaranteed()` - Atomic message send with deduplication
+- `mark_message_delivered()` / `mark_messages_read()` - Update delivery status
+- `create_group_chat()` - Create group with participants
+- `add_group_participants()` / `leave_group()` - Group management
 
 Row Level Security (RLS) is enabled on all tables. See `supabase/migrations/` for schema.
+
+**Migration:** Run `supabase/migrations/20251210_group_chat_and_delivery.sql` in Supabase Dashboard to enable group chat features.
 
 ## Testing
 
@@ -96,6 +138,8 @@ npm run test:coverage          # With coverage
 - `metro.config.js` has a temporary workaround for react-native-reanimated
 - Some demo data is hardcoded in `app/(tabs)/index.tsx` (home screen stats)
 - `app/(tabs)/requests.tsx` contains simulation code for demo purposes (lines with `setInterval`)
+- TypeScript `--jsx` flag configuration needs adjustment in tsconfig.json
+- Group chat features require migration `20251210_group_chat_and_delivery.sql` to be run in Supabase Dashboard
 
 ## Deployment
 
