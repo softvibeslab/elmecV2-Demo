@@ -42,6 +42,8 @@ import {
   User as UserIcon,
   MessageCircle,
   Loader2,
+  Circle,
+  Trash2,
 } from 'lucide-react-native';
 import { ActivityIndicator } from 'react-native';
 import { AdvancedSearchComponent } from '@/components/AdvancedSearchComponent';
@@ -68,7 +70,7 @@ export default function Requests() {
   });
 
   const { user } = useAuth();
-  const { sendDemoNotification } = useNotifications();
+  const { sendDemoNotification, sendNotificationToUser } = useNotifications();
   const { createChatRoom } = useChat();
   const router = useRouter();
 
@@ -130,7 +132,7 @@ export default function Requests() {
 
   const loadAgents = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('users')
         .select(
           'id, nombre, apellido_paterno, apellido_materno, categoria, zona'
@@ -138,6 +140,13 @@ export default function Requests() {
         .eq('rol', 'agent')
         .eq('activo', true)
         .order('nombre', { ascending: true });
+
+      // Si el usuario es cliente, filtrar agentes por su misma zona
+      if (user?.rol === 'customer' && user?.zona) {
+        query = query.eq('zona', user.zona);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error loading agents:', error);
@@ -150,39 +159,42 @@ export default function Requests() {
     }
   };
 
+  // Sistema de semáforo:
+  // ROJO: Sin atender (solicitud que excedió tiempos de respuesta)
+  // AMARILLO: Nueva (recién creada)
+  // VERDE: En proceso (siendo atendida)
+  // AZUL: Terminada (resuelta o cerrada)
   const getStatusIcon = (status: string) => {
     switch (status) {
+      case 'sin_atender':
+        return <Circle size={16} color="#ef4444" fill="#ef4444" />;
       case 'nuevo':
-        return <AlertTriangle size={16} color="#f59e0b" />;
+        return <Circle size={16} color="#f59e0b" fill="#f59e0b" />;
       case 'asignado':
-        return <Clock size={16} color="#3b82f6" />;
       case 'en_proceso':
-        return <Clock size={16} color="#8b5cf6" />;
-      case 'pausado':
-        return <AlertTriangle size={16} color="#ef4444" />;
+        return <Circle size={16} color="#22c55e" fill="#22c55e" />;
       case 'resuelto':
-        return <CheckCircle size={16} color="#10b981" />;
       case 'cerrado':
-        return <CheckCircle size={16} color="#6b7280" />;
+        return <Circle size={16} color="#3b82f6" fill="#3b82f6" />;
       default:
-        return <AlertTriangle size={16} color="#6b7280" />;
+        return <Circle size={16} color="#6b7280" fill="#6b7280" />;
     }
   };
 
   const getStatusText = (status: string) => {
     switch (status) {
+      case 'sin_atender':
+        return 'Sin atender';
       case 'nuevo':
-        return 'Nuevo';
+        return 'Nueva';
       case 'asignado':
         return 'Asignado';
       case 'en_proceso':
         return 'En proceso';
-      case 'pausado':
-        return 'Pausado';
       case 'resuelto':
-        return 'Resuelto';
+        return 'Terminada';
       case 'cerrado':
-        return 'Cerrado';
+        return 'Terminada';
       default:
         return 'Desconocido';
     }
@@ -190,21 +202,40 @@ export default function Requests() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'sin_atender':
+        return '#ef4444'; // Rojo
       case 'nuevo':
-        return '#f59e0b';
+        return '#f59e0b'; // Amarillo
       case 'asignado':
-        return '#3b82f6';
       case 'en_proceso':
-        return '#8b5cf6';
-      case 'pausado':
-        return '#ef4444';
+        return '#22c55e'; // Verde
       case 'resuelto':
-        return '#10b981';
       case 'cerrado':
-        return '#6b7280';
+        return '#3b82f6'; // Azul
       default:
         return '#6b7280';
     }
+  };
+
+  // Verifica si una solicitud debe marcarse como "sin atender"
+  const checkRequestExpiration = (request: RequestWithRelations): string => {
+    const now = new Date();
+    const createdAt = new Date(request.created_at);
+    const updatedAt = new Date(request.updated_at);
+    const daysSinceCreation = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+    const daysSinceUpdate = Math.floor((now.getTime() - updatedAt.getTime()) / (1000 * 60 * 60 * 24));
+
+    // Si es nueva y han pasado más de 3 días sin cambiar a en_proceso
+    if (request.estatus === 'nuevo' && daysSinceCreation > 3) {
+      return 'sin_atender';
+    }
+
+    // Si está en proceso y han pasado más de 5 días sin terminar
+    if ((request.estatus === 'asignado' || request.estatus === 'en_proceso') && daysSinceUpdate > 5) {
+      return 'sin_atender';
+    }
+
+    return request.estatus;
   };
 
   const getPriorityColor = (priority: string) => {
@@ -580,24 +611,16 @@ export default function Requests() {
         // No bloquear si falla la notificación
       }
 
-      // Si se asignó un agente, enviar notificación al agente
+      // Si se asignó un agente, enviar notificación al agente en tiempo real
       if (data.agente_id) {
         try {
-          const { error: notifError } = await supabaseClient
-            .from('notifications')
-            .insert({
-              user_id: data.agente_id,
-              title: 'Nueva solicitud asignada',
-              body: `Se te ha asignado la solicitud "${data.titulo}"`,
-              type: 'assignment',
-              priority: 'medium',
-              data: { requestId: data.id },
-              read: false,
-            } as any);
-
-          if (notifError) {
-            console.error('Error sending agent notification:', notifError);
-          }
+          await sendNotificationToUser(
+            data.agente_id,
+            'Nueva solicitud asignada',
+            `Se te ha asignado la solicitud "${data.titulo}"`,
+            'info',
+            { requestId: data.id, type: 'assignment' }
+          );
         } catch (notifError) {
           console.error('Error sending agent notification:', notifError);
           // No bloquear si falla la notificación
@@ -670,19 +693,71 @@ export default function Requests() {
         )
       );
 
-      // Enviar notificación al usuario
+      // Enviar notificación al usuario propietario de la solicitud (en tiempo real)
       const request = requests.find(r => r.id === requestId);
+      if (request && request.usuario_id) {
+        // Notificar al cliente que su solicitud cambió de estado
+        try {
+          await sendNotificationToUser(
+            request.usuario_id,
+            'Solicitud actualizada',
+            `Tu solicitud "${request.titulo}" cambió a: ${getStatusText(newStatus)}`,
+            'info',
+            { requestId, newStatus }
+          );
+        } catch (notifError) {
+          console.error('Error sending notification to customer:', notifError);
+        }
+      }
+
+      // También mostrar notificación local al agente
       if (request) {
         await sendDemoNotification(
-          'Solicitud actualizada',
-          `Tu solicitud "${request.titulo}" cambió a: ${getStatusText(newStatus)}`,
-          'info',
+          'Estado actualizado',
+          `La solicitud "${request.titulo}" cambió a: ${getStatusText(newStatus)}`,
+          'success',
           { requestId }
         );
       }
     } catch (error) {
       console.error('Error updating request status:', error);
     }
+  };
+
+  // Eliminar solicitud terminada (solo disponible para solicitudes con estatus resuelto/cerrado)
+  const handleDeleteRequest = async (requestId: string, titulo: string) => {
+    Alert.alert(
+      'Eliminar solicitud',
+      `¿Estás seguro de que deseas eliminar la solicitud "${titulo}"?\n\nEsta acción no se puede deshacer.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { error } = await supabaseClient
+                .from('requests')
+                .delete()
+                .eq('id', requestId);
+
+              if (error) {
+                console.error('Error deleting request:', error);
+                Alert.alert('Error', 'No se pudo eliminar la solicitud');
+                return;
+              }
+
+              // Eliminar de la lista local
+              setRequests(prev => prev.filter(req => req.id !== requestId));
+              Alert.alert('Éxito', 'Solicitud eliminada correctamente');
+            } catch (error) {
+              console.error('Error deleting request:', error);
+              Alert.alert('Error', 'No se pudo eliminar la solicitud');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleSearch = (filters: any) => {
@@ -870,14 +945,16 @@ export default function Requests() {
         </View>
       </View>
 
-      {/* Advanced Search */}
-      <View style={styles.searchSection}>
-        <AdvancedSearchComponent
-          onSearch={handleSearch}
-          onClear={handleClearSearch}
-          placeholder="Buscar solicitudes..."
-        />
-      </View>
+      {/* Advanced Search - Solo para agentes y admins */}
+      {(user?.rol === 'agent' || user?.rol === 'admin') && (
+        <View style={styles.searchSection}>
+          <AdvancedSearchComponent
+            onSearch={handleSearch}
+            onClear={handleClearSearch}
+            placeholder="Buscar solicitudes..."
+          />
+        </View>
+      )}
 
       <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
         {filteredRequests.map(request => (
@@ -926,25 +1003,15 @@ export default function Requests() {
           >
             <View style={styles.requestHeader}>
               <View style={styles.requestStatus}>
-                {getStatusIcon(request.estatus)}
+                {getStatusIcon(checkRequestExpiration(request))}
                 <Text
                   style={[
                     styles.statusText,
-                    { color: getStatusColor(request.estatus) },
+                    { color: getStatusColor(checkRequestExpiration(request)) },
                   ]}
                 >
-                  {getStatusText(request.estatus)}
+                  {getStatusText(checkRequestExpiration(request))}
                 </Text>
-                <View
-                  style={[
-                    styles.priorityBadge,
-                    { backgroundColor: getPriorityColor(request.prioridad) },
-                  ]}
-                >
-                  <Text style={styles.priorityText}>
-                    {request.prioridad.toUpperCase()}
-                  </Text>
-                </View>
               </View>
               <Text style={styles.requestDate}>
                 {formatDate(request.created_at)}
@@ -1012,17 +1079,34 @@ export default function Requests() {
               </View>
             )}
 
-            {/* Botón Charlar */}
-            <TouchableOpacity
-              style={styles.chatButton}
-              onPress={(e) => {
-                e.stopPropagation();
-                handleStartChat(request);
-              }}
-            >
-              <MessageCircle size={18} color="#ffffff" />
-              <Text style={styles.chatButtonText}>Charlar</Text>
-            </TouchableOpacity>
+            {/* Botones de acción */}
+            <View style={styles.actionButtons}>
+              {/* Botón Charlar */}
+              <TouchableOpacity
+                style={styles.chatButton}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  handleStartChat(request);
+                }}
+              >
+                <MessageCircle size={18} color="#ffffff" />
+                <Text style={styles.chatButtonText}>Charlar</Text>
+              </TouchableOpacity>
+
+              {/* Botón Eliminar (solo para solicitudes terminadas) */}
+              {(request.estatus === 'resuelto' || request.estatus === 'cerrado') && (
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handleDeleteRequest(request.id, request.titulo);
+                  }}
+                >
+                  <Trash2 size={18} color="#ffffff" />
+                  <Text style={styles.deleteButtonText}>Eliminar</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </TouchableOpacity>
         ))}
 
@@ -1135,48 +1219,6 @@ export default function Requests() {
               </ScrollView>
             </View>
 
-            <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>Prioridad</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.priorityScroll}
-              >
-                {[
-                  { value: 'baja', label: 'Baja', color: '#10b981' },
-                  { value: 'media', label: 'Media', color: '#f59e0b' },
-                  { value: 'alta', label: 'Alta', color: '#ef4444' },
-                  { value: 'urgente', label: 'Urgente', color: '#dc2626' },
-                ].map(priority => (
-                  <TouchableOpacity
-                    key={priority.value}
-                    style={[
-                      styles.priorityChip,
-                      newRequest.prioridad === priority.value && {
-                        backgroundColor: priority.color,
-                        borderColor: priority.color,
-                      },
-                    ]}
-                    onPress={() =>
-                      setNewRequest(prev => ({
-                        ...prev,
-                        prioridad: priority.value as any,
-                      }))
-                    }
-                  >
-                    <Text
-                      style={[
-                        styles.priorityChipText,
-                        newRequest.prioridad === priority.value &&
-                          styles.priorityChipTextSelected,
-                      ]}
-                    >
-                      {priority.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
 
             {agents.length > 0 && (
               <View style={styles.formGroup}>
@@ -1496,7 +1538,13 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Medium',
     color: '#1e40af',
   },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+  },
   chatButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1504,7 +1552,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    marginTop: 12,
     gap: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -1513,6 +1560,26 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   chatButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ef4444',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  deleteButtonText: {
     color: '#ffffff',
     fontSize: 16,
     fontFamily: 'Inter-SemiBold',

@@ -8,6 +8,8 @@ import React, {
 } from 'react';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import { supabase, supabaseClient } from '@/lib/supabase';
+import { useAuth } from './AuthContext';
 
 // Configure notification behavior for mobile
 Notifications.setNotificationHandler({
@@ -47,6 +49,13 @@ interface NotificationContextType {
     body: string,
     data?: any
   ) => Promise<void>;
+  sendNotificationToUser: (
+    userId: string,
+    title: string,
+    body: string,
+    type?: InAppNotification['type'],
+    data?: any
+  ) => Promise<void>;
   markNotificationAsRead: (id: string) => void;
   markAllAsRead: () => void;
   clearNotifications: () => void;
@@ -84,6 +93,7 @@ const sendWebNotification = (title: string, body: string) => {
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  const { user } = useAuth();
   const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
   const [notification, setNotification] =
     useState<Notifications.Notification | null>(null);
@@ -92,8 +102,101 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
   >([]);
   const notificationListener = useRef<Notifications.Subscription | null>(null);
   const responseListener = useRef<Notifications.Subscription | null>(null);
+  const realtimeSubscription = useRef<any>(null);
 
   const unreadCount = inAppNotifications.filter(n => !n.read).length;
+
+  // Cargar notificaciones existentes de la base de datos
+  const loadNotificationsFromDB = useCallback(async () => {
+    if (!user?.id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) {
+        console.error('Error loading notifications:', error);
+        return;
+      }
+
+      if (data) {
+        const dbNotifications: InAppNotification[] = data.map((n: any) => ({
+          id: n.id,
+          title: n.title,
+          body: n.body,
+          type: n.type || 'info',
+          timestamp: n.created_at,
+          data: n.data,
+          read: n.read || false,
+        }));
+        setInAppNotifications(dbNotifications);
+      }
+    } catch (error) {
+      console.error('Error loading notifications:', error);
+    }
+  }, [user?.id]);
+
+  // Suscribirse a notificaciones en tiempo real
+  useEffect(() => {
+    if (!user?.id) return;
+
+    // Cargar notificaciones existentes
+    loadNotificationsFromDB();
+
+    // Suscribirse a nuevas notificaciones en tiempo real
+    realtimeSubscription.current = supabase
+      .channel(`notifications:${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload: any) => {
+          console.log('Nueva notificación recibida:', payload);
+          const newNotif = payload.new;
+          const notification: InAppNotification = {
+            id: newNotif.id,
+            title: newNotif.title,
+            body: newNotif.body,
+            type: newNotif.type || 'info',
+            timestamp: newNotif.created_at,
+            data: newNotif.data,
+            read: false,
+          };
+
+          setInAppNotifications(prev => [notification, ...prev]);
+
+          // También enviar notificación del sistema
+          if (Platform.OS === 'web') {
+            sendWebNotification(newNotif.title, newNotif.body);
+          } else {
+            Notifications.scheduleNotificationAsync({
+              content: {
+                title: newNotif.title,
+                body: newNotif.body,
+                data: newNotif.data,
+                sound: true,
+              },
+              trigger: null,
+            }).catch(console.error);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      if (realtimeSubscription.current) {
+        supabase.removeChannel(realtimeSubscription.current);
+      }
+    };
+  }, [user?.id, loadNotificationsFromDB]);
 
   useEffect(() => {
     // Only run notification setup on mobile platforms
@@ -231,19 +334,77 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
     await sendDemoNotification(title, body, 'info', data);
   };
 
-  const markNotificationAsRead = (id: string) => {
+  // Enviar notificación a otro usuario (se guarda en la base de datos)
+  const sendNotificationToUser = useCallback(
+    async (
+      userId: string,
+      title: string,
+      body: string,
+      type: InAppNotification['type'] = 'info',
+      data?: any
+    ) => {
+      try {
+        const { error } = await supabaseClient
+          .from('notifications')
+          .insert({
+            user_id: userId,
+            title,
+            body,
+            type,
+            priority: type === 'error' ? 'high' : type === 'warning' ? 'medium' : 'low',
+            data: data || {},
+            read: false,
+          } as any);
+
+        if (error) {
+          console.error('Error sending notification to user:', error);
+        } else {
+          console.log(`Notificación enviada a usuario ${userId}:`, title);
+        }
+      } catch (error) {
+        console.error('Error sending notification to user:', error);
+      }
+    },
+    []
+  );
+
+  const markNotificationAsRead = useCallback(async (id: string) => {
+    // Actualizar estado local
     setInAppNotifications(prev =>
       prev.map(notification =>
         notification.id === id ? { ...notification, read: true } : notification
       )
     );
-  };
 
-  const markAllAsRead = () => {
+    // Actualizar en la base de datos
+    try {
+      await supabaseClient
+        .from('notifications')
+        .update({ read: true } as any)
+        .eq('id', id);
+    } catch (error) {
+      console.error('Error marking notification as read in DB:', error);
+    }
+  }, []);
+
+  const markAllAsRead = useCallback(async () => {
+    if (!user?.id) return;
+
     setInAppNotifications(prev =>
       prev.map(notification => ({ ...notification, read: true }))
     );
-  };
+
+    // Actualizar todas en la base de datos
+    try {
+      await supabaseClient
+        .from('notifications')
+        .update({ read: true } as any)
+        .eq('user_id', user.id)
+        .eq('read', false);
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
+  }, [user?.id]);
 
   const clearNotifications = () => {
     setInAppNotifications([]);
@@ -258,6 +419,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
         unreadCount,
         sendDemoNotification,
         sendLocalNotification,
+        sendNotificationToUser,
         markNotificationAsRead,
         markAllAsRead,
         clearNotifications,
