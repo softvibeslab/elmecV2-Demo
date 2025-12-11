@@ -49,7 +49,7 @@ export interface Request {
 
 export interface ChatRoom {
   id: string;
-  tipo: 'support' | 'sales' | 'general';
+  tipo: 'support' | 'sales' | 'general' | 'group';
   participants: string[];
   request_id?: string;
   created_at: string;
@@ -57,6 +57,40 @@ export interface ChatRoom {
   last_message?: any;
   is_active: boolean;
   metadata?: any;
+  // Group chat fields
+  name?: string;
+  description?: string;
+  avatar_url?: string;
+  is_group: boolean;
+  admin_ids?: string[];
+  created_by?: string;
+  max_participants?: number;
+  settings?: ChatRoomSettings;
+}
+
+export interface ChatRoomSettings {
+  mute_notifications: boolean;
+  only_admins_can_send: boolean;
+  only_admins_can_edit_info: boolean;
+  disappearing_messages?: number | null;
+}
+
+export interface ChatRoomMember {
+  id: string;
+  chat_room_id: string;
+  user_id: string;
+  role: 'admin' | 'moderator' | 'member';
+  joined_at: string;
+  added_by?: string;
+  is_muted: boolean;
+  muted_until?: string;
+  last_read_at?: string;
+  last_read_message_id?: string;
+  notification_settings?: {
+    sound: boolean;
+    vibrate: boolean;
+    preview: boolean;
+  };
 }
 
 export interface Message {
@@ -75,6 +109,19 @@ export interface Message {
   audio_duration?: number;
   edited_at?: string;
   is_deleted: boolean;
+  // Delivery status fields (WhatsApp-like)
+  status?: 'pending' | 'sent' | 'delivered' | 'read' | 'failed';
+  delivered_at?: string;
+  client_message_id?: string;
+  retry_count?: number;
+}
+
+export interface MessageReceipt {
+  id: string;
+  message_id: string;
+  user_id: string;
+  delivered_at?: string;
+  read_at?: string;
 }
 
 export interface Notification {
