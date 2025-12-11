@@ -10,6 +10,7 @@ import {
   Calculator,
   User,
   MessageCircle,
+  Package,
 } from 'lucide-react-native';
 import { View, Text, StyleSheet } from 'react-native';
 
@@ -98,6 +99,15 @@ export default function TabLayout() {
           title: 'Calculadora',
           tabBarIcon: ({ size, color }) => (
             <Calculator size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="mispedidos"
+        options={{
+          title: 'Pedidos',
+          tabBarIcon: ({ size, color }) => (
+            <Package size={size} color={color} />
           ),
         }}
       />
