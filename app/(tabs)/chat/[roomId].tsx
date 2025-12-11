@@ -1225,24 +1225,30 @@ export default function ChatRoom() {
           </TouchableOpacity>
 
           <View style={styles.headerInfo}>
-            <View style={styles.headerAvatar}>
+            <View style={[styles.headerAvatar, chatRoom?.is_group && styles.headerAvatarGroup]}>
               <Text style={styles.headerAvatarText}>
-                {getOtherParticipantInitials(getOtherParticipantName())}
+                {chatRoom?.is_group
+                  ? '👥'
+                  : getOtherParticipantInitials(getOtherParticipantName())}
               </Text>
             </View>
             <View style={styles.headerText}>
-              <Text style={styles.headerName}>{getOtherParticipantName()}</Text>
+              <Text style={styles.headerName} numberOfLines={1}>
+                {chatRoom?.is_group ? chatRoom.name : getOtherParticipantName()}
+              </Text>
               <Text style={styles.headerStatus}>
                 {roomTypingUsers.some(tu => tu.userId !== user?.id)
                   ? 'escribiendo...'
-                  : 'en línea'}
+                  : chatRoom?.is_group
+                    ? `${chatRoom.participants?.length || 0} participantes`
+                    : 'en línea'}
               </Text>
             </View>
           </View>
 
           <View style={styles.headerActions}>
-            {/* Botón agregar miembros (solo si tiene metadata de zona) */}
-            {chatRoom?.metadata?.zona && !chatRoom?.is_group && (
+            {/* Botón agregar miembros (siempre visible para agregar al chat) */}
+            {!chatRoom?.is_group && (
               <TouchableOpacity
                 style={styles.headerActionButton}
                 onPress={() => setShowAddMembers(true)}
@@ -1251,14 +1257,18 @@ export default function ChatRoom() {
               </TouchableOpacity>
             )}
 
-            {/* Indicador de grupo */}
+            {/* Indicador de grupo con opción de agregar más */}
             {chatRoom?.is_group && (
-              <View style={styles.groupIndicator}>
+              <TouchableOpacity
+                style={styles.groupIndicator}
+                onPress={() => setShowAddMembers(true)}
+              >
                 <Users size={18} color="#ffffff" />
                 <Text style={styles.groupCount}>
                   {chatRoom.participants?.length || 0}
                 </Text>
-              </View>
+                <UserPlus size={14} color="#ffffff" style={{ marginLeft: 4 }} />
+              </TouchableOpacity>
             )}
 
             <TouchableOpacity
@@ -1273,23 +1283,26 @@ export default function ChatRoom() {
         {/* Header Menu Dropdown */}
         {showHeaderMenu && (
           <View style={styles.headerDropdown}>
-            {chatRoom?.metadata?.zona && (
-              <TouchableOpacity
-                style={styles.dropdownItem}
-                onPress={() => {
-                  setShowHeaderMenu(false);
-                  setShowAddMembers(true);
-                }}
-              >
-                <UserPlus size={18} color="#374151" />
-                <Text style={styles.dropdownText}>Agregar miembros de zona</Text>
-              </TouchableOpacity>
-            )}
             <TouchableOpacity
               style={styles.dropdownItem}
               onPress={() => {
                 setShowHeaderMenu(false);
-                Alert.alert('Info', `Chat ID: ${roomId}\nParticipantes: ${chatRoom?.participants?.length || 0}`);
+                setShowAddMembers(true);
+              }}
+            >
+              <UserPlus size={18} color="#374151" />
+              <Text style={styles.dropdownText}>
+                {chatRoom?.is_group ? 'Agregar más miembros' : 'Agregar personas al chat'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.dropdownItem}
+              onPress={() => {
+                setShowHeaderMenu(false);
+                Alert.alert(
+                  chatRoom?.is_group ? 'Info del Grupo' : 'Info del Chat',
+                  `${chatRoom?.is_group ? `Grupo: ${chatRoom.name}\n` : ''}Participantes: ${chatRoom?.participants?.length || 0}${chatRoom?.metadata?.zona ? `\nZona: ${chatRoom.metadata.zona}` : ''}`
+                );
               }}
             >
               <MessageSquare size={18} color="#374151" />
@@ -1639,6 +1652,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+  },
+  headerAvatarGroup: {
+    backgroundColor: 'rgba(139, 92, 246, 0.3)',
   },
   headerAvatarText: {
     fontSize: 14,
