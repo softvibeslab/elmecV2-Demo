@@ -611,9 +611,10 @@ export default function Requests() {
         // No bloquear si falla la notificación
       }
 
-      // Si se asignó un agente, enviar notificación al agente en tiempo real
-      if (data.agente_id) {
+      // Si se asignó un agente, enviar notificación y CREAR CHAT AUTOMÁTICAMENTE
+      if (data.agente_id && user) {
         try {
+          // 1. Enviar notificación al agente
           await sendNotificationToUser(
             data.agente_id,
             'Nueva solicitud asignada',
@@ -621,9 +622,43 @@ export default function Requests() {
             'info',
             { requestId: data.id, type: 'assignment' }
           );
+
+          // 2. CREAR CHAT AUTOMÁTICO entre solicitante y agente
+          const agente = agents.find(a => a.id === data.agente_id);
+          const agenteName = agente
+            ? `${agente.nombre} ${agente.apellido_paterno}`
+            : 'Agente';
+
+          const chatRoomId = await createChatRoom(
+            data.agente_id,
+            data.id, // request_id para vincular
+            {
+              request_title: data.titulo,
+              request_id: data.id,
+              zona: user.zona,
+              can_add_zone_members: true, // Permitir agregar miembros de la zona
+              participant_names: [
+                `${user.nombre} ${user.apellido_paterno}`,
+                agenteName
+              ]
+            }
+          );
+
+          console.log('✅ Chat creado automáticamente:', chatRoomId);
+
+          // Enviar mensaje inicial del sistema
+          if (chatRoomId) {
+            // El chat se creó, notificar al usuario
+            await sendDemoNotification(
+              'Chat creado',
+              `Se ha creado un chat con ${agenteName} para tu solicitud`,
+              'success',
+              { chatRoomId, requestId: data.id }
+            );
+          }
         } catch (notifError) {
-          console.error('Error sending agent notification:', notifError);
-          // No bloquear si falla la notificación
+          console.error('Error creating chat or sending notification:', notifError);
+          // No bloquear si falla la notificación o chat
         }
       }
 

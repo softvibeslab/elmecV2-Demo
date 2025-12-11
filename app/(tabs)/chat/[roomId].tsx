@@ -47,7 +47,10 @@ import {
   Pause,
   Volume2,
   MessageSquare,
+  UserPlus,
+  Users,
 } from 'lucide-react-native';
+import AddZoneMembers from '@/components/AddZoneMembers';
 
 const { width, height } = Dimensions.get('window');
 
@@ -297,6 +300,8 @@ export default function ChatRoom() {
   const [playingAudio, setPlayingAudio] = useState<{ [key: string]: Audio.Sound }>({});
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
+  const [showAddMembers, setShowAddMembers] = useState(false);
+  const [showHeaderMenu, setShowHeaderMenu] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<ChatMessage | null>(
     null
   );
@@ -1235,10 +1240,63 @@ export default function ChatRoom() {
             </View>
           </View>
 
-          <TouchableOpacity style={styles.headerMenuButton}>
-            <MoreVertical size={24} color="#ffffff" />
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            {/* Botón agregar miembros (solo si tiene metadata de zona) */}
+            {chatRoom?.metadata?.zona && !chatRoom?.is_group && (
+              <TouchableOpacity
+                style={styles.headerActionButton}
+                onPress={() => setShowAddMembers(true)}
+              >
+                <UserPlus size={22} color="#ffffff" />
+              </TouchableOpacity>
+            )}
+
+            {/* Indicador de grupo */}
+            {chatRoom?.is_group && (
+              <View style={styles.groupIndicator}>
+                <Users size={18} color="#ffffff" />
+                <Text style={styles.groupCount}>
+                  {chatRoom.participants?.length || 0}
+                </Text>
+              </View>
+            )}
+
+            <TouchableOpacity
+              style={styles.headerMenuButton}
+              onPress={() => setShowHeaderMenu(!showHeaderMenu)}
+            >
+              <MoreVertical size={24} color="#ffffff" />
+            </TouchableOpacity>
+          </View>
         </LinearGradient>
+
+        {/* Header Menu Dropdown */}
+        {showHeaderMenu && (
+          <View style={styles.headerDropdown}>
+            {chatRoom?.metadata?.zona && (
+              <TouchableOpacity
+                style={styles.dropdownItem}
+                onPress={() => {
+                  setShowHeaderMenu(false);
+                  setShowAddMembers(true);
+                }}
+              >
+                <UserPlus size={18} color="#374151" />
+                <Text style={styles.dropdownText}>Agregar miembros de zona</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={styles.dropdownItem}
+              onPress={() => {
+                setShowHeaderMenu(false);
+                Alert.alert('Info', `Chat ID: ${roomId}\nParticipantes: ${chatRoom?.participants?.length || 0}`);
+              }}
+            >
+              <MessageSquare size={18} color="#374151" />
+              <Text style={styles.dropdownText}>Info del chat</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Messages */}
         <FlatList
@@ -1524,6 +1582,23 @@ export default function ChatRoom() {
           </View>
         )}
 
+        {/* Add Zone Members Modal */}
+        <AddZoneMembers
+          visible={showAddMembers}
+          onClose={() => setShowAddMembers(false)}
+          chatRoomId={roomId!}
+          currentParticipants={chatRoom?.participants || []}
+          zona={chatRoom?.metadata?.zona}
+          requestTitle={chatRoom?.metadata?.request_title}
+          onMembersAdded={(newRoomId) => {
+            setShowAddMembers(false);
+            if (newRoomId && newRoomId !== roomId) {
+              // Navegar al nuevo chat de grupo
+              router.replace(`/chat/${newRoomId}`);
+            }
+          }}
+        />
+
         {/* Image Viewer */}
         <ImageViewer
           images={imageViewerImages}
@@ -1585,6 +1660,57 @@ const styles = StyleSheet.create({
   },
   headerMenuButton: {
     padding: 4,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  headerActionButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  groupIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 4,
+  },
+  groupCount: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#ffffff',
+  },
+  headerDropdown: {
+    position: 'absolute',
+    top: 80,
+    right: 16,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 1000,
+    minWidth: 220,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  dropdownText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    color: '#374151',
   },
   errorContainer: {
     flex: 1,
