@@ -22,7 +22,7 @@ import {
 } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/contexts/ChatContext';
-import { supabase, supabaseClient } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 interface User {
   id: string;
@@ -157,74 +157,127 @@ export default function AddZoneMembers({
         .single();
 
       if (roomError || !currentRoom) {
+        console.error('Error fetching room:', roomError);
         throw new Error('No se pudo obtener información del chat');
       }
 
-      // Crear el nombre del grupo basado en la solicitud
+      // Verificar si ya es un grupo o si es un chat 1:1
+      const isAlreadyGroup = currentRoom.is_group === true;
+
+      // Crear el nombre del grupo basado en la solicitud o genérico
       const groupName = requestTitle
         ? `📋 ${requestTitle.substring(0, 30)}${requestTitle.length > 30 ? '...' : ''}`
-        : `Grupo - ${zona}`;
+        : zona
+          ? `Grupo - ${zona}`
+          : `Grupo - ${new Date().toLocaleDateString('es-MX')}`;
+
+      // Obtener participantes actuales (asegurar que sea array)
+      const existingParticipants = Array.isArray(currentRoom.participants)
+        ? currentRoom.participants
+        : currentParticipants;
+
+      // Filtrar usuarios que ya están en el chat
+      const newUsersToAdd = selectedUsers.filter(id => !existingParticipants.includes(id));
+
+      if (newUsersToAdd.length === 0) {
+        Alert.alert('Info', 'Los usuarios seleccionados ya están en el chat');
+        setSaving(false);
+        return;
+      }
 
       // Nuevos participantes = actuales + seleccionados
-      const allParticipants = [...currentParticipants, ...selectedUsers];
+      const allParticipants = [...existingParticipants, ...newUsersToAdd];
 
-      // Actualizar el chat existente para convertirlo en grupo
-      const { error: updateError } = await supabaseClient
+      // Preparar admin_ids
+      const adminIds = Array.isArray(currentRoom.admin_ids) && currentRoom.admin_ids.length > 0
+        ? currentRoom.admin_ids
+        : [user?.id].filter(Boolean);
+
+      // Actualizar el chat existente para convertirlo en grupo (o actualizar grupo existente)
+      const updateData: Record<string, unknown> = {
+        is_group: true,
+        participants: allParticipants,
+        updated_at: new Date().toISOString(),
+      };
+
+      // Solo agregar nombre si no es ya un grupo (no sobrescribir nombre existente)
+      if (!isAlreadyGroup) {
+        updateData.name = groupName;
+        updateData.admin_ids = adminIds;
+        updateData.metadata = {
+          ...currentRoom.metadata,
+          zona: zona || currentRoom.metadata?.zona,
+          converted_to_group: true,
+          converted_at: new Date().toISOString(),
+          original_participants: existingParticipants,
+        };
+      } else {
+        // Para grupos existentes, solo actualizar metadata parcialmente
+        updateData.metadata = {
+          ...currentRoom.metadata,
+          participant_count: allParticipants.length,
+          last_member_added: new Date().toISOString(),
+        };
+      }
+
+      const { error: updateError } = await supabase
         .from('chat_rooms')
-        .update({
-          is_group: true,
-          name: groupName,
-          participants: allParticipants,
-          admin_ids: currentRoom.admin_ids?.length > 0
-            ? currentRoom.admin_ids
-            : [user?.id],
-          metadata: {
-            ...currentRoom.metadata,
-            zona: zona,
-            converted_to_group: true,
-            converted_at: new Date().toISOString(),
-            original_participants: currentParticipants,
-          },
-          updated_at: new Date().toISOString(),
-        } as any)
+        .update(updateData)
         .eq('id', chatRoomId);
 
       if (updateError) {
-        throw updateError;
+        console.error('Error updating chat room:', updateError);
+        throw new Error(`Error al actualizar chat: ${updateError.message}`);
       }
 
-      // Agregar registros a chat_room_members para los nuevos miembros
-      const memberInserts = selectedUsers.map(userId => ({
-        chat_room_id: chatRoomId,
-        user_id: userId,
-        role: 'member',
-        added_by: user?.id,
-      }));
+      // Intentar agregar registros a chat_room_members (puede no existir la tabla)
+      try {
+        const memberInserts = newUsersToAdd.map(userId => ({
+          chat_room_id: chatRoomId,
+          user_id: userId,
+          role: 'member',
+          joined_at: new Date().toISOString(),
+        }));
 
-      await supabaseClient
-        .from('chat_room_members')
-        .insert(memberInserts)
-        .select();
+        const { error: membersError } = await supabase
+          .from('chat_room_members')
+          .insert(memberInserts);
+
+        if (membersError) {
+          // Log pero no fallar - la tabla puede no existir
+          console.warn('Warning: Could not insert into chat_room_members:', membersError.message);
+        }
+      } catch (membersErr) {
+        console.warn('chat_room_members table may not exist:', membersErr);
+      }
 
       // Enviar mensaje de sistema notificando los nuevos miembros
       const addedNamesText = selectedNames.join(', ');
-      await sendMessage(
-        chatRoomId,
-        `👥 ${user?.nombre} agregó a ${addedNamesText} al grupo`,
-        'system'
-      );
+      const systemMessage = isAlreadyGroup
+        ? `👥 ${user?.nombre} agregó a ${addedNamesText}`
+        : `👥 ${user?.nombre} creó el grupo y agregó a ${addedNamesText}`;
+
+      try {
+        await sendMessage(chatRoomId, systemMessage, 'system');
+      } catch (msgError) {
+        console.warn('Could not send system message:', msgError);
+      }
 
       Alert.alert(
-        'Grupo creado',
-        `Se agregaron ${selectedUsers.length} miembro(s) al chat. Ahora es un grupo.`,
+        isAlreadyGroup ? 'Miembros agregados' : 'Grupo creado',
+        `Se agregaron ${newUsersToAdd.length} miembro(s) al chat.`,
         [{ text: 'OK' }]
       );
+
+      // Limpiar selección
+      setSelectedUsers([]);
 
       onMembersAdded(chatRoomId);
       onClose();
     } catch (error) {
       console.error('Error adding members:', error);
-      Alert.alert('Error', 'No se pudieron agregar los miembros al chat');
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      Alert.alert('Error', `No se pudieron agregar los miembros: ${errorMessage}`);
     } finally {
       setSaving(false);
     }
