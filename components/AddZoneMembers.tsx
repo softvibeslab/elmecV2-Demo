@@ -137,12 +137,26 @@ export default function AddZoneMembers({
     );
   });
 
-  const handleAddMembers = async () => {
+  const confirmAndAddMembers = () => {
     if (selectedUsers.length === 0) {
       Alert.alert('Selecciona usuarios', 'Debes seleccionar al menos un usuario para agregar');
       return;
     }
 
+    const selectedUserData = zoneUsers.filter(u => selectedUsers.includes(u.id));
+    const selectedNames = selectedUserData.map(u => getFullName(u)).join('\n• ');
+
+    Alert.alert(
+      '¿Crear grupo?',
+      `Se agregará${selectedUsers.length > 1 ? 'n' : ''} ${selectedUsers.length} persona${selectedUsers.length > 1 ? 's' : ''} al chat:\n\n• ${selectedNames}\n\nEl chat se convertirá en un grupo.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Crear grupo', style: 'default', onPress: handleAddMembers },
+      ]
+    );
+  };
+
+  const handleAddMembers = async () => {
     setSaving(true);
     try {
       // Obtener nombres de los usuarios seleccionados
@@ -294,7 +308,14 @@ export default function AddZoneMembers({
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <UserPlus size={24} color="#1e40af" />
-            <Text style={styles.title}>Agregar Miembros</Text>
+            <View>
+              <Text style={styles.title}>Agregar Miembros</Text>
+              {!loading && (
+                <Text style={styles.headerSubtitle}>
+                  {filteredUsers.length} usuario{filteredUsers.length !== 1 ? 's' : ''} disponible{filteredUsers.length !== 1 ? 's' : ''}
+                </Text>
+              )}
+            </View>
           </View>
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
             <X size={24} color="#6b7280" />
@@ -367,7 +388,9 @@ export default function AddZoneMembers({
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#1e40af" />
-            <Text style={styles.loadingText}>Cargando usuarios de la zona...</Text>
+            <Text style={styles.loadingText}>
+              {showAllUsers ? 'Cargando directorio...' : 'Cargando usuarios de la zona...'}
+            </Text>
           </View>
         ) : (
           <ScrollView style={styles.userList}>
@@ -378,8 +401,20 @@ export default function AddZoneMembers({
                 <Text style={styles.emptySubtitle}>
                   {searchQuery
                     ? 'No se encontraron usuarios con ese criterio'
-                    : 'No hay más usuarios en esta zona para agregar'}
+                    : showAllUsers
+                      ? 'Todos los usuarios ya están en el chat'
+                      : zona
+                        ? 'No hay más usuarios en esta zona para agregar'
+                        : 'No hay usuarios disponibles para agregar'}
                 </Text>
+                {!showAllUsers && zona && (
+                  <TouchableOpacity
+                    style={styles.emptyStateButton}
+                    onPress={() => setShowAllUsers(true)}
+                  >
+                    <Text style={styles.emptyStateButtonText}>Ver todos los usuarios</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             ) : (
               filteredUsers.map(zoneUser => {
@@ -436,11 +471,14 @@ export default function AddZoneMembers({
           <View style={styles.footer}>
             <TouchableOpacity
               style={[styles.addButton, saving && styles.addButtonDisabled]}
-              onPress={handleAddMembers}
+              onPress={confirmAndAddMembers}
               disabled={saving}
             >
               {saving ? (
-                <ActivityIndicator size="small" color="#ffffff" />
+                <>
+                  <ActivityIndicator size="small" color="#ffffff" />
+                  <Text style={styles.addButtonText}>Creando grupo...</Text>
+                </>
               ) : (
                 <>
                   <Users size={20} color="#ffffff" />
@@ -479,6 +517,12 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontFamily: 'Inter-SemiBold',
     color: '#111827',
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: '#6b7280',
+    marginTop: 2,
   },
   closeButton: {
     padding: 4,
@@ -596,6 +640,20 @@ const styles = StyleSheet.create({
     color: '#9ca3af',
     textAlign: 'center',
     marginTop: 4,
+  },
+  emptyStateButton: {
+    marginTop: 16,
+    backgroundColor: '#eff6ff',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#1e40af',
+  },
+  emptyStateButtonText: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#1e40af',
   },
   userItem: {
     flexDirection: 'row',
