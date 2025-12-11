@@ -62,27 +62,33 @@ export default function AddZoneMembers({
   const [zoneUsers, setZoneUsers] = useState<User[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
 
-  // Cargar usuarios de la misma zona
+  const [showAllUsers, setShowAllUsers] = useState(false);
+
+  // Cargar usuarios (de la zona o todos)
   useEffect(() => {
-    if (visible && zona) {
-      loadZoneUsers();
+    if (visible) {
+      loadUsers();
     }
-  }, [visible, zona]);
+  }, [visible, zona, showAllUsers]);
 
-  const loadZoneUsers = async () => {
-    if (!zona) return;
-
+  const loadUsers = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('users')
         .select('id, nombre, apellido_paterno, apellido_materno, rol, zona, categoria, empresa')
-        .eq('zona', zona)
         .eq('activo', true)
         .order('nombre', { ascending: true });
 
+      // Si hay zona y no se quiere mostrar todos, filtrar por zona
+      if (zona && !showAllUsers) {
+        query = query.eq('zona', zona);
+      }
+
+      const { data, error } = await query;
+
       if (error) {
-        console.error('Error loading zone users:', error);
+        console.error('Error loading users:', error);
         return;
       }
 
@@ -93,7 +99,7 @@ export default function AddZoneMembers({
 
       setZoneUsers(availableUsers);
     } catch (error) {
-      console.error('Error loading zone users:', error);
+      console.error('Error loading users:', error);
     } finally {
       setLoading(false);
     }
@@ -242,15 +248,28 @@ export default function AddZoneMembers({
           </TouchableOpacity>
         </View>
 
-        {/* Info de zona */}
-        {zona && (
-          <View style={styles.zoneInfo}>
+        {/* Info de zona y toggle */}
+        <View style={styles.zoneInfo}>
+          <View style={styles.zoneInfoLeft}>
             <MapPin size={16} color="#6b7280" />
             <Text style={styles.zoneText}>
-              Mostrando usuarios de la zona: <Text style={styles.zoneName}>{zona}</Text>
+              {zona && !showAllUsers
+                ? <>Usuarios de zona: <Text style={styles.zoneName}>{zona}</Text></>
+                : 'Todos los usuarios del directorio'
+              }
             </Text>
           </View>
-        )}
+          {zona && (
+            <TouchableOpacity
+              style={styles.toggleButton}
+              onPress={() => setShowAllUsers(!showAllUsers)}
+            >
+              <Text style={styles.toggleButtonText}>
+                {showAllUsers ? 'Solo zona' : 'Ver todos'}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
         {/* Búsqueda */}
         <View style={styles.searchContainer}>
@@ -336,9 +355,17 @@ export default function AddZoneMembers({
                           </>
                         )}
                       </View>
-                      {zoneUser.categoria && (
-                        <Text style={styles.userCategory}>{zoneUser.categoria}</Text>
-                      )}
+                      <View style={styles.userMetaSecond}>
+                        {zoneUser.categoria && (
+                          <Text style={styles.userCategory}>{zoneUser.categoria}</Text>
+                        )}
+                        {showAllUsers && zoneUser.zona && (
+                          <View style={styles.userZonaBadge}>
+                            <MapPin size={10} color="#6b7280" />
+                            <Text style={styles.userZonaText}>{zoneUser.zona}</Text>
+                          </View>
+                        )}
+                      </View>
                     </View>
 
                     <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
@@ -406,12 +433,18 @@ const styles = StyleSheet.create({
   zoneInfo: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: '#f3f4f6',
     padding: 12,
     marginHorizontal: 20,
     marginTop: 16,
     borderRadius: 8,
+  },
+  zoneInfoLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
+    flex: 1,
   },
   zoneText: {
     fontSize: 13,
@@ -421,6 +454,17 @@ const styles = StyleSheet.create({
   zoneName: {
     fontFamily: 'Inter-SemiBold',
     color: '#1e40af',
+  },
+  toggleButton: {
+    backgroundColor: '#1e40af',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  toggleButtonText: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#ffffff',
   },
   searchContainer: {
     flexDirection: 'row',
@@ -559,11 +603,30 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     color: '#9ca3af',
   },
+  userMetaSecond: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+    gap: 8,
+  },
   userCategory: {
     fontSize: 11,
     fontFamily: 'Inter-Regular',
     color: '#9ca3af',
-    marginTop: 2,
+  },
+  userZonaBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    gap: 3,
+  },
+  userZonaText: {
+    fontSize: 10,
+    fontFamily: 'Inter-Medium',
+    color: '#6b7280',
   },
   checkbox: {
     width: 24,
