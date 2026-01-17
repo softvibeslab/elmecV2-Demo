@@ -76,7 +76,9 @@ export default function AddZoneMembers({
     try {
       let query = supabase
         .from('users')
-        .select('id, nombre, apellido_paterno, apellido_materno, rol, zona, categoria, empresa')
+        .select(
+          'id, nombre, apellido_paterno, apellido_materno, rol, zona, categoria, empresa'
+        )
         .eq('activo', true)
         .order('nombre', { ascending: true });
 
@@ -114,15 +116,19 @@ export default function AddZoneMembers({
   };
 
   const getFullName = (user: User) => {
-    return `${user.nombre} ${user.apellido_paterno}${user.apellido_materno ? ' ' + user.apellido_materno : ''}`;
+    return [user.nombre, user.apellido_paterno, user.apellido_materno].filter(Boolean).join(' ').trim();
   };
 
   const getRoleLabel = (rol: string) => {
     switch (rol) {
-      case 'admin': return 'Administrador';
-      case 'agent': return 'Agente';
-      case 'customer': return 'Cliente';
-      default: return rol;
+      case 'admin':
+        return 'Administrador';
+      case 'agent':
+        return 'Agente';
+      case 'customer':
+        return 'Cliente';
+      default:
+        return rol;
     }
   };
 
@@ -139,14 +145,19 @@ export default function AddZoneMembers({
 
   const handleAddMembers = async () => {
     if (selectedUsers.length === 0) {
-      Alert.alert('Selecciona usuarios', 'Debes seleccionar al menos un usuario para agregar');
+      Alert.alert(
+        'Selecciona usuarios',
+        'Debes seleccionar al menos un usuario para agregar'
+      );
       return;
     }
 
     setSaving(true);
     try {
       // Obtener nombres de los usuarios seleccionados
-      const selectedUserData = zoneUsers.filter(u => selectedUsers.includes(u.id));
+      const selectedUserData = zoneUsers.filter(u =>
+        selectedUsers.includes(u.id)
+      );
       const selectedNames = selectedUserData.map(u => getFullName(u));
 
       // Obtener datos actuales del chat
@@ -175,9 +186,10 @@ export default function AddZoneMembers({
           is_group: true,
           name: groupName,
           participants: allParticipants,
-          admin_ids: currentRoom.admin_ids?.length > 0
-            ? currentRoom.admin_ids
-            : [user?.id],
+          admin_ids:
+            currentRoom.admin_ids?.length > 0
+              ? currentRoom.admin_ids
+              : [user?.id],
           metadata: {
             ...currentRoom.metadata,
             zona: zona,
@@ -253,10 +265,13 @@ export default function AddZoneMembers({
           <View style={styles.zoneInfoLeft}>
             <MapPin size={16} color="#6b7280" />
             <Text style={styles.zoneText}>
-              {zona && !showAllUsers
-                ? <>Usuarios de zona: <Text style={styles.zoneName}>{zona}</Text></>
-                : 'Todos los usuarios del directorio'
-              }
+              {zona && !showAllUsers ? (
+                <>
+                  Usuarios de zona: <Text style={styles.zoneName}>{zona}</Text>
+                </>
+              ) : (
+                'Todos los usuarios del directorio'
+              )}
             </Text>
           </View>
           {zona && (
@@ -287,7 +302,8 @@ export default function AddZoneMembers({
         {selectedUsers.length > 0 && (
           <View style={styles.selectedSection}>
             <Text style={styles.selectedTitle}>
-              {selectedUsers.length} seleccionado{selectedUsers.length !== 1 ? 's' : ''}
+              {selectedUsers.length} seleccionado
+              {selectedUsers.length !== 1 ? 's' : ''}
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {selectedUsers.map(userId => {
@@ -314,14 +330,18 @@ export default function AddZoneMembers({
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#1e40af" />
-            <Text style={styles.loadingText}>Cargando usuarios de la zona...</Text>
+            <Text style={styles.loadingText}>
+              Cargando usuarios de la zona...
+            </Text>
           </View>
         ) : (
           <ScrollView style={styles.userList}>
             {filteredUsers.length === 0 ? (
               <View style={styles.emptyState}>
                 <Users size={48} color="#d1d5db" />
-                <Text style={styles.emptyTitle}>No hay usuarios disponibles</Text>
+                <Text style={styles.emptyTitle}>
+                  No hay usuarios disponibles
+                </Text>
                 <Text style={styles.emptySubtitle}>
                   {searchQuery
                     ? 'No se encontraron usuarios con ese criterio'
@@ -334,41 +354,65 @@ export default function AddZoneMembers({
                 return (
                   <TouchableOpacity
                     key={zoneUser.id}
-                    style={[styles.userItem, isSelected && styles.userItemSelected]}
+                    style={[
+                      styles.userItem,
+                      isSelected && styles.userItemSelected,
+                    ]}
                     onPress={() => toggleUserSelection(zoneUser.id)}
                   >
-                    <View style={[styles.avatar, isSelected && styles.avatarSelected]}>
+                    <View
+                      style={[
+                        styles.avatar,
+                        isSelected && styles.avatarSelected,
+                      ]}
+                    >
                       <Text style={styles.avatarText}>
-                        {zoneUser.nombre[0]}{zoneUser.apellido_paterno[0]}
+                        {zoneUser.nombre[0]}
+                        {zoneUser.apellido_paterno[0]}
                       </Text>
                     </View>
 
                     <View style={styles.userInfo}>
-                      <Text style={styles.userName}>{getFullName(zoneUser)}</Text>
+                      <Text style={styles.userName}>
+                        {getFullName(zoneUser)}
+                      </Text>
                       <View style={styles.userMeta}>
-                        <Text style={styles.userRole}>{getRoleLabel(zoneUser.rol)}</Text>
+                        <Text style={styles.userRole}>
+                          {getRoleLabel(zoneUser.rol)}
+                        </Text>
                         {zoneUser.empresa && (
                           <>
                             <Text style={styles.metaSeparator}>•</Text>
                             <Building2 size={12} color="#9ca3af" />
-                            <Text style={styles.userCompany}>{zoneUser.empresa}</Text>
+                            <Text style={styles.userCompany}>
+                              {zoneUser.empresa}
+                            </Text>
                           </>
                         )}
                       </View>
                       <View style={styles.userMetaSecond}>
                         {zoneUser.categoria && (
-                          <Text style={styles.userCategory}>{zoneUser.categoria}</Text>
+                          <Text style={styles.userCategory}>
+                            {zoneUser.categoria}
+                          </Text>
                         )}
                         {showAllUsers && zoneUser.zona && (
                           <View style={styles.userZonaBadge}>
                             <MapPin size={10} color="#6b7280" />
-                            <Text style={styles.userZonaText}>{zoneUser.zona}</Text>
+                            <Text style={styles.userZonaText}>
+                              {zoneUser.zona}
+                            </Text>
                           </View>
                         )}
                       </View>
                     </View>
 
-                    <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+                    <View
+                      style={[
+                        styles.checkbox,
+                        isSelected && styles.checkboxSelected,
+                      ]}
+                    >
                       {isSelected && <Check size={16} color="#ffffff" />}
                     </View>
                   </TouchableOpacity>

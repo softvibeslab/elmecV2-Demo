@@ -130,7 +130,9 @@ export default function Profile() {
             </View>
           </View>
           <Text style={styles.userName}>
-            {user?.nombre} {user?.apellido_paterno} {user?.apellido_materno}
+            {[user?.nombre, user?.apellido_paterno, user?.apellido_materno]
+              .filter(Boolean)
+              .join(' ')}
           </Text>
           <Text style={styles.userEmail}>{user?.correo_electronico}</Text>
         </View>

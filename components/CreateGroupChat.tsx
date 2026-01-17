@@ -10,14 +10,7 @@ import {
   ActivityIndicator,
   Image,
 } from 'react-native';
-import {
-  X,
-  Users,
-  Check,
-  Search,
-  Camera,
-  UserPlus,
-} from 'lucide-react-native';
+import { X, Users, Check, Search, Camera, UserPlus } from 'lucide-react-native';
 import { useChat } from '@/contexts/ChatContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -63,7 +56,9 @@ export default function CreateGroupChat({
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('id, nombre, apellido_paterno, apellido_materno, foto, rol, is_online, empresa')
+        .select(
+          'id, nombre, apellido_paterno, apellido_materno, foto, rol, is_online, empresa'
+        )
         .eq('activo', true)
         .neq('id', user?.id)
         .order('nombre', { ascending: true });
@@ -77,10 +72,19 @@ export default function CreateGroupChat({
     }
   };
 
+  const getFullName = (u: User) => {
+    return [u.nombre, u.apellido_paterno, u.apellido_materno]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+  };
+
   const filteredUsers = users.filter(u => {
-    const fullName = `${u.nombre} ${u.apellido_paterno} ${u.apellido_materno}`.toLowerCase();
+    const fullName = getFullName(u).toLowerCase();
     const search = searchQuery.toLowerCase();
-    return fullName.includes(search) || u.empresa?.toLowerCase().includes(search);
+    return (
+      fullName.includes(search) || u.empresa?.toLowerCase().includes(search)
+    );
   });
 
   const toggleUserSelection = (selectedUser: User) => {
@@ -137,7 +141,7 @@ export default function CreateGroupChat({
 
   const renderUserItem = (u: User) => {
     const isSelected = selectedUsers.some(s => s.id === u.id);
-    const fullName = `${u.nombre} ${u.apellido_paterno}`;
+    const fullName = getFullName(u);
 
     return (
       <TouchableOpacity
@@ -161,12 +165,7 @@ export default function CreateGroupChat({
           <Text style={styles.userRole}>{u.empresa || u.rol}</Text>
         </View>
 
-        <View
-          style={[
-            styles.checkbox,
-            isSelected && styles.checkboxSelected,
-          ]}
-        >
+        <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
           {isSelected && <Check size={16} color="#ffffff" />}
         </View>
       </TouchableOpacity>
@@ -220,10 +219,14 @@ export default function CreateGroupChat({
           <TouchableOpacity
             style={[
               styles.actionButton,
-              (step === 'select' && selectedUsers.length < 2) && styles.actionButtonDisabled,
+              step === 'select' &&
+                selectedUsers.length < 2 &&
+                styles.actionButtonDisabled,
             ]}
             onPress={step === 'select' ? handleNext : handleCreateGroup}
-            disabled={loading || (step === 'select' && selectedUsers.length < 2)}
+            disabled={
+              loading || (step === 'select' && selectedUsers.length < 2)
+            }
           >
             {loading ? (
               <ActivityIndicator size="small" color="#ffffff" />
@@ -241,7 +244,8 @@ export default function CreateGroupChat({
             {selectedUsers.length > 0 && (
               <View style={styles.selectedSection}>
                 <Text style={styles.selectedCount}>
-                  {selectedUsers.length} seleccionado{selectedUsers.length !== 1 ? 's' : ''}
+                  {selectedUsers.length} seleccionado
+                  {selectedUsers.length !== 1 ? 's' : ''}
                 </Text>
                 {renderSelectedUsers()}
               </View>
@@ -260,7 +264,10 @@ export default function CreateGroupChat({
             </View>
 
             {/* User list */}
-            <ScrollView style={styles.userList} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              style={styles.userList}
+              showsVerticalScrollIndicator={false}
+            >
               {loadingUsers ? (
                 <View style={styles.loadingContainer}>
                   <ActivityIndicator size="large" color="#1e40af" />
@@ -269,7 +276,9 @@ export default function CreateGroupChat({
               ) : filteredUsers.length === 0 ? (
                 <View style={styles.emptyContainer}>
                   <Users size={48} color="#d1d5db" />
-                  <Text style={styles.emptyText}>No se encontraron contactos</Text>
+                  <Text style={styles.emptyText}>
+                    No se encontraron contactos
+                  </Text>
                 </View>
               ) : (
                 filteredUsers.map(renderUserItem)
@@ -277,7 +286,10 @@ export default function CreateGroupChat({
             </ScrollView>
           </>
         ) : (
-          <ScrollView style={styles.detailsContainer} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.detailsContainer}
+            showsVerticalScrollIndicator={false}
+          >
             {/* Group avatar */}
             <TouchableOpacity style={styles.groupAvatarContainer}>
               <View style={styles.groupAvatar}>
@@ -317,7 +329,8 @@ export default function CreateGroupChat({
             {/* Participants preview */}
             <View style={styles.participantsPreview}>
               <Text style={styles.participantsTitle}>
-                <UserPlus size={16} color="#1e40af" /> Participantes ({selectedUsers.length + 1})
+                <UserPlus size={16} color="#1e40af" /> Participantes (
+                {selectedUsers.length + 1})
               </Text>
               <View style={styles.participantsList}>
                 {/* Current user as admin */}
@@ -339,7 +352,7 @@ export default function CreateGroupChat({
                     </View>
                     <View style={styles.participantInfo}>
                       <Text style={styles.participantName}>
-                        {u.nombre} {u.apellido_paterno}
+                        {getFullName(u)}
                       </Text>
                     </View>
                   </View>

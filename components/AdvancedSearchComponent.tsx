@@ -125,44 +125,6 @@ export const AdvancedSearchComponent: React.FC<
       {/* Advanced Filters */}
       {showAdvanced && showFilters && (
         <View style={styles.advancedFilters}>
-          {/* Status Filter */}
-          <View style={styles.filterSection}>
-            <Text style={styles.filterLabel}>Estado:</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.filterOptions}
-            >
-              {statusOptions.map(option => (
-                <TouchableOpacity
-                  key={option.value}
-                  style={[
-                    styles.filterChip,
-                    filters.status.includes(option.value) && {
-                      backgroundColor: option.color,
-                      borderColor: option.color,
-                    },
-                  ]}
-                  onPress={() =>
-                    toggleArrayFilter(filters.status, option.value, arr =>
-                      updateFilters('status', arr)
-                    )
-                  }
-                >
-                  <Text
-                    style={[
-                      styles.filterChipText,
-                      filters.status.includes(option.value) &&
-                        styles.filterChipTextActive,
-                    ]}
-                  >
-                    {option.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-
           {/* Priority Filter */}
           <View style={styles.filterSection}>
             <Text style={styles.filterLabel}>Prioridad:</Text>

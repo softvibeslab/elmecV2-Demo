@@ -14,7 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { useChat } from '@/contexts/ChatContext';
 import { useRouter } from 'expo-router';
-  import { supabase, supabaseClient } from '@/lib/supabase';
+import { supabase, supabaseClient } from '@/lib/supabase';
 import { Request, User } from '@/types/supabase';
 
 // Tipos extendidos para las consultas con joins
@@ -24,12 +24,14 @@ interface RequestWithRelations extends Request {
     apellido_paterno: string;
     apellido_materno: string;
     empresa: string;
+    zona?: string;
   };
   agente?: {
     nombre: string;
     apellido_paterno: string;
     apellido_materno: string;
     categoria?: string;
+    zona?: string;
   };
 }
 import {
@@ -44,6 +46,7 @@ import {
   Loader2,
   Circle,
   Trash2,
+  MapPin,
 } from 'lucide-react-native';
 import { ActivityIndicator } from 'react-native';
 import { AdvancedSearchComponent } from '@/components/AdvancedSearchComponent';
@@ -52,7 +55,9 @@ import { uploadMultipleFiles, UploadResult } from '@/utils/fileUpload';
 
 export default function Requests() {
   const [requests, setRequests] = useState<RequestWithRelations[]>([]);
-  const [filteredRequests, setFilteredRequests] = useState<RequestWithRelations[]>([]);
+  const [filteredRequests, setFilteredRequests] = useState<
+    RequestWithRelations[]
+  >([]);
   const [showNewRequestModal, setShowNewRequestModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -97,8 +102,8 @@ export default function Requests() {
         .select(
           `
           *,
-          usuario:users!requests_usuario_id_fkey(id, nombre, apellido_paterno, apellido_materno, empresa),
-          agente:users!requests_agente_id_fkey(id, nombre, apellido_paterno, apellido_materno, categoria)
+          usuario:users!requests_usuario_id_fkey(id, nombre, apellido_paterno, apellido_materno, empresa, zona),
+          agente:users!requests_agente_id_fkey(id, nombre, apellido_paterno, apellido_materno, categoria, zona)
         `
         )
         .order('created_at', { ascending: false });
@@ -222,8 +227,12 @@ export default function Requests() {
     const now = new Date();
     const createdAt = new Date(request.created_at);
     const updatedAt = new Date(request.updated_at);
-    const daysSinceCreation = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
-    const daysSinceUpdate = Math.floor((now.getTime() - updatedAt.getTime()) / (1000 * 60 * 60 * 24));
+    const daysSinceCreation = Math.floor(
+      (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    const daysSinceUpdate = Math.floor(
+      (now.getTime() - updatedAt.getTime()) / (1000 * 60 * 60 * 24)
+    );
 
     // Si es nueva y han pasado más de 3 días sin cambiar a en_proceso
     if (request.estatus === 'nuevo' && daysSinceCreation > 3) {
@@ -231,7 +240,10 @@ export default function Requests() {
     }
 
     // Si está en proceso y han pasado más de 5 días sin terminar
-    if ((request.estatus === 'asignado' || request.estatus === 'en_proceso') && daysSinceUpdate > 5) {
+    if (
+      (request.estatus === 'asignado' || request.estatus === 'en_proceso') &&
+      daysSinceUpdate > 5
+    ) {
       return 'sin_atender';
     }
 
@@ -266,11 +278,13 @@ export default function Requests() {
 
   const getFullName = (usuario: any) => {
     if (!usuario) return 'Usuario desconocido';
-    return `${usuario.nombre} ${usuario.apellido_paterno} ${usuario.apellido_materno}`.trim();
+    const parts = [usuario.nombre, usuario.apellido_paterno, usuario.apellido_materno].filter(Boolean);
+    return parts.join(' ').trim() || 'Usuario desconocido';
   };
 
   const getAgentFullName = (agent: User) => {
-    return `${agent.nombre} ${agent.apellido_paterno} ${agent.apellido_materno}`.trim();
+    const parts = [agent.nombre, agent.apellido_paterno, agent.apellido_materno].filter(Boolean);
+    return parts.join(' ').trim() || 'Agente';
   };
 
   const handleCreateRequest = async () => {
@@ -351,10 +365,14 @@ export default function Requests() {
     // Validar tamaño de cada archivo
     const maxSizeInMB = 5;
     const maxSizeInBytes = maxSizeInMB * 1024 * 1024;
-    const oversizedFiles = selectedFiles.filter(file => file.size > maxSizeInBytes);
+    const oversizedFiles = selectedFiles.filter(
+      file => file.size > maxSizeInBytes
+    );
     if (oversizedFiles.length > 0) {
       console.log('❌ Validación fallida: archivos muy grandes');
-      const fileNames = oversizedFiles.map(f => `• ${f.name} (${(f.size / (1024 * 1024)).toFixed(2)}MB)`).join('\n');
+      const fileNames = oversizedFiles
+        .map(f => `• ${f.name} (${(f.size / (1024 * 1024)).toFixed(2)}MB)`)
+        .join('\n');
       Alert.alert(
         'Archivos muy grandes',
         `Los siguientes archivos exceden el límite de ${maxSizeInMB}MB:\n\n${fileNames}\n\nPor favor selecciona archivos más pequeños.`,
@@ -403,7 +421,9 @@ export default function Requests() {
       let uploadedFiles: UploadResult[] = [];
       if (selectedFiles.length > 0) {
         try {
-          console.log(`Uploading ${selectedFiles.length} file(s) to storage...`);
+          console.log(
+            `Uploading ${selectedFiles.length} file(s) to storage...`
+          );
           uploadedFiles = await uploadMultipleFiles(
             selectedFiles,
             'request-files',
@@ -417,13 +437,26 @@ export default function Requests() {
           let errorMessage = 'No se pudieron subir los archivos adjuntos.';
           if (uploadError?.message) {
             if (uploadError.message.includes('size')) {
-              errorMessage = 'Uno o más archivos exceden el tamaño máximo permitido.';
-            } else if (uploadError.message.includes('type') || uploadError.message.includes('format')) {
-              errorMessage = 'Uno o más archivos tienen un formato no permitido.';
-            } else if (uploadError.message.includes('network') || uploadError.message.includes('connection')) {
-              errorMessage = 'Error de conexión al subir los archivos. Verifica tu conexión a internet.';
-            } else if (uploadError.message.includes('permission') || uploadError.message.includes('denied')) {
-              errorMessage = 'No tienes permisos para subir archivos. Contacta al administrador.';
+              errorMessage =
+                'Uno o más archivos exceden el tamaño máximo permitido.';
+            } else if (
+              uploadError.message.includes('type') ||
+              uploadError.message.includes('format')
+            ) {
+              errorMessage =
+                'Uno o más archivos tienen un formato no permitido.';
+            } else if (
+              uploadError.message.includes('network') ||
+              uploadError.message.includes('connection')
+            ) {
+              errorMessage =
+                'Error de conexión al subir los archivos. Verifica tu conexión a internet.';
+            } else if (
+              uploadError.message.includes('permission') ||
+              uploadError.message.includes('denied')
+            ) {
+              errorMessage =
+                'No tienes permisos para subir archivos. Contacta al administrador.';
             } else {
               errorMessage = `Error al subir archivos: ${uploadError.message}`;
             }
@@ -436,15 +469,17 @@ export default function Requests() {
               {
                 text: 'Cancelar',
                 style: 'cancel',
-                onPress: () => { setSubmitting(false); }
+                onPress: () => {
+                  setSubmitting(false);
+                },
               },
               {
                 text: 'Continuar sin archivos',
                 onPress: () => {
                   // Los archivos se limpiarán, continuar sin ellos
                   uploadedFiles = [];
-                }
-              }
+                },
+              },
             ]
           );
           setSubmitting(false);
@@ -494,8 +529,8 @@ export default function Requests() {
         .select(
           `
           *,
-          usuario:users!requests_usuario_id_fkey(nombre, apellido_paterno, apellido_materno, empresa),
-          agente:users!requests_agente_id_fkey(nombre, apellido_paterno, apellido_materno, categoria)
+          usuario:users!requests_usuario_id_fkey(nombre, apellido_paterno, apellido_materno, empresa, zona),
+          agente:users!requests_agente_id_fkey(nombre, apellido_paterno, apellido_materno, categoria, zona)
         `
         )
         .single();
@@ -511,45 +546,68 @@ export default function Requests() {
 
         // Analizar el tipo de error y mostrar mensaje específico
         let errorTitle = 'Error al crear solicitud';
-        let errorMessage = 'No se pudo crear la solicitud. Por favor intenta de nuevo.';
+        let errorMessage =
+          'No se pudo crear la solicitud. Por favor intenta de nuevo.';
 
         // Errores de validación de Supabase
-        if (error.code === '23502') { // NOT NULL violation
+        if (error.code === '23502') {
+          // NOT NULL violation
           errorTitle = 'Datos incompletos';
-          errorMessage = 'Algunos campos obligatorios no fueron enviados correctamente. Por favor verifica todos los campos e intenta nuevamente.';
-        } else if (error.code === '23503') { // Foreign key violation
+          errorMessage =
+            'Algunos campos obligatorios no fueron enviados correctamente. Por favor verifica todos los campos e intenta nuevamente.';
+        } else if (error.code === '23503') {
+          // Foreign key violation
           errorTitle = 'Referencia inválida';
           if (error.message.includes('agente_id')) {
-            errorMessage = 'El agente seleccionado no es válido. Por favor selecciona otro agente o deja el campo vacío.';
+            errorMessage =
+              'El agente seleccionado no es válido. Por favor selecciona otro agente o deja el campo vacío.';
           } else if (error.message.includes('usuario_id')) {
-            errorMessage = 'Tu sesión no es válida. Por favor cierra sesión y vuelve a iniciar sesión.';
+            errorMessage =
+              'Tu sesión no es válida. Por favor cierra sesión y vuelve a iniciar sesión.';
           } else {
-            errorMessage = 'Una de las referencias en la solicitud no es válida. Por favor verifica los datos.';
+            errorMessage =
+              'Una de las referencias en la solicitud no es válida. Por favor verifica los datos.';
           }
-        } else if (error.code === '23505') { // Unique violation
+        } else if (error.code === '23505') {
+          // Unique violation
           errorTitle = 'Solicitud duplicada';
-          errorMessage = 'Ya existe una solicitud similar. Por favor verifica tus solicitudes existentes.';
-        } else if (error.code === '42501' || error.message.includes('permission')) { // Permission denied
+          errorMessage =
+            'Ya existe una solicitud similar. Por favor verifica tus solicitudes existentes.';
+        } else if (
+          error.code === '42501' ||
+          error.message.includes('permission')
+        ) {
+          // Permission denied
           errorTitle = 'Permisos insuficientes';
-          errorMessage = 'No tienes permisos para crear solicitudes. Por favor contacta al administrador.';
+          errorMessage =
+            'No tienes permisos para crear solicitudes. Por favor contacta al administrador.';
         } else if (error.message.includes('titulo')) {
           errorTitle = 'Error en el título';
-          errorMessage = 'El título de la solicitud no cumple con los requisitos. Debe tener entre 5 y 200 caracteres.';
+          errorMessage =
+            'El título de la solicitud no cumple con los requisitos. Debe tener entre 5 y 200 caracteres.';
         } else if (error.message.includes('mensaje')) {
           errorTitle = 'Error en el mensaje';
-          errorMessage = 'El mensaje de la solicitud no cumple con los requisitos. Debe tener al menos 10 caracteres.';
+          errorMessage =
+            'El mensaje de la solicitud no cumple con los requisitos. Debe tener al menos 10 caracteres.';
         } else if (error.message.includes('tipo')) {
           errorTitle = 'Tipo de solicitud inválido';
-          errorMessage = 'El tipo de solicitud seleccionado no es válido. Por favor selecciona un tipo válido.';
+          errorMessage =
+            'El tipo de solicitud seleccionado no es válido. Por favor selecciona un tipo válido.';
         } else if (error.message.includes('prioridad')) {
           errorTitle = 'Prioridad inválida';
-          errorMessage = 'La prioridad seleccionada no es válida. Por favor selecciona una prioridad válida.';
-        } else if (error.message.includes('network') || error.message.includes('connection')) {
+          errorMessage =
+            'La prioridad seleccionada no es válida. Por favor selecciona una prioridad válida.';
+        } else if (
+          error.message.includes('network') ||
+          error.message.includes('connection')
+        ) {
           errorTitle = 'Error de conexión';
-          errorMessage = 'No se pudo conectar con el servidor. Por favor verifica tu conexión a internet e intenta nuevamente.';
+          errorMessage =
+            'No se pudo conectar con el servidor. Por favor verifica tu conexión a internet e intenta nuevamente.';
         } else if (error.message.includes('timeout')) {
           errorTitle = 'Tiempo de espera agotado';
-          errorMessage = 'La operación tardó demasiado tiempo. Por favor intenta nuevamente.';
+          errorMessage =
+            'La operación tardó demasiado tiempo. Por favor intenta nuevamente.';
         } else if (error.details) {
           errorMessage = `Error: ${error.message}\n\nDetalles: ${error.details}`;
         } else {
@@ -581,7 +639,10 @@ export default function Requests() {
 
       // Agregar la nueva solicitud a la lista
       setRequests(prev => {
-        console.log('Agregando solicitud a la lista. Total anterior:', prev.length);
+        console.log(
+          'Agregando solicitud a la lista. Total anterior:',
+          prev.length
+        );
         return [data as RequestWithRelations, ...prev];
       });
 
@@ -639,8 +700,8 @@ export default function Requests() {
               can_add_zone_members: true, // Permitir agregar miembros de la zona
               participant_names: [
                 `${user.nombre} ${user.apellido_paterno}`,
-                agenteName
-              ]
+                agenteName,
+              ],
             }
           );
 
@@ -657,7 +718,10 @@ export default function Requests() {
             );
           }
         } catch (notifError) {
-          console.error('Error creating chat or sending notification:', notifError);
+          console.error(
+            'Error creating chat or sending notification:',
+            notifError
+          );
           // No bloquear si falla la notificación o chat
         }
       }
@@ -672,18 +736,28 @@ export default function Requests() {
       let errorMessage = 'Ocurrió un error inesperado al crear la solicitud.';
 
       if (error instanceof Error) {
-        if (error.message.includes('network') || error.message.includes('Failed to fetch')) {
+        if (
+          error.message.includes('network') ||
+          error.message.includes('Failed to fetch')
+        ) {
           errorTitle = 'Error de conexión';
-          errorMessage = 'No se pudo conectar con el servidor. Por favor verifica tu conexión a internet e intenta nuevamente.';
+          errorMessage =
+            'No se pudo conectar con el servidor. Por favor verifica tu conexión a internet e intenta nuevamente.';
         } else if (error.message.includes('timeout')) {
           errorTitle = 'Tiempo de espera agotado';
-          errorMessage = 'La operación tardó demasiado tiempo. Por favor intenta nuevamente.';
+          errorMessage =
+            'La operación tardó demasiado tiempo. Por favor intenta nuevamente.';
         } else if (error.message.includes('abort')) {
           errorTitle = 'Operación cancelada';
-          errorMessage = 'La operación fue cancelada. Por favor intenta nuevamente.';
-        } else if (error.message.includes('parse') || error.message.includes('JSON')) {
+          errorMessage =
+            'La operación fue cancelada. Por favor intenta nuevamente.';
+        } else if (
+          error.message.includes('parse') ||
+          error.message.includes('JSON')
+        ) {
           errorTitle = 'Error de formato';
-          errorMessage = 'Hubo un problema al procesar la respuesta del servidor. Por favor intenta nuevamente.';
+          errorMessage =
+            'Hubo un problema al procesar la respuesta del servidor. Por favor intenta nuevamente.';
         } else {
           errorMessage = `${error.message}\n\nPor favor intenta de nuevo o contacta al soporte técnico si el problema persiste.`;
         }
@@ -861,7 +935,10 @@ export default function Requests() {
       } else {
         // Si soy agente o admin, abrir chat con el cliente
         if (!request.usuario_id || !request.usuario) {
-          Alert.alert('Error', 'No se pudo encontrar el usuario de esta solicitud');
+          Alert.alert(
+            'Error',
+            'No se pudo encontrar el usuario de esta solicitud'
+          );
           return;
         }
         otherParticipantId = request.usuario_id;
@@ -1061,13 +1138,23 @@ export default function Requests() {
             {/* Información del usuario (para agentes y admins) */}
             {(user?.rol === 'agent' || user?.rol === 'admin') &&
               request.usuario && (
-                <View style={styles.userInfo}>
-                  <UserIcon size={16} color="#6b7280" />
-                  <Text style={styles.userName}>
-                    Cliente: {getFullName(request.usuario)} -{' '}
-                    {request.usuario.empresa}
-                  </Text>
-                </View>
+                <>
+                  <View style={styles.userInfo}>
+                    <UserIcon size={16} color="#6b7280" />
+                    <Text style={styles.userName}>
+                      Cliente: {getFullName(request.usuario)} -{' '}
+                      {request.usuario.empresa}
+                    </Text>
+                  </View>
+                  {request.usuario.zona && (
+                    <View style={styles.zoneInfo}>
+                      <MapPin size={14} color="#3b82f6" />
+                      <Text style={styles.zoneText}>
+                        Zona: {request.usuario.zona}
+                      </Text>
+                    </View>
+                  )}
+                </>
               )}
 
             {/* Información del agente (para clientes) */}
@@ -1119,7 +1206,7 @@ export default function Requests() {
               {/* Botón Charlar */}
               <TouchableOpacity
                 style={styles.chatButton}
-                onPress={(e) => {
+                onPress={e => {
                   e.stopPropagation();
                   handleStartChat(request);
                 }}
@@ -1129,10 +1216,11 @@ export default function Requests() {
               </TouchableOpacity>
 
               {/* Botón Eliminar (solo para solicitudes terminadas) */}
-              {(request.estatus === 'resuelto' || request.estatus === 'cerrado') && (
+              {(request.estatus === 'resuelto' ||
+                request.estatus === 'cerrado') && (
                 <TouchableOpacity
                   style={styles.deleteButton}
-                  onPress={(e) => {
+                  onPress={e => {
                     e.stopPropagation();
                     handleDeleteRequest(request.id, request.titulo);
                   }}
@@ -1206,9 +1294,7 @@ export default function Requests() {
                 maxLength={250}
               />
               {newRequest.titulo.length > 0 && newRequest.titulo.length < 5 && (
-                <Text style={styles.validationHint}>
-                  Mínimo 5 caracteres
-                </Text>
+                <Text style={styles.validationHint}>Mínimo 5 caracteres</Text>
               )}
               {newRequest.titulo.length > 200 && (
                 <Text style={styles.validationError}>
@@ -1216,44 +1302,6 @@ export default function Requests() {
                 </Text>
               )}
             </View>
-
-            <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>Tipo de Solicitud</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.typeScroll}
-              >
-                {[
-                  { id: 1, name: 'Ventas' },
-                  { id: 2, name: 'Soporte' },
-                  { id: 3, name: 'Cotización' },
-                  { id: 4, name: 'Rastreo de pedidos' },
-                ].map(type => (
-                  <TouchableOpacity
-                    key={type.id}
-                    style={[
-                      styles.typeChip,
-                      newRequest.tipo === type.id && styles.typeChipSelected,
-                    ]}
-                    onPress={() =>
-                      setNewRequest(prev => ({ ...prev, tipo: type.id }))
-                    }
-                  >
-                    <Text
-                      style={[
-                        styles.typeChipText,
-                        newRequest.tipo === type.id &&
-                          styles.typeChipTextSelected,
-                      ]}
-                    >
-                      {type.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-
 
             {agents.length > 0 && (
               <View style={styles.formGroup}>
@@ -1335,11 +1383,12 @@ export default function Requests() {
                 numberOfLines={6}
                 textAlignVertical="top"
               />
-              {newRequest.mensaje.length > 0 && newRequest.mensaje.length < 10 && (
-                <Text style={styles.validationHint}>
-                  Mínimo 10 caracteres
-                </Text>
-              )}
+              {newRequest.mensaje.length > 0 &&
+                newRequest.mensaje.length < 10 && (
+                  <Text style={styles.validationHint}>
+                    Mínimo 10 caracteres
+                  </Text>
+                )}
             </View>
 
             <TouchableOpacity
@@ -1363,6 +1412,9 @@ export default function Requests() {
                 </>
               )}
             </TouchableOpacity>
+
+            {/* Espacio inferior para evitar que el teclado tape el botón */}
+            <View style={{ height: 40 }} />
           </ScrollView>
         </SafeAreaView>
       </Modal>
@@ -1516,6 +1568,22 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Medium',
     color: '#374151',
     flex: 1,
+  },
+  zoneInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+    backgroundColor: '#eff6ff',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+  },
+  zoneText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Medium',
+    color: '#3b82f6',
   },
   agentInfo: {
     flexDirection: 'row',

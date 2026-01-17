@@ -119,3 +119,153 @@ temp/
 scripts/output/*.json
 scripts/output/*.csv
 .env.local
+.env/
+# Version: 0.28.0
+venv/
+# Tracked in git: config/, memory/, scripts/, specs/
+.moai/backups/
+.aws/config
+ehthumbs.db
+.moai/docs/
+.aws/credentials
+*.pyc
+.moai/analytics/
+api-key-*
+.vercel/
+*.rdb
+*.temp
+.TemporaryItems
+# Package Distribution
+.moai/scripts/phase*.sh
+.tscache/
+.firebase/
+# Build Artifacts
+.fseventsd
+.pytest_cache/
+!.moai/scripts/
+.moai/scripts/sync-*.py
+.moai/work/
+*.sln
+!.moai/scripts/**
+# Logs & Temporary Files
+*.sublime-workspace
+logs/
+*-api-key.*
+*.dbm
+*-key.*
+.env.*
+# .moai local-only directories (user projects only)
+.claude/skills/*/secrets/
+.gitlab-ci.yml.bak
+*.backup
+*-secret-key.*
+*.backup/
+# OS Files
+*.sqlite3
+# Mac
+# Certificate files
+# Virtual Environments
+# Legacy config format (migrated to YAML in v0.32.0)
+.moai/scripts/sync-*.sh
+.claude/local/
+.uv-cache/
+*.pfx
+.next/
+*.sw?
+.moai/config/config.json
+# MoAI Directory Management
+.moai/temp/
+env/
+# User-generated content: logs/, cache/, reports/, etc.
+.AppleDouble
+*.njsproj
+# uv.lock is intentionally included for reproducible builds
+.claude/skills/*/*/*secret*
+.moai/scripts/__pycache__/
+secret-*.*
+# Claude Code Local Configuration
+!.moai/config/**
+.moai/archive/
+*.tmp
+.LSOverride
+*.pyd
+.claude/skills/*/.env*
+# Add to .gitignore if needed per project
+# .moai local development scripts (not distributed)
+.claude/settings.local.json
+.moai/cache/
+*_key.*
+.cursor/
+# ============================================
+# Node.js (for docs/Nextra)
+*.secret.*
+*.db
+*-secret.*
+# Backups
+*.egg-info/
+.claude/settings.local.*.json
+private-key*
+!.moai/specs/**
+# Python Cache & Database
+.moai/logs/
+*_backup_*/
+.moai/error_logs/
+*.sqlite
+.uv_cache/
+.Spotlight-V100
+.mypy_cache/
+*_secret.*
+.DocumentRevisions-V100
+.VolumeIcon.icns
+secret-key-*
+# API credentials patterns
+.claude/skills/*/*/*token*
+.claude/skills/*/*/*key*
+.#*
+htmlcov/
+# Private keys and certificates (specific patterns to avoid false positives)
+!.moai/specs/
+*.bak
+*.pyo
+# MoAI-ADK Package Distribution .gitignore
+__pycache__/
+!.moai/memory/**
+# Windows
+coverage.json
+# Environment Variables & Secrets
+# IDE & Editors
+*_token=*
+# CI/CD
+.ruff_cache/
+*.egg
+Thumbs.db
+.moai-backups/
+# Purpose: Essential patterns for user projects
+# Claude Code Skills Secrets
+!.moai/config/
+# Test Coverage
+.moai/*
+.coverage
+*.key.*
+# uv.lock
+# Old patterns caused false positives for: keyboard-config, hotkey, monkey-patch, etc.
+.moai/archived-skills/
+[Dd]esktop.ini
+# FIXED: Issue #237 - Replaced overly broad *key* and *secret* patterns
+!.moai/memory/
+# Linux
+.directory
+.moai/scripts/*sync*.sh
+# ---------------------------------------------
+*_secret=*
+!.env.example
+*-backup/
+.moai/scripts/phase*.py
+.venv/
+.Trashes
+.github/workflows/*.yml.bak
+# Cloud provider credentials
+*.sublime-project
+.claude/.env.local*
+*.suo
+.moai/reports/

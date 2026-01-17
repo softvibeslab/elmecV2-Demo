@@ -13,7 +13,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useChat } from '@/contexts/ChatContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { Search, MessageCircle, Clock, Users, Plus, UsersRound, Wifi, WifiOff, Building2 } from 'lucide-react-native';
+import {
+  Search,
+  MessageCircle,
+  Clock,
+  Users,
+  Plus,
+  UsersRound,
+  Wifi,
+  WifiOff,
+  Building2,
+} from 'lucide-react-native';
 import { ChatRoom } from '@/types/supabase';
 import CreateGroupChat from '@/components/CreateGroupChat';
 import InternalChats from '@/components/InternalChats';
@@ -31,7 +41,16 @@ export default function ChatList() {
   const [refreshing, setRefreshing] = useState(false);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [showInternalChats, setShowInternalChats] = useState(false);
-  const { chatRooms, messages, loading, error, getRoomUnreadCount, isUserOnline, connectionStatus } = useChat();
+  const {
+    chatRooms,
+    messages,
+    loading,
+    error,
+    getRoomUnreadCount,
+    isUserOnline,
+    connectionStatus,
+    onlineUsers,
+  } = useChat();
   const { user } = useAuth();
   const router = useRouter();
 
@@ -50,10 +69,21 @@ export default function ChatList() {
     router.push(`/chat/${roomId}`);
   };
 
+  // Log online users for debugging (can be removed in production)
+  useEffect(() => {
+    console.log(
+      'Chat list - Online users updated:',
+      onlineUsers?.length || 0,
+      onlineUsers
+    );
+  }, [onlineUsers]);
+
   const getOtherParticipantName = (room: any) => {
     if (!room.metadata?.participant_names || !user) return 'Chat';
 
-    const currentUserName = `${user.nombre} ${user.apellido_paterno}`;
+    const currentUserName = [user.nombre, user.apellido_paterno]
+      .filter(Boolean)
+      .join(' ');
     return (
       room.metadata.participant_names.find(
         (name: string) => name !== currentUserName
@@ -232,12 +262,17 @@ export default function ChatList() {
             <View style={styles.titleRow}>
               <Text style={styles.title}>Chats</Text>
               {/* Indicador de conexion */}
-              <View style={[
-                styles.connectionIndicator,
-                connectionStatus === 'connected' && styles.connectionConnected,
-                connectionStatus === 'connecting' && styles.connectionConnecting,
-                connectionStatus === 'disconnected' && styles.connectionDisconnected,
-              ]}>
+              <View
+                style={[
+                  styles.connectionIndicator,
+                  connectionStatus === 'connected' &&
+                    styles.connectionConnected,
+                  connectionStatus === 'connecting' &&
+                    styles.connectionConnecting,
+                  connectionStatus === 'disconnected' &&
+                    styles.connectionDisconnected,
+                ]}
+              >
                 {connectionStatus === 'connected' ? (
                   <Wifi size={12} color="#10b981" />
                 ) : connectionStatus === 'connecting' ? (
@@ -250,7 +285,8 @@ export default function ChatList() {
             <Text style={styles.subtitle}>
               {chatRooms.length} conversacion
               {chatRooms.length !== 1 ? 'es' : ''}
-              {groupChats.length > 0 && ` (${groupChats.length} grupo${groupChats.length !== 1 ? 's' : ''})`}
+              {groupChats.length > 0 &&
+                ` (${groupChats.length} grupo${groupChats.length !== 1 ? 's' : ''})`}
             </Text>
           </View>
           <View style={styles.headerButtons}>
@@ -327,20 +363,24 @@ export default function ChatList() {
                     <Text style={styles.avatarText}>{initials}</Text>
                   )}
                 </View>
-                {!isGroup && (() => {
-                  const otherUserId = getOtherParticipantId(room);
-                  const online = otherUserId ? isUserOnline(otherUserId) : false;
-                  return (
-                    <View
-                      style={[
-                        styles.onlineIndicator,
-                        {
-                          backgroundColor: online ? '#10b981' : '#6b7280',
-                        },
-                      ]}
-                    />
-                  );
-                })()}
+                {!isGroup &&
+                  (() => {
+                    const otherUserId = getOtherParticipantId(room);
+                    // Use onlineUsers directly to ensure reactivity when array changes
+                    const online = otherUserId
+                      ? onlineUsers.includes(otherUserId)
+                      : false;
+                    return (
+                      <View
+                        style={[
+                          styles.onlineIndicator,
+                          {
+                            backgroundColor: online ? '#10b981' : '#6b7280',
+                          },
+                        ]}
+                      />
+                    );
+                  })()}
                 {isGroup && (
                   <View style={styles.groupBadge}>
                     <Text style={styles.groupBadgeText}>
