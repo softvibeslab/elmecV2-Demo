@@ -1249,7 +1249,9 @@ export default function ChatRoom() {
             </View>
             <View style={styles.headerText}>
               <Text style={styles.headerName} numberOfLines={1}>
-                {chatRoom?.is_group ? chatRoom.name : getOtherParticipantName()}
+                {chatRoom?.is_group
+                  ? (chatRoom.name || 'Grupo sin nombre')
+                  : getOtherParticipantName()}
               </Text>
               <Text style={styles.headerStatus}>
                 {roomTypingUsers.some(tu => tu.userId !== user?.id)
@@ -1318,7 +1320,7 @@ export default function ChatRoom() {
                 setShowHeaderMenu(false);
                 Alert.alert(
                   chatRoom?.is_group ? 'Info del Grupo' : 'Info del Chat',
-                  `${chatRoom?.is_group ? `Grupo: ${chatRoom.name}\n` : ''}Participantes: ${chatRoom?.participants?.length || 0}${chatRoom?.metadata?.zona ? `\nZona: ${chatRoom.metadata.zona}` : ''}`
+                  `${chatRoom?.is_group ? `Grupo: ${chatRoom.name || 'Sin nombre'}\n` : ''}Participantes: ${chatRoom?.participants?.length || 0}${chatRoom?.metadata?.zona ? `\nZona: ${chatRoom.metadata.zona}` : ''}`
                 );
               }}
             >
