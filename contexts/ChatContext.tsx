@@ -84,7 +84,7 @@ interface ChatContextType {
     name: string,
     participantIds: string[],
     description?: string,
-    avatarUrl?: string
+    metadata?: { area?: string; isInternal?: boolean; zona?: string }
   ) => Promise<string>;
   addGroupParticipants: (
     roomId: string,
@@ -1246,11 +1246,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
     name: string,
     participantIds: string[],
     description?: string,
-    avatarUrl?: string
+    metadata?: { area?: string; isInternal?: boolean; zona?: string }
   ): Promise<string> => {
     if (!user || !session) throw new Error('Usuario no autenticado');
 
-    if (participantIds.length < 2) {
+    // Para chats de área internos, permitir 1 solo participante
+    const isInternalChat = metadata?.isInternal === true;
+    if (!isInternalChat && participantIds.length < 2) {
       throw new Error('Un grupo necesita al menos 3 participantes');
     }
 
@@ -1263,6 +1265,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
       console.log('Creando grupo:', {
         name,
         participantCount: allParticipants.length,
+        isInternal: isInternalChat,
       });
 
       const { data, error } = await supabaseClient
@@ -1270,7 +1273,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         .insert({
           name,
           description,
-          avatar_url: avatarUrl,
           tipo: 'group',
           is_group: true,
           participants: allParticipants,
@@ -1280,6 +1282,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
           metadata: {
             participant_count: allParticipants.length,
             created_at: new Date().toISOString(),
+            ...metadata,
           },
         })
         .select()

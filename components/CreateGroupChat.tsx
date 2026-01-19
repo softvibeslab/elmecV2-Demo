@@ -127,9 +127,10 @@ export default function CreateGroupChat({
 
       onGroupCreated(roomId);
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating group:', error);
-      alert('Error al crear el grupo');
+      const errorMessage = error?.message || 'Error desconocido';
+      alert(`Error al crear el grupo: ${errorMessage}`);
     } finally {
       setLoading(false);
     }

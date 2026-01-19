@@ -222,6 +222,34 @@ export default function Requests() {
     }
   };
 
+  // Obtener nombre del área basado en el tipo de solicitud
+  const getAreaName = (tipo: number) => {
+    switch (tipo) {
+      case 1:
+        return 'VENTAS';
+      case 2:
+        return 'SOPORTE';
+      case 3:
+        return 'COTIZACIÓN';
+      default:
+        return 'GENERAL';
+    }
+  };
+
+  // Obtener color del área
+  const getAreaColor = (tipo: number) => {
+    switch (tipo) {
+      case 1:
+        return '#10b981'; // Verde - Ventas
+      case 2:
+        return '#3b82f6'; // Azul - Soporte
+      case 3:
+        return '#f59e0b'; // Amarillo - Cotización
+      default:
+        return '#6b7280'; // Gris - General
+    }
+  };
+
   // Verifica si una solicitud debe marcarse como "sin atender"
   const checkRequestExpiration = (request: RequestWithRelations): string => {
     const now = new Date();
@@ -1114,16 +1142,33 @@ export default function Requests() {
             }}
           >
             <View style={styles.requestHeader}>
-              <View style={styles.requestStatus}>
-                {getStatusIcon(checkRequestExpiration(request))}
-                <Text
+              <View style={styles.statusAndAreaContainer}>
+                <View style={styles.requestStatus}>
+                  {getStatusIcon(checkRequestExpiration(request))}
+                  <Text
+                    style={[
+                      styles.statusText,
+                      { color: getStatusColor(checkRequestExpiration(request)) },
+                    ]}
+                  >
+                    {getStatusText(checkRequestExpiration(request))}
+                  </Text>
+                </View>
+                <View
                   style={[
-                    styles.statusText,
-                    { color: getStatusColor(checkRequestExpiration(request)) },
+                    styles.areaBadge,
+                    { backgroundColor: `${getAreaColor(request.tipo)}20` },
                   ]}
                 >
-                  {getStatusText(checkRequestExpiration(request))}
-                </Text>
+                  <Text
+                    style={[
+                      styles.areaBadgeText,
+                      { color: getAreaColor(request.tipo) },
+                    ]}
+                  >
+                    {getAreaName(request.tipo)}
+                  </Text>
+                </View>
               </View>
               <Text style={styles.requestDate}>
                 {formatDate(request.created_at)}
@@ -1520,10 +1565,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
+  statusAndAreaContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
   requestStatus: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  areaBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  areaBadgeText: {
+    fontSize: 11,
+    fontFamily: 'Inter-Bold',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   statusText: {
     fontSize: 14,

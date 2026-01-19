@@ -71,7 +71,9 @@ export default function InternalChats({
   const { user } = useAuth();
   const { createGroupChat, chatRooms } = useChat();
   const [loading, setLoading] = useState(false);
-  const [areaChats, setAreaChats] = useState<Record<string, AreaChatRoom | null>>({});
+  const [areaChats, setAreaChats] = useState<
+    Record<string, AreaChatRoom | null>
+  >({});
   const [joiningArea, setJoiningArea] = useState<string | null>(null);
 
   // Cargar chats internos existentes
@@ -151,7 +153,10 @@ export default function InternalChats({
           onClose();
         } else {
           // Agregar al usuario al grupo existente
-          const updatedParticipants = [...(roomData?.participants || []), user.id];
+          const updatedParticipants = [
+            ...(roomData?.participants || []),
+            user.id,
+          ];
           const { error: updateError } = await supabaseClient
             .from('chat_rooms')
             .update({
@@ -173,7 +178,7 @@ export default function InternalChats({
         const roomId = await createGroupChat(
           area.name,
           [user.id], // Solo el creador inicialmente
-          undefined, // Sin imagen
+          area.description, // Descripción del área
           { area: areaId, isInternal: true }
         );
 
@@ -248,10 +253,7 @@ export default function InternalChats({
               return (
                 <TouchableOpacity
                   key={area.id}
-                  style={[
-                    styles.areaCard,
-                    isInChat && styles.areaCardJoined,
-                  ]}
+                  style={[styles.areaCard, isInChat && styles.areaCardJoined]}
                   onPress={() => handleJoinOrCreateAreaChat(area.id)}
                   disabled={isJoining}
                 >
@@ -266,7 +268,9 @@ export default function InternalChats({
 
                   <View style={styles.areaInfo}>
                     <Text style={styles.areaName}>{area.name}</Text>
-                    <Text style={styles.areaDescription}>{area.description}</Text>
+                    <Text style={styles.areaDescription}>
+                      {area.description}
+                    </Text>
                     {areaChat && (
                       <View style={styles.participantInfo}>
                         <Users size={12} color="#6b7280" />
