@@ -9,8 +9,9 @@ import {
   ScrollView,
   ActivityIndicator,
   Image,
+  Alert,
 } from 'react-native';
-import { X, Users, Check, Search, Camera, UserPlus } from 'lucide-react-native';
+import { X, Users, Check, Search, Camera, UserPlus, MapPin, AlertTriangle } from 'lucide-react-native';
 import { useChat } from '@/contexts/ChatContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -35,13 +36,14 @@ export default function CreateGroupChat({
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(true);
+  const [userZona, setUserZona] = useState<string | null>(null);
 
   const { createGroupChat } = useChat();
   const { user } = useAuth();
 
   useEffect(() => {
     if (visible) {
-      loadUsers();
+      loadCurrentUserZona();
       // Reset state
       setStep('select');
       setGroupName('');
@@ -51,15 +53,47 @@ export default function CreateGroupChat({
     }
   }, [visible]);
 
-  const loadUsers = async () => {
+  // Primero cargar la zona del usuario actual
+  const loadCurrentUserZona = async () => {
+    if (!user?.id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('zona')
+        .eq('id', user.id)
+        .single();
+
+      if (error) throw error;
+      setUserZona(data?.zona || null);
+
+      // Luego cargar usuarios de la misma zona
+      if (data?.zona) {
+        loadUsers(data.zona);
+      } else {
+        setLoadingUsers(false);
+        Alert.alert(
+          'Sin zona asignada',
+          'Tu usuario no tiene una zona asignada. Contacta al administrador para poder crear grupos.'
+        );
+      }
+    } catch (error) {
+      console.error('Error loading user zona:', error);
+      setLoadingUsers(false);
+    }
+  };
+
+  // REGLA DE NEGOCIO: Solo cargar usuarios de la MISMA zona
+  const loadUsers = async (zona: string) => {
     setLoadingUsers(true);
     try {
       const { data, error } = await supabase
         .from('users')
         .select(
-          'id, nombre, apellido_paterno, apellido_materno, foto, rol, is_online, empresa'
+          'id, nombre, apellido_paterno, apellido_materno, foto, rol, is_online, empresa, zona'
         )
         .eq('activo', true)
+        .eq('zona', zona) // OBLIGATORIO: misma zona
         .neq('id', user?.id)
         .order('nombre', { ascending: true });
 
@@ -116,13 +150,19 @@ export default function CreateGroupChat({
       return;
     }
 
+    if (!userZona) {
+      Alert.alert('Error', 'No tienes una zona asignada. No puedes crear grupos.');
+      return;
+    }
+
     setLoading(true);
     try {
       const participantIds = selectedUsers.map(u => u.id);
       const roomId = await createGroupChat(
         groupName.trim(),
         participantIds,
-        groupDescription.trim() || undefined
+        groupDescription.trim() || undefined,
+        { zona: userZona } // Incluir zona en metadata
       );
 
       onGroupCreated(roomId);
@@ -130,7 +170,7 @@ export default function CreateGroupChat({
     } catch (error: any) {
       console.error('Error creating group:', error);
       const errorMessage = error?.message || 'Error desconocido';
-      alert(`Error al crear el grupo: ${errorMessage}`);
+      Alert.alert('Error al crear el grupo', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -252,12 +292,27 @@ export default function CreateGroupChat({
               </View>
             )}
 
+            {/* Indicador de zona - REGLA DE NEGOCIO */}
+            <View style={styles.zonaIndicator}>
+              <MapPin size={16} color="#1e40af" />
+              <Text style={styles.zonaIndicatorText}>
+                {userZona ? (
+                  <>Solo usuarios de zona: <Text style={styles.zonaName}>{userZona}</Text></>
+                ) : (
+                  <Text style={styles.zonaWarning}>⚠️ Sin zona asignada</Text>
+                )}
+              </Text>
+              <View style={styles.zonaLockBadge}>
+                <Text style={styles.zonaLockText}>🔒</Text>
+              </View>
+            </View>
+
             {/* Search */}
             <View style={styles.searchContainer}>
               <Search size={20} color="#6b7280" style={styles.searchIcon} />
               <TextInput
                 style={styles.searchInput}
-                placeholder="Buscar contactos..."
+                placeholder="Buscar contactos de tu zona..."
                 placeholderTextColor="#9ca3af"
                 value={searchQuery}
                 onChangeText={setSearchQuery}
@@ -269,16 +324,29 @@ export default function CreateGroupChat({
               style={styles.userList}
               showsVerticalScrollIndicator={false}
             >
-              {loadingUsers ? (
+              {!userZona ? (
+                <View style={styles.emptyContainer}>
+                  <AlertTriangle size={48} color="#f59e0b" />
+                  <Text style={styles.emptyText}>
+                    No tienes zona asignada
+                  </Text>
+                  <Text style={styles.emptySubtext}>
+                    Contacta al administrador para que te asigne una zona
+                  </Text>
+                </View>
+              ) : loadingUsers ? (
                 <View style={styles.loadingContainer}>
                   <ActivityIndicator size="large" color="#1e40af" />
-                  <Text style={styles.loadingText}>Cargando contactos...</Text>
+                  <Text style={styles.loadingText}>Cargando contactos de tu zona...</Text>
                 </View>
               ) : filteredUsers.length === 0 ? (
                 <View style={styles.emptyContainer}>
                   <Users size={48} color="#d1d5db" />
                   <Text style={styles.emptyText}>
-                    No se encontraron contactos
+                    No hay más contactos en tu zona
+                  </Text>
+                  <Text style={styles.emptySubtext}>
+                    Solo puedes agregar personas de la zona {userZona}
                   </Text>
                 </View>
               ) : (
@@ -402,6 +470,39 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 14,
     fontFamily: 'Inter-SemiBold',
+  },
+  zonaIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#dbeafe',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#bfdbfe',
+  },
+  zonaIndicatorText: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: 'Inter-Regular',
+    color: '#1e40af',
+  },
+  zonaName: {
+    fontFamily: 'Inter-Bold',
+    color: '#1e40af',
+  },
+  zonaWarning: {
+    fontFamily: 'Inter-Medium',
+    color: '#f59e0b',
+  },
+  zonaLockBadge: {
+    backgroundColor: '#1e40af',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  zonaLockText: {
+    fontSize: 12,
   },
   selectedSection: {
     backgroundColor: '#ffffff',
@@ -570,6 +671,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Inter-Medium',
     color: '#6b7280',
+  },
+  emptySubtext: {
+    marginTop: 4,
+    fontSize: 13,
+    fontFamily: 'Inter-Regular',
+    color: '#9ca3af',
+    textAlign: 'center',
+    paddingHorizontal: 24,
   },
   detailsContainer: {
     flex: 1,

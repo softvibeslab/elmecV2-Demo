@@ -1332,6 +1332,23 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
       throw new Error('Solo los administradores pueden agregar participantes');
     }
 
+    // REGLA DE NEGOCIO: Validar que los nuevos participantes sean de la misma zona
+    const groupZona = room.metadata?.zona;
+    if (groupZona) {
+      // Verificar zona de los nuevos participantes
+      const { data: usersData } = await supabaseClient
+        .from('users')
+        .select('id, zona')
+        .in('id', participantIds);
+
+      const invalidZoneUsers = usersData?.filter(u => u.zona !== groupZona) || [];
+      if (invalidZoneUsers.length > 0) {
+        throw new Error(
+          `Solo puedes agregar usuarios de la zona ${groupZona}. ${invalidZoneUsers.length} usuario(s) son de otra zona.`
+        );
+      }
+    }
+
     try {
       // Filtrar participantes que ya están en el grupo
       const currentParticipants = room.participants || [];

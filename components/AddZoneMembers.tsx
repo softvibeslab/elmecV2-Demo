@@ -62,32 +62,36 @@ export default function AddZoneMembers({
   const [zoneUsers, setZoneUsers] = useState<User[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
 
-  const [showAllUsers, setShowAllUsers] = useState(false);
+  // REGLA DE NEGOCIO: Solo se pueden agregar usuarios de la MISMA ZONA
+  // No hay opción de "Ver todos" - esto es obligatorio
 
-  // Cargar usuarios (de la zona o todos)
+  // Cargar usuarios de la misma zona únicamente
   useEffect(() => {
-    if (visible) {
+    if (visible && zona) {
       loadUsers();
     }
-  }, [visible, zona, showAllUsers]);
+  }, [visible, zona]);
 
   const loadUsers = async () => {
+    if (!zona) {
+      Alert.alert(
+        'Sin zona definida',
+        'No se puede agregar miembros sin una zona definida. Solo puedes agregar personas de tu misma zona.'
+      );
+      return;
+    }
+
     setLoading(true);
     try {
-      let query = supabase
+      // REGLA DE NEGOCIO: Solo usuarios de la MISMA zona
+      const { data, error } = await supabase
         .from('users')
         .select(
           'id, nombre, apellido_paterno, apellido_materno, rol, zona, categoria, empresa'
         )
         .eq('activo', true)
+        .eq('zona', zona) // OBLIGATORIO: misma zona
         .order('nombre', { ascending: true });
-
-      // Si hay zona y no se quiere mostrar todos, filtrar por zona
-      if (zona && !showAllUsers) {
-        query = query.eq('zona', zona);
-      }
-
-      const { data, error } = await query;
 
       if (error) {
         console.error('Error loading users:', error);
@@ -260,30 +264,23 @@ export default function AddZoneMembers({
           </TouchableOpacity>
         </View>
 
-        {/* Info de zona y toggle */}
+        {/* Info de zona - REGLA DE NEGOCIO: Solo misma zona */}
         <View style={styles.zoneInfo}>
           <View style={styles.zoneInfoLeft}>
-            <MapPin size={16} color="#6b7280" />
+            <MapPin size={16} color="#1e40af" />
             <Text style={styles.zoneText}>
-              {zona && !showAllUsers ? (
+              {zona ? (
                 <>
-                  Usuarios de zona: <Text style={styles.zoneName}>{zona}</Text>
+                  Solo usuarios de zona: <Text style={styles.zoneName}>{zona}</Text>
                 </>
               ) : (
-                'Todos los usuarios del directorio'
+                <Text style={styles.zoneWarning}>⚠️ Sin zona definida</Text>
               )}
             </Text>
           </View>
-          {zona && (
-            <TouchableOpacity
-              style={styles.toggleButton}
-              onPress={() => setShowAllUsers(!showAllUsers)}
-            >
-              <Text style={styles.toggleButtonText}>
-                {showAllUsers ? 'Solo zona' : 'Ver todos'}
-              </Text>
-            </TouchableOpacity>
-          )}
+          <View style={styles.zoneBadge}>
+            <Text style={styles.zoneBadgeText}>🔒 Misma zona</Text>
+          </View>
         </View>
 
         {/* Búsqueda */}
@@ -396,14 +393,6 @@ export default function AddZoneMembers({
                             {zoneUser.categoria}
                           </Text>
                         )}
-                        {showAllUsers && zoneUser.zona && (
-                          <View style={styles.userZonaBadge}>
-                            <MapPin size={10} color="#6b7280" />
-                            <Text style={styles.userZonaText}>
-                              {zoneUser.zona}
-                            </Text>
-                          </View>
-                        )}
                       </View>
                     </View>
 
@@ -499,16 +488,20 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     color: '#1e40af',
   },
-  toggleButton: {
-    backgroundColor: '#1e40af',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+  zoneWarning: {
+    fontFamily: 'Inter-Medium',
+    color: '#f59e0b',
   },
-  toggleButtonText: {
-    fontSize: 12,
+  zoneBadge: {
+    backgroundColor: '#dbeafe',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  zoneBadgeText: {
+    fontSize: 11,
     fontFamily: 'Inter-SemiBold',
-    color: '#ffffff',
+    color: '#1e40af',
   },
   searchContainer: {
     flexDirection: 'row',
