@@ -1248,71 +1248,222 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
     description?: string,
     metadata?: { area?: string; isInternal?: boolean; zona?: string }
   ): Promise<string> => {
-    if (!user || !session) throw new Error('Usuario no autenticado');
+    // =========================================================================
+    // VALIDACIÓN INICIAL
+    // =========================================================================
+    if (!user) {
+      console.error('createGroupChat: user es null');
+      throw new Error('Usuario no autenticado. Por favor inicia sesión nuevamente.');
+    }
+
+    if (!session) {
+      console.error('createGroupChat: session es null');
+      throw new Error('Sesión no válida. Por favor inicia sesión nuevamente.');
+    }
 
     // Para chats de área internos, permitir 1 solo participante
     const isInternalChat = metadata?.isInternal === true;
     if (!isInternalChat && participantIds.length < 2) {
-      throw new Error('Un grupo necesita al menos 3 participantes');
+      throw new Error('Un grupo necesita al menos 2 participantes además de ti');
     }
 
-    // Agregar el creador si no está
-    const allParticipants = participantIds.includes(user.id)
-      ? participantIds
-      : [...participantIds, user.id];
+    // =========================================================================
+    // PREPARAR DATOS - El creador DEBE estar PRIMERO en participants (RLS)
+    // =========================================================================
+    // Filtrar duplicados y asegurar que el creador está primero
+    const uniqueParticipants = [...new Set(participantIds)].filter(id => id !== user.id);
+    const allParticipants = [user.id, ...uniqueParticipants];
+
+    console.log('========================================');
+    console.log('🚀 CREANDO GRUPO');
+    console.log('========================================');
+    console.log('Nombre:', name);
+    console.log('Creador ID:', user.id);
+    console.log('Total participantes:', allParticipants.length);
+    console.log('Participantes:', allParticipants);
+    console.log('Es interno:', isInternalChat);
+    console.log('Metadata:', metadata);
 
     try {
-      console.log('Creando grupo:', {
-        name,
-        participantCount: allParticipants.length,
-        isInternal: isInternalChat,
-      });
+      // =========================================================================
+      // VERIFICAR SESIÓN ACTIVA
+      // =========================================================================
+      const { data: currentSession, error: sessionError } = await supabase.auth.getSession();
 
+      if (sessionError) {
+        console.error('Error verificando sesión:', sessionError);
+        throw new Error('Error de autenticación. Por favor inicia sesión nuevamente.');
+      }
+
+      if (!currentSession?.session) {
+        console.error('No hay sesión activa');
+        throw new Error('Tu sesión ha expirado. Por favor inicia sesión nuevamente.');
+      }
+
+      const authUserId = currentSession.session.user.id;
+      console.log('✅ Sesión verificada. Auth UID:', authUserId);
+
+      // Verificar que el auth UID coincida con user.id
+      if (authUserId !== user.id) {
+        console.error('Mismatch de IDs:', { authUserId, userId: user.id });
+        throw new Error('Error de sincronización de sesión. Por favor cierra sesión e inicia de nuevo.');
+      }
+
+      // =========================================================================
+      // CONSTRUIR OBJETO PARA INSERT - Solo campos básicos primero
+      // =========================================================================
+      // Usamos campos mínimos que sabemos existen para evitar errores de schema
+      const chatRoomData: Record<string, any> = {
+        tipo: 'group',
+        participants: allParticipants,
+        is_active: true,
+        metadata: {
+          participant_count: allParticipants.length,
+          created_at: new Date().toISOString(),
+          zona: metadata?.zona || (user as any).zona || null,
+          area: metadata?.area || null,
+          isInternal: isInternalChat,
+          created_by_name: `${user.nombre || ''} ${user.apellido_paterno || ''}`.trim(),
+        },
+      };
+
+      // Agregar campos opcionales si existen en el schema
+      // Estos campos fueron agregados por la migración de grupos
+      chatRoomData.name = name || 'Grupo sin nombre';
+      chatRoomData.description = description || null;
+      chatRoomData.is_group = true;
+      chatRoomData.admin_ids = [user.id];
+      chatRoomData.created_by = user.id;
+
+      console.log('📦 Datos para INSERT:', JSON.stringify(chatRoomData, null, 2));
+
+      // =========================================================================
+      // EJECUTAR INSERT
+      // =========================================================================
       const { data, error } = await supabaseClient
         .from('chat_rooms')
-        .insert({
-          name,
-          description,
-          tipo: 'group',
-          is_group: true,
-          participants: allParticipants,
-          admin_ids: [user.id],
-          created_by: user.id,
-          is_active: true,
-          metadata: {
-            participant_count: allParticipants.length,
-            created_at: new Date().toISOString(),
-            ...metadata,
-          },
-        })
-        .select()
+        .insert(chatRoomData)
+        .select('*')
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error en INSERT chat_rooms:');
+        console.error('  Código:', error.code);
+        console.error('  Mensaje:', error.message);
+        console.error('  Detalles:', error.details);
+        console.error('  Hint:', error.hint);
 
-      // Agregar miembros a chat_room_members
-      const memberInserts = allParticipants.map(pId => ({
-        chat_room_id: data.id,
-        user_id: pId,
-        role: pId === user.id ? 'admin' : 'member',
-        added_by: user.id,
-      }));
+        // Manejar errores específicos
+        if (error.code === '42501') {
+          throw new Error(
+            'No tienes permisos para crear grupos. ' +
+            'Verifica que tu sesión esté activa y que las políticas de seguridad estén configuradas correctamente.'
+          );
+        }
+        if (error.code === '23503') {
+          throw new Error(
+            'Error de referencia en la base de datos. ' +
+            'Uno de los participantes no existe o hay un problema con tu usuario.'
+          );
+        }
+        if (error.code === '23502') {
+          // NOT NULL violation - probablemente falta una columna requerida
+          throw new Error(
+            `Error de datos: ${error.message}. Contacta al administrador.`
+          );
+        }
+        if (error.code === '42703') {
+          // Column does not exist - la migración no se ha ejecutado
+          throw new Error(
+            'La base de datos necesita una actualización. ' +
+            'Contacta al administrador para ejecutar la migración de chat grupal.'
+          );
+        }
 
-      await supabaseClient.from('chat_room_members').insert(memberInserts);
+        throw new Error(`Error al crear el grupo: ${error.message}`);
+      }
 
-      // Actualizar estado local
-      setChatRooms(prev => [data, ...prev]);
+      if (!data) {
+        console.error('❌ INSERT exitoso pero no se recibieron datos');
+        throw new Error('El grupo se creó pero no se pudo verificar. Intenta refrescar.');
+      }
+
+      console.log('✅ Chat room creado exitosamente');
+      console.log('  ID:', data.id);
+      console.log('  Nombre:', data.name);
+
+      // =========================================================================
+      // AGREGAR MIEMBROS A chat_room_members (OPCIONAL - puede fallar)
+      // =========================================================================
+      try {
+        const memberInserts = allParticipants.map(pId => ({
+          chat_room_id: data.id,
+          user_id: pId,
+          role: pId === user.id ? 'admin' : 'member',
+          added_by: user.id,
+        }));
+
+        const { error: membersError } = await supabaseClient
+          .from('chat_room_members')
+          .insert(memberInserts);
+
+        if (membersError) {
+          // No es crítico - el grupo ya fue creado
+          console.warn('⚠️ Error agregando a chat_room_members:', membersError.message);
+        } else {
+          console.log('✅ Miembros agregados a chat_room_members');
+        }
+      } catch (membersErr) {
+        console.warn('⚠️ Error en chat_room_members (no crítico):', membersErr);
+      }
+
+      // =========================================================================
+      // ACTUALIZAR ESTADO LOCAL
+      // =========================================================================
+      const newRoom: ChatRoom = {
+        ...data,
+        is_group: true,
+        admin_ids: [user.id],
+      } as ChatRoom;
+
+      setChatRooms(prev => [newRoom, ...prev]);
       setMessages(prev => ({ ...prev, [data.id]: [] }));
       setupRealtimeSubscription(data.id);
 
-      // Enviar mensaje de sistema
-      await sendMessage(data.id, `🎉 Grupo "${name}" creado`, 'system');
+      // =========================================================================
+      // ENVIAR MENSAJE DE BIENVENIDA (OPCIONAL)
+      // =========================================================================
+      try {
+        await sendMessage(data.id, `🎉 Grupo "${name}" creado`, 'system');
+        console.log('✅ Mensaje de bienvenida enviado');
+      } catch (msgError) {
+        console.warn('⚠️ Error enviando mensaje de bienvenida (no crítico):', msgError);
+      }
 
-      console.log('Grupo creado exitosamente:', data.id);
+      console.log('========================================');
+      console.log('✅ GRUPO CREADO EXITOSAMENTE:', data.id);
+      console.log('========================================');
+
       return data.id;
-    } catch (error) {
-      console.error('Error creando grupo:', error);
-      throw new Error('No se pudo crear el grupo');
+
+    } catch (error: any) {
+      console.error('========================================');
+      console.error('❌ ERROR CREANDO GRUPO');
+      console.error('========================================');
+      console.error('Tipo:', error?.constructor?.name);
+      console.error('Mensaje:', error?.message);
+      console.error('Stack:', error?.stack);
+
+      // Re-lanzar errores ya formateados
+      if (error.message && error.message.includes('Error')) {
+        throw error;
+      }
+
+      // Error genérico
+      throw new Error(
+        'No se pudo crear el grupo. ' +
+        'Verifica tu conexión a internet e intenta nuevamente.'
+      );
     }
   };
 
