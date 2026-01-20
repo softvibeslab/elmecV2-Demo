@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Informe de Correcciones - ElmecV2</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --dark: #1e293b;
+            --darker: #0f172a;
+            --light: #f8fafc;
+            --gray: #64748b;
+            --gray-light: #e2e8f0;
+            --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--darker);
+            color: var(--light);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* Header Hero */
+        .hero {
+            background: var(--gradient-1);
+            padding: 60px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            opacity: 0.5;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .hero h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .hero .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        .hero-meta {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .hero-meta span {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* Section */
+        .section {
+            background: var(--dark);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .section:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .section-number {
+            width: 45px;
+            height: 45px;
+            background: var(--gradient-1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .section-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        /* Problem/Solution Cards */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .card-icon {
+            width: 35px;
+            height: 35px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .card-icon.problem {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .card-icon.solution {
+            background: rgba(16, 185, 129, 0.2);
+        }
+
+        .card-title {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        /* Code Block */
+        .code-block {
+            background: #0d1117;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            overflow-x: auto;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .code-block pre {
+            margin: 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        .code-block .comment {
+            color: #6a737d;
+        }
+
+        .code-block .keyword {
+            color: #ff7b72;
+        }
+
+        .code-block .string {
+            color: #a5d6ff;
+        }
+
+        .code-block .function {
+            color: #d2a8ff;
+        }
+
+        .code-block .variable {
+            color: #79c0ff;
+        }
+
+        .code-label {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 5px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .code-label.before {
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+        }
+
+        .code-label.after {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+        }
+
+        /* Table */
+        .table-wrapper {
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        th {
+            background: rgba(99, 102, 241, 0.2);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+        }
+
+        tr:hover td {
+            background: rgba(255,255,255,0.03);
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-primary {
+            background: rgba(99, 102, 241, 0.2);
+            color: #818cf8;
+        }
+
+        .badge-success {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+        }
+
+        .badge-warning {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+        }
+
+        .badge-info {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+        }
+
+        /* Flow Diagram */
+        .flow-diagram {
+            background: #0d1117;
+            border-radius: 12px;
+            padding: 30px;
+            margin: 20px 0;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .flow-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .flow-step:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            left: 17px;
+            top: 40px;
+            width: 2px;
+            height: calc(100% + 10px);
+            background: linear-gradient(180deg, var(--primary) 0%, transparent 100%);
+        }
+
+        .flow-number {
+            width: 35px;
+            height: 35px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .flow-content {
+            flex: 1;
+            padding-top: 5px;
+        }
+
+        .flow-content strong {
+            color: var(--primary);
+        }
+
+        /* Commits */
+        .commit-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .commit-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+            border-left: 3px solid var(--primary);
+        }
+
+        .commit-hash {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+
+        .commit-message {
+            flex: 1;
+            font-size: 0.9rem;
+        }
+
+        /* Checklist */
+        .checklist {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 15px;
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .checklist-item::before {
+            content: '✓';
+            width: 24px;
+            height: 24px;
+            background: var(--secondary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        /* Build Status */
+        .build-status {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(16, 185, 129, 0.2) 100%);
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+
+        .build-status h3 {
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .build-link {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .build-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+
+        .footer a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 1.8rem;
+            }
+
+            .hero-meta {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .section {
+                padding: 20px;
+            }
+
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section {
+            animation: fadeInUp 0.5s ease forwards;
+        }
+
+        .section:nth-child(2) { animation-delay: 0.1s; }
+        .section:nth-child(3) { animation-delay: 0.2s; }
+        .section:nth-child(4) { animation-delay: 0.3s; }
+        .section:nth-child(5) { animation-delay: 0.4s; }
+        .section:nth-child(6) { animation-delay: 0.5s; }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <header class="hero">
+        <div class="hero-content">
+            <h1>Informe de Correcciones</h1>
+            <p class="subtitle">ElmecV2 - Sistema de Gestión de Solicitudes y Chat</p>
+            <div class="hero-meta">
+                <span>📅 19 Enero 2026</span>
+                <span>🌿 Branch: netifly</span>
+                <span>📱 React Native / Expo</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Section 1: Null en Nombres -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">1</div>
+                <h2 class="section-title">Corrección de "null" en Nombres</h2>
+            </div>
+
+            <div class="card-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon problem">❌</div>
+                        <span class="card-title">Problema</span>
+                    </div>
+                    <p>Los nombres de usuarios aparecían con la palabra "null" al final cuando el campo <code>apellido_materno</code> estaba vacío.</p>
+                    <p style="margin-top: 10px; color: var(--gray);">Ejemplo: "Alberto Cano null", "Alejandro Licona null"</p>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon solution">✓</div>
+                        <span class="card-title">Solución</span>
+                    </div>
+                    <p>Implementación de función <code>getFullName</code> con filtrado de valores nulos/undefined usando <code>.filter(Boolean).join(' ')</code></p>
+                </div>
+            </div>
+
+            <div class="code-block">
+                <span class="code-label before">Antes (Incorrecto)</span>
+                <pre><span class="keyword">const</span> <span class="variable">fullName</span> = <span class="string">`${nombre} ${apellido_paterno} ${apellido_materno}`</span>;</pre>
+            </div>
+
+            <div class="code-block">
+                <span class="code-label after">Después (Correcto)</span>
+                <pre><span class="keyword">const</span> <span class="function">getFullName</span> = (<span class="variable">user</span>: User) => {
+  <span class="keyword">return</span> [<span class="variable">user</span>.nombre, <span class="variable">user</span>.apellido_paterno, <span class="variable">user</span>.apellido_materno]
+    .<span class="function">filter</span>(Boolean)
+    .<span class="function">join</span>(<span class="string">' '</span>);
+};</pre>
+            </div>
+
+            <h4 style="margin-top: 20px; margin-bottom: 10px;">Archivos Modificados</h4>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Archivo</th>
+                            <th>Cambio</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>components/CreateGroupChat.tsx</code></td>
+                            <td>Función getFullName con filtrado</td>
+                        </tr>
+                        <tr>
+                            <td><code>components/AddZoneMembers.tsx</code></td>
+                            <td>Mismo patrón de filtrado</td>
+                        </tr>
+                        <tr>
+                            <td><code>app/(tabs)/requests.tsx</code></td>
+                            <td>Filtrado en nombres de solicitudes</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Section 2: Grupo undefined -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">2</div>
+                <h2 class="section-title">Corrección de "Grupo - undefined" en Header</h2>
+            </div>
+
+            <div class="card-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon problem">❌</div>
+                        <span class="card-title">Problema</span>
+                    </div>
+                    <p>El header del chat mostraba "Grupo - undefined" cuando el nombre del grupo no estaba definido.</p>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon solution">✓</div>
+                        <span class="card-title">Solución</span>
+                    </div>
+                    <p>Implementación de fallback con operador <code>||</code> para mostrar nombre por defecto.</p>
+                </div>
+            </div>
+
+            <div class="code-block">
+                <span class="code-label after">Solución</span>
+                <pre><span class="variable">chatRoom</span>.name || <span class="string">'Grupo sin nombre'</span></pre>
+            </div>
+        </section>
+
+        <!-- Section 3: Badges de Área -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">3</div>
+                <h2 class="section-title">Badges de Área en Solicitudes</h2>
+            </div>
+
+            <div class="card-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon problem">❌</div>
+                        <span class="card-title">Problema</span>
+                    </div>
+                    <p>Las tarjetas de solicitudes no mostraban el área correspondiente (VENTAS, SOPORTE, COTIZACIÓN).</p>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon solution">✓</div>
+                        <span class="card-title">Solución</span>
+                    </div>
+                    <p>Implementación de funciones <code>getAreaName</code> y <code>getAreaColor</code> con badges visuales.</p>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 15px; margin: 20px 0; flex-wrap: wrap;">
+                <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">VENTAS</span>
+                <span class="badge" style="background: rgba(59, 130, 246, 0.2); color: #60a5fa;">SOPORTE</span>
+                <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24;">COTIZACIÓN</span>
+                <span class="badge" style="background: rgba(107, 114, 128, 0.2); color: #9ca3af;">GENERAL</span>
+            </div>
+
+            <div class="code-block">
+                <span class="code-label after">Implementación</span>
+                <pre><span class="keyword">const</span> <span class="function">getAreaName</span> = (<span class="variable">tipo</span>: number) => {
+  <span class="keyword">switch</span> (<span class="variable">tipo</span>) {
+    <span class="keyword">case</span> <span class="string">1</span>: <span class="keyword">return</span> <span class="string">'VENTAS'</span>;
+    <span class="keyword">case</span> <span class="string">2</span>: <span class="keyword">return</span> <span class="string">'SOPORTE'</span>;
+    <span class="keyword">case</span> <span class="string">3</span>: <span class="keyword">return</span> <span class="string">'COTIZACIÓN'</span>;
+    <span class="keyword">default</span>: <span class="keyword">return</span> <span class="string">'GENERAL'</span>;
+  }
+};
+
+<span class="keyword">const</span> <span class="function">getAreaColor</span> = (<span class="variable">tipo</span>: number) => {
+  <span class="keyword">switch</span> (<span class="variable">tipo</span>) {
+    <span class="keyword">case</span> <span class="string">1</span>: <span class="keyword">return</span> <span class="string">'#10b981'</span>; <span class="comment">// Verde - Ventas</span>
+    <span class="keyword">case</span> <span class="string">2</span>: <span class="keyword">return</span> <span class="string">'#3b82f6'</span>; <span class="comment">// Azul - Soporte</span>
+    <span class="keyword">case</span> <span class="string">3</span>: <span class="keyword">return</span> <span class="string">'#f59e0b'</span>; <span class="comment">// Amarillo - Cotización</span>
+    <span class="keyword">default</span>: <span class="keyword">return</span> <span class="string">'#6b7280'</span>;
+  }
+};</pre>
+            </div>
+        </section>
+
+        <!-- Section 4: Restricción por Zona -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">4</div>
+                <h2 class="section-title">Regla de Negocio: Restricción por Zona</h2>
+            </div>
+
+            <div class="card-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon problem">📋</div>
+                        <span class="card-title">Requerimiento</span>
+                    </div>
+                    <p>Los usuarios solo pueden crear/agregar miembros a grupos de chat si son de la <strong>misma zona</strong>.</p>
+                    <p style="margin-top: 10px; color: var(--gray);">Ejemplo: Usuario de Monterrey NO puede agregar usuarios de Hidalgo.</p>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon solution">✓</div>
+                        <span class="card-title">Implementación</span>
+                    </div>
+                    <p>Validación en UI (filtrado de usuarios) + Validación en Backend (ChatContext).</p>
+                    <p style="margin-top: 10px;"><span class="badge badge-info">🔒 Doble Validación</span></p>
+                </div>
+            </div>
+
+            <h4 style="margin-top: 25px; margin-bottom: 15px;">Archivos Modificados</h4>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Archivo</th>
+                            <th>Cambio</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>components/CreateGroupChat.tsx</code></td>
+                            <td>Solo carga usuarios de la misma zona</td>
+                        </tr>
+                        <tr>
+                            <td><code>components/AddZoneMembers.tsx</code></td>
+                            <td>Eliminado toggle "Ver todos", forzado filtro por zona</td>
+                        </tr>
+                        <tr>
+                            <td><code>contexts/ChatContext.tsx</code></td>
+                            <td>Validación de zona en addGroupParticipants</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="code-block">
+                <span class="code-label after">Validación Frontend - CreateGroupChat</span>
+                <pre><span class="comment">// REGLA DE NEGOCIO: Solo cargar usuarios de la MISMA zona</span>
+<span class="keyword">const</span> <span class="function">loadUsers</span> = <span class="keyword">async</span> (<span class="variable">zona</span>: string) => {
+  <span class="keyword">const</span> { <span class="variable">data</span> } = <span class="keyword">await</span> <span class="variable">supabase</span>
+    .<span class="function">from</span>(<span class="string">'users'</span>)
+    .<span class="function">select</span>(<span class="string">'id, nombre, apellido_paterno, ...'</span>)
+    .<span class="function">eq</span>(<span class="string">'activo'</span>, <span class="keyword">true</span>)
+    .<span class="function">eq</span>(<span class="string">'zona'</span>, <span class="variable">zona</span>) <span class="comment">// ← OBLIGATORIO: misma zona</span>
+    .<span class="function">neq</span>(<span class="string">'id'</span>, <span class="variable">user</span>?.id);
+};</pre>
+            </div>
+
+            <div class="code-block">
+                <span class="code-label after">Validación Backend - ChatContext</span>
+                <pre><span class="comment">// REGLA DE NEGOCIO: Validar zona antes de agregar participantes</span>
+<span class="keyword">const</span> <span class="variable">groupZona</span> = <span class="variable">room</span>.metadata?.zona;
+<span class="keyword">if</span> (<span class="variable">groupZona</span>) {
+  <span class="keyword">const</span> { <span class="variable">data</span>: <span class="variable">usersData</span> } = <span class="keyword">await</span> <span class="variable">supabaseClient</span>
+    .<span class="function">from</span>(<span class="string">'users'</span>)
+    .<span class="function">select</span>(<span class="string">'id, zona'</span>)
+    .<span class="function">in</span>(<span class="string">'id'</span>, <span class="variable">participantIds</span>);
+
+  <span class="keyword">const</span> <span class="variable">invalidZoneUsers</span> = <span class="variable">usersData</span>?.<span class="function">filter</span>(<span class="variable">u</span> => <span class="variable">u</span>.zona !== <span class="variable">groupZona</span>) || [];
+  <span class="keyword">if</span> (<span class="variable">invalidZoneUsers</span>.length > 0) {
+    <span class="keyword">throw new</span> <span class="function">Error</span>(
+      <span class="string">`Solo puedes agregar usuarios de la zona ${groupZona}.`</span>
+    );
+  }
+}</pre>
+            </div>
+        </section>
+
+        <!-- Section 5: Error Crear Grupos -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">5</div>
+                <h2 class="section-title">Fix Principal: Error al Crear Grupos</h2>
+            </div>
+
+            <div class="card-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon problem">❌</div>
+                        <span class="card-title">Problema</span>
+                    </div>
+                    <p>Error "Error al crear el grupo - No se pudo crear el grupo" al intentar crear grupos de chat.</p>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon solution">🔍</div>
+                        <span class="card-title">Causa Raíz</span>
+                    </div>
+                    <p>La política RLS de Supabase requiere que <code>auth.uid()</code> esté dentro del array <code>participants</code>.</p>
+                </div>
+            </div>
+
+            <div class="code-block">
+                <span class="code-label before">Política RLS de Supabase</span>
+                <pre><span class="keyword">CREATE POLICY</span> <span class="string">"chat_rooms_insert_participant"</span>
+  <span class="keyword">ON</span> chat_rooms
+  <span class="keyword">FOR INSERT</span>
+  <span class="keyword">TO</span> authenticated
+  <span class="keyword">WITH CHECK</span> (<span class="function">auth.uid</span>() = <span class="keyword">ANY</span>(participants));</pre>
+            </div>
+
+            <h4 style="margin-top: 25px; margin-bottom: 15px;">Problemas Específicos Corregidos</h4>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Problema</th>
+                            <th>Solución</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="badge badge-primary">1</span></td>
+                            <td>User ID no siempre al inicio del array</td>
+                            <td><code>[user.id, ...participantIds.filter(id => id !== user.id)]</code></td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-primary">2</span></td>
+                            <td>Verificación de sesión insuficiente</td>
+                            <td><code>await supabase.auth.getSession()</code> antes del INSERT</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-primary">3</span></td>
+                            <td>Errores genéricos sin contexto</td>
+                            <td>Manejo específico por código de error</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-primary">4</span></td>
+                            <td>Duplicados en participants</td>
+                            <td><code>[...new Set(participantIds)]</code></td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-primary">5</span></td>
+                            <td>Mismatch entre auth UID y user.id</td>
+                            <td>Verificación explícita antes de INSERT</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h4 style="margin-top: 25px; margin-bottom: 15px;">Flujo de Creación de Grupo</h4>
+            <div class="flow-diagram">
+                <div class="flow-step">
+                    <div class="flow-number">1</div>
+                    <div class="flow-content">
+                        <strong>Validación Inicial</strong><br>
+                        Verificar que <code>user</code> y <code>session</code> existen
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number">2</div>
+                    <div class="flow-content">
+                        <strong>Preparar Participants</strong><br>
+                        El creador DEBE estar PRIMERO: <code>[user.id, ...others]</code>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number">3</div>
+                    <div class="flow-content">
+                        <strong>Verificar Sesión</strong><br>
+                        Llamar <code>auth.getSession()</code> y validar que UID coincida
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number">4</div>
+                    <div class="flow-content">
+                        <strong>Ejecutar INSERT</strong><br>
+                        RLS verifica: <code>auth.uid() = ANY(participants)</code>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number">5</div>
+                    <div class="flow-content">
+                        <strong>Manejo de Errores</strong><br>
+                        Códigos específicos: 42501 (permisos), 23503 (FK), 42703 (columna)
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 6: Commits -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">📝</div>
+                <h2 class="section-title">Resumen de Commits</h2>
+            </div>
+
+            <div class="commit-list">
+                <div class="commit-item">
+                    <span class="commit-hash">8c7b2d9</span>
+                    <span class="commit-message">fix(chat): improve createGroupChat with robust error handling and RLS compliance</span>
+                </div>
+                <div class="commit-item">
+                    <span class="commit-hash">b94e98d</span>
+                    <span class="commit-message">feat: implement zone-based group chat restriction (WhatsApp-like)</span>
+                </div>
+                <div class="commit-item">
+                    <span class="commit-hash">a2f6b33</span>
+                    <span class="commit-message">fix: multiple UI improvements and bug fixes</span>
+                </div>
+                <div class="commit-item">
+                    <span class="commit-hash">2b0868e</span>
+                    <span class="commit-message">fix: handle undefined group name in chat header</span>
+                </div>
+                <div class="commit-item">
+                    <span class="commit-hash">9149018</span>
+                    <span class="commit-message">fix: remove null from names when apellido_materno is missing</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 7: Checklist -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">✅</div>
+                <h2 class="section-title">Checklist de Validación</h2>
+            </div>
+
+            <div class="checklist">
+                <div class="checklist-item">Nombres sin "null" al final</div>
+                <div class="checklist-item">Header de grupo sin "undefined"</div>
+                <div class="checklist-item">Badges de área en solicitudes</div>
+                <div class="checklist-item">Restricción de zona implementada</div>
+                <div class="checklist-item">Creación de grupos con RLS</div>
+                <div class="checklist-item">Manejo de errores descriptivo</div>
+                <div class="checklist-item">Logging detallado para debug</div>
+                <div class="checklist-item">Build APK iniciado</div>
+            </div>
+        </section>
+
+        <!-- Build Status -->
+        <section class="section">
+            <div class="section-header">
+                <div class="section-number">📱</div>
+                <h2 class="section-title">Estado del Build</h2>
+            </div>
+
+            <div class="build-status">
+                <h3>🚀 Build de Android en Progreso</h3>
+                <p style="margin-bottom: 20px; color: var(--gray);">Platform: Android (Preview APK)</p>
+                <a href="https://expo.dev/accounts/rogermck/projects/elmec-mobile-app/builds/01483bbf-c059-4f01-918c-771970f5a374"
+                   class="build-link"
+                   target="_blank">
+                    Ver Build en Expo →
+                </a>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>Generado por <strong>R2-D2</strong> - Claude Code Assistant</p>
+        <p style="margin-top: 5px;">ElmecV2 © 2026 | <a href="https://expo.dev">Expo</a> | <a href="https://supabase.com">Supabase</a></p>
+    </footer>
+
+    <script>
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // Add intersection observer for animations
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.section').forEach(section => {
+            observer.observe(section);
+        });
+    </script>
+</body>
+</html>

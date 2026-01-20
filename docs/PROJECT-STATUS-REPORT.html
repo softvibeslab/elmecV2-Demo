@@ -1,0 +1,2121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ElmecV2 - Informe de Estado del Proyecto</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #818cf8;
+            --secondary: #10b981;
+            --secondary-dark: #059669;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --purple: #8b5cf6;
+            --pink: #ec4899;
+            --dark: #1e293b;
+            --darker: #0f172a;
+            --darkest: #020617;
+            --light: #f8fafc;
+            --gray: #64748b;
+            --gray-light: #94a3b8;
+            --gray-dark: #334155;
+            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-secondary: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            --gradient-accent: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --gradient-blue: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --gradient-dark: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.3);
+            --shadow-lg: 0 10px 15px rgba(0,0,0,0.3);
+            --shadow-xl: 0 20px 25px rgba(0,0,0,0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--darkest);
+            color: var(--light);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 280px;
+            height: 100vh;
+            background: var(--darker);
+            border-right: 1px solid rgba(255,255,255,0.1);
+            padding: 20px 0;
+            overflow-y: auto;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 20px;
+        }
+
+        .sidebar-logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .sidebar-subtitle {
+            font-size: 0.75rem;
+            color: var(--gray);
+            margin-top: 5px;
+        }
+
+        .nav-section {
+            padding: 10px 20px;
+        }
+
+        .nav-section-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--gray);
+            margin-bottom: 10px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 15px;
+            color: var(--gray-light);
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            margin-bottom: 4px;
+        }
+
+        .nav-link:hover {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--light);
+        }
+
+        .nav-link.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .nav-icon {
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 280px;
+            min-height: 100vh;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: var(--gradient-primary);
+            padding: 80px 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .hero-badge .dot {
+            width: 8px;
+            height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .hero .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 30px;
+            max-width: 600px;
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 40px;
+            flex-wrap: wrap;
+        }
+
+        .hero-stat {
+            text-align: center;
+        }
+
+        .hero-stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .hero-stat-label {
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px;
+        }
+
+        /* Section */
+        .section {
+            margin-bottom: 50px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .section-icon {
+            width: 50px;
+            height: 50px;
+            background: var(--gradient-primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+        }
+
+        .section-subtitle {
+            font-size: 0.9rem;
+            color: var(--gray);
+        }
+
+        /* Cards */
+        .card {
+            background: var(--dark);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .card-grid-3 {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        /* Status Badges */
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-complete {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+        }
+
+        .status-progress {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+        }
+
+        .status-pending {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+        }
+
+        .status-ready {
+            background: rgba(139, 92, 246, 0.2);
+            color: #a78bfa;
+        }
+
+        /* Feature List */
+        .feature-list {
+            list-style: none;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .feature-item:last-child {
+            border-bottom: none;
+        }
+
+        .feature-check {
+            width: 22px;
+            height: 22px;
+            background: var(--secondary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            color: white;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .feature-content {
+            flex: 1;
+        }
+
+        .feature-name {
+            font-weight: 500;
+            margin-bottom: 3px;
+        }
+
+        .feature-desc {
+            font-size: 0.85rem;
+            color: var(--gray);
+        }
+
+        /* Tables */
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 14px 18px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        th {
+            background: rgba(99, 102, 241, 0.1);
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--primary-light);
+        }
+
+        tr:hover td {
+            background: rgba(255,255,255,0.02);
+        }
+
+        /* Flow Diagram */
+        .flow-container {
+            background: var(--darker);
+            border-radius: 16px;
+            padding: 30px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .flow-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .flow-steps {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .flow-step {
+            background: var(--dark);
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .flow-step.active {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .flow-arrow {
+            color: var(--gray);
+            font-size: 1.2rem;
+        }
+
+        /* Architecture Diagram */
+        .architecture {
+            background: var(--darker);
+            border-radius: 16px;
+            padding: 30px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .arch-layer {
+            margin-bottom: 20px;
+        }
+
+        .arch-layer-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--gray);
+            margin-bottom: 12px;
+        }
+
+        .arch-boxes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .arch-box {
+            background: var(--dark);
+            padding: 12px 18px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .arch-box.highlight {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        /* Code Blocks */
+        .code-block {
+            background: #0d1117;
+            border-radius: 12px;
+            padding: 20px;
+            overflow-x: auto;
+            border: 1px solid rgba(255,255,255,0.1);
+            margin: 15px 0;
+        }
+
+        .code-block pre {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .code-block .comment { color: #8b949e; }
+        .code-block .keyword { color: #ff7b72; }
+        .code-block .string { color: #a5d6ff; }
+        .code-block .function { color: #d2a8ff; }
+        .code-block .variable { color: #79c0ff; }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-card {
+            background: var(--dark);
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: transform 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: scale(1.02);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--gray);
+            margin-top: 5px;
+        }
+
+        /* Progress Bars */
+        .progress-item {
+            margin-bottom: 20px;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .progress-label {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .progress-value {
+            font-size: 0.9rem;
+            color: var(--primary-light);
+            font-weight: 600;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: var(--gray-dark);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 1s ease;
+        }
+
+        .progress-fill.green { background: var(--gradient-secondary); }
+        .progress-fill.blue { background: var(--gradient-blue); }
+        .progress-fill.purple { background: var(--gradient-primary); }
+
+        /* Timeline */
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(180deg, var(--primary) 0%, var(--secondary) 100%);
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-bottom: 25px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -26px;
+            top: 5px;
+            width: 12px;
+            height: 12px;
+            background: var(--primary);
+            border-radius: 50%;
+            border: 2px solid var(--darker);
+        }
+
+        .timeline-date {
+            font-size: 0.8rem;
+            color: var(--gray);
+            margin-bottom: 5px;
+        }
+
+        .timeline-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .timeline-desc {
+            font-size: 0.9rem;
+            color: var(--gray-light);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+            background: var(--darker);
+            padding: 5px;
+            border-radius: 10px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            background: transparent;
+            color: var(--gray);
+        }
+
+        .tab:hover {
+            color: var(--light);
+        }
+
+        .tab.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Database Schema */
+        .schema-table {
+            background: var(--dark);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .schema-table-name {
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--primary-light);
+        }
+
+        .schema-columns {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 8px;
+        }
+
+        .schema-column {
+            font-size: 0.8rem;
+            padding: 6px 10px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 5px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .schema-column.pk {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+        }
+
+        .schema-column.fk {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+        }
+
+        /* Checklist */
+        .checklist-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px;
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: 10px;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .checklist-icon {
+            width: 28px;
+            height: 28px;
+            background: var(--secondary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--darker);
+            padding: 40px;
+            text-align: center;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .footer-logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .footer-text {
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .container {
+                padding: 20px;
+            }
+        }
+
+        /* Mobile menu button */
+        .mobile-menu-btn {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            background: var(--primary);
+            border-radius: 50%;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            z-index: 1001;
+            box-shadow: var(--shadow-lg);
+        }
+
+        @media (max-width: 1024px) {
+            .mobile-menu-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-in {
+            animation: fadeInUp 0.5s ease forwards;
+        }
+
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+        .delay-3 { animation-delay: 0.3s; }
+        .delay-4 { animation-delay: 0.4s; }
+    </style>
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">ElmecV2</div>
+            <div class="sidebar-subtitle">Informe de Estado del Proyecto</div>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">General</div>
+            <a href="#overview" class="nav-link active">
+                <span class="nav-icon">📊</span> Resumen Ejecutivo
+            </a>
+            <a href="#features" class="nav-link">
+                <span class="nav-icon">✨</span> Funcionalidades
+            </a>
+            <a href="#architecture" class="nav-link">
+                <span class="nav-icon">🏗️</span> Arquitectura
+            </a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Módulos</div>
+            <a href="#auth" class="nav-link">
+                <span class="nav-icon">🔐</span> Autenticación
+            </a>
+            <a href="#requests" class="nav-link">
+                <span class="nav-icon">📋</span> Solicitudes
+            </a>
+            <a href="#chat" class="nav-link">
+                <span class="nav-icon">💬</span> Chat
+            </a>
+            <a href="#directory" class="nav-link">
+                <span class="nav-icon">👥</span> Directorio
+            </a>
+            <a href="#calculator" class="nav-link">
+                <span class="nav-icon">🔢</span> Calculadora
+            </a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Técnico</div>
+            <a href="#database" class="nav-link">
+                <span class="nav-icon">🗄️</span> Base de Datos
+            </a>
+            <a href="#flows" class="nav-link">
+                <span class="nav-icon">🔄</span> Flujos
+            </a>
+            <a href="#deployment" class="nav-link">
+                <span class="nav-icon">🚀</span> Despliegue
+            </a>
+            <a href="#security" class="nav-link">
+                <span class="nav-icon">🛡️</span> Seguridad
+            </a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Estado</div>
+            <a href="#checklist" class="nav-link">
+                <span class="nav-icon">✅</span> Checklist
+            </a>
+            <a href="#next-steps" class="nav-link">
+                <span class="nav-icon">📍</span> Próximos Pasos
+            </a>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu Button -->
+    <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Hero Section -->
+        <header class="hero" id="overview">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <span class="dot"></span>
+                    Production Ready
+                </div>
+                <h1>ElmecV2</h1>
+                <p class="subtitle">
+                    Aplicación empresarial React Native/Expo para gestión de solicitudes,
+                    chat en tiempo real y calculadoras industriales.
+                </p>
+                <div class="hero-stats">
+                    <div class="hero-stat">
+                        <div class="hero-stat-value">20,600+</div>
+                        <div class="hero-stat-label">Líneas de Código</div>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="hero-stat-value">50+</div>
+                        <div class="hero-stat-label">Componentes</div>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="hero-stat-value">8</div>
+                        <div class="hero-stat-label">Módulos</div>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="hero-stat-value">100%</div>
+                        <div class="hero-stat-label">TypeScript</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="container">
+            <!-- Tech Stack -->
+            <section class="section animate-in">
+                <div class="section-header">
+                    <div class="section-icon">⚡</div>
+                    <div>
+                        <h2 class="section-title">Stack Tecnológico</h2>
+                        <p class="section-subtitle">Tecnologías principales del proyecto</p>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" style="font-size: 1.5rem;">React Native</div>
+                        <div class="stat-label">0.79.5</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" style="font-size: 1.5rem;">Expo</div>
+                        <div class="stat-label">53.0.23</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" style="font-size: 1.5rem;">TypeScript</div>
+                        <div class="stat-label">5.8.3</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" style="font-size: 1.5rem;">Supabase</div>
+                        <div class="stat-label">PostgreSQL + Realtime</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Features Section -->
+            <section class="section animate-in delay-1" id="features">
+                <div class="section-header">
+                    <div class="section-icon">✨</div>
+                    <div>
+                        <h2 class="section-title">Funcionalidades Implementadas</h2>
+                        <p class="section-subtitle">Todas las características del sistema</p>
+                    </div>
+                </div>
+
+                <div class="card-grid">
+                    <!-- Auth Card -->
+                    <div class="card" id="auth">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="card-icon" style="background: rgba(99, 102, 241, 0.2);">🔐</div>
+                                Autenticación
+                            </div>
+                            <span class="status status-complete">✓ Completo</span>
+                        </div>
+                        <ul class="feature-list">
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">Login Email/Password</div>
+                                    <div class="feature-desc">Con timeout y recuperación de errores</div>
+                                </div>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">Registro de Usuarios</div>
+                                    <div class="feature-desc">Validación de formulario, empresa, ubicación</div>
+                                </div>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">Gestión de Sesión</div>
+                                    <div class="feature-desc">Token refresh, auto-logout por inactividad</div>
+                                </div>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">Roles de Usuario</div>
+                                    <div class="feature-desc">Cliente, Agente, Admin con permisos específicos</div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Requests Card -->
+                    <div class="card" id="requests">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="card-icon" style="background: rgba(16, 185, 129, 0.2);">📋</div>
+                                Solicitudes
+                            </div>
+                            <span class="status status-complete">✓ Completo</span>
+                        </div>
+                        <ul class="feature-list">
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">CRUD Completo</div>
+                                    <div class="feature-desc">Crear, listar, editar, eliminar solicitudes</div>
+                                </div>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">Pipeline de Estados</div>
+                                    <div class="feature-desc">nuevo → asignado → en_proceso → resuelto → cerrado</div>
+                                </div>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">Archivos Adjuntos</div>
+                                    <div class="feature-desc">Hasta 3 archivos, 5MB c/u, múltiples formatos</div>
+                                </div>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">Búsqueda Avanzada</div>
+                                    <div class="feature-desc">Filtros múltiples y búsqueda por texto</div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Chat Card -->
+                    <div class="card" id="chat">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="card-icon" style="background: rgba(236, 72, 153, 0.2);">💬</div>
+                                Chat en Tiempo Real
+                            </div>
+                            <span class="status status-complete">✓ Completo</span>
+                        </div>
+                        <ul class="feature-list">
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">Mensajes Directos (1:1)</div>
+                                    <div class="feature-desc">Chat en tiempo real usuario a usuario</div>
+                                </div>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">Grupos (hasta 256)</div>
+                                    <div class="feature-desc">Estilo WhatsApp con roles admin/moderador/miembro</div>
+                                </div>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">Estados de Entrega</div>
+                                    <div class="feature-desc">pending → sent → delivered → read</div>
+                                </div>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">Restricción por Zona</div>
+                                    <div class="feature-desc">Solo usuarios de la misma zona pueden crear grupos</div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Directory Card -->
+                    <div class="card" id="directory">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="card-icon" style="background: rgba(59, 130, 246, 0.2);">👥</div>
+                                Directorio
+                            </div>
+                            <span class="status status-complete">✓ Completo</span>
+                        </div>
+                        <ul class="feature-list">
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">Lista de Personal</div>
+                                    <div class="feature-desc">Navegar todos los usuarios por categoría</div>
+                                </div>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">Contacto Rápido</div>
+                                    <div class="feature-desc">Llamada, email, WhatsApp integrado</div>
+                                </div>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">Filtros por Categoría/Zona</div>
+                                    <div class="feature-desc">Ventas, Soporte, Servicio + Norte, Sur, etc.</div>
+                                </div>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">Estado en Línea</div>
+                                    <div class="feature-desc">Indicador online/offline en tiempo real</div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Calculator Card -->
+                    <div class="card" id="calculator">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="card-icon" style="background: rgba(245, 158, 11, 0.2);">🔢</div>
+                                Calculadora Industrial
+                            </div>
+                            <span class="status status-complete">✓ Completo</span>
+                        </div>
+                        <ul class="feature-list">
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">Barrenado</div>
+                                    <div class="feature-desc">Cálculos de taladrado (Vc, N, fz, etc.)</div>
+                                </div>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">Fresado</div>
+                                    <div class="feature-desc">Cálculos de fresado industrial</div>
+                                </div>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">Sistema de Unidades</div>
+                                    <div class="feature-desc">Métrico/Imperial configurable</div>
+                                </div>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">Redux State</div>
+                                    <div class="feature-desc">Gestión de estado con Redux Toolkit</div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Admin Dashboard Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="card-icon" style="background: rgba(139, 92, 246, 0.2);">📊</div>
+                                Dashboard Admin
+                            </div>
+                            <span class="status status-complete">✓ Completo</span>
+                        </div>
+                        <ul class="feature-list">
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">Métricas de Usuario</div>
+                                    <div class="feature-desc">Total, activos, por rol</div>
+                                </div>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">Métricas de Solicitudes</div>
+                                    <div class="feature-desc">Total, pendientes, resueltas</div>
+                                </div>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">Visualizaciones</div>
+                                    <div class="feature-desc">Gráficos de barras y pastel</div>
+                                </div>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">Filtros de Periodo</div>
+                                    <div class="feature-desc">7d, 30d, 90d</div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Chat Features Deep Dive -->
+            <section class="section animate-in delay-2">
+                <div class="section-header">
+                    <div class="section-icon">💬</div>
+                    <div>
+                        <h2 class="section-title">Sistema de Chat - Detalle</h2>
+                        <p class="section-subtitle">Funcionalidades tipo WhatsApp/Telegram</p>
+                    </div>
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Funcionalidad</th>
+                                <th>Estado</th>
+                                <th>Descripción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Mensajes de Texto</td>
+                                <td><span class="status status-complete">✓ Completo</span></td>
+                                <td>Envío y recepción en tiempo real</td>
+                            </tr>
+                            <tr>
+                                <td>Imágenes y Archivos</td>
+                                <td><span class="status status-complete">✓ Completo</span></td>
+                                <td>Subida a Supabase Storage</td>
+                            </tr>
+                            <tr>
+                                <td>Audio (Notas de Voz)</td>
+                                <td><span class="status status-complete">✓ Completo</span></td>
+                                <td>Grabación y reproducción in-app</td>
+                            </tr>
+                            <tr>
+                                <td>Emojis</td>
+                                <td><span class="status status-complete">✓ Completo</span></td>
+                                <td>Picker completo por categorías</td>
+                            </tr>
+                            <tr>
+                                <td>Indicador de Escritura</td>
+                                <td><span class="status status-complete">✓ Completo</span></td>
+                                <td>"Usuario está escribiendo..."</td>
+                            </tr>
+                            <tr>
+                                <td>Estados de Entrega</td>
+                                <td><span class="status status-complete">✓ Completo</span></td>
+                                <td>⏱ → ✓ → ✓✓ → ✓✓ (azul)</td>
+                            </tr>
+                            <tr>
+                                <td>Editar Mensaje</td>
+                                <td><span class="status status-complete">✓ Completo</span></td>
+                                <td>Edición de mensajes recientes</td>
+                            </tr>
+                            <tr>
+                                <td>Eliminar Mensaje</td>
+                                <td><span class="status status-complete">✓ Completo</span></td>
+                                <td>Soft delete con indicador visual</td>
+                            </tr>
+                            <tr>
+                                <td>Responder Mensaje</td>
+                                <td><span class="status status-complete">✓ Completo</span></td>
+                                <td>Quote y respuesta a mensaje específico</td>
+                            </tr>
+                            <tr>
+                                <td>Grupos (hasta 256)</td>
+                                <td><span class="status status-complete">✓ Completo</span></td>
+                                <td>Admin/Moderador/Miembro</td>
+                            </tr>
+                            <tr>
+                                <td>Restricción por Zona</td>
+                                <td><span class="status status-complete">✓ Completo</span></td>
+                                <td>Solo misma zona puede crear grupos</td>
+                            </tr>
+                            <tr>
+                                <td>Cola Offline</td>
+                                <td><span class="status status-complete">✓ Completo</span></td>
+                                <td>Auto-sync al reconectar</td>
+                            </tr>
+                            <tr>
+                                <td>Deduplicación</td>
+                                <td><span class="status status-complete">✓ Completo</span></td>
+                                <td>client_message_id previene duplicados</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Architecture Section -->
+            <section class="section animate-in delay-3" id="architecture">
+                <div class="section-header">
+                    <div class="section-icon">🏗️</div>
+                    <div>
+                        <h2 class="section-title">Arquitectura del Sistema</h2>
+                        <p class="section-subtitle">Estructura de carpetas y componentes</p>
+                    </div>
+                </div>
+
+                <div class="architecture">
+                    <div class="arch-layer">
+                        <div class="arch-layer-title">📱 Pantallas (app/)</div>
+                        <div class="arch-boxes">
+                            <div class="arch-box highlight">📍 (tabs)/index.tsx</div>
+                            <div class="arch-box">📋 (tabs)/requests.tsx</div>
+                            <div class="arch-box">💬 (tabs)/chat/</div>
+                            <div class="arch-box">👥 (tabs)/directory.tsx</div>
+                            <div class="arch-box">🔢 calculator/</div>
+                            <div class="arch-box">👤 (tabs)/profile.tsx</div>
+                            <div class="arch-box">🔐 auth/</div>
+                        </div>
+                    </div>
+
+                    <div class="arch-layer">
+                        <div class="arch-layer-title">🧩 Componentes (components/)</div>
+                        <div class="arch-boxes">
+                            <div class="arch-box">AdminDashboard</div>
+                            <div class="arch-box highlight">CreateGroupChat</div>
+                            <div class="arch-box">MessageBubble</div>
+                            <div class="arch-box">MessageStatus</div>
+                            <div class="arch-box">TypingIndicator</div>
+                            <div class="arch-box">EmojiPicker</div>
+                            <div class="arch-box">FileUpload</div>
+                            <div class="arch-box">AdvancedSearch</div>
+                        </div>
+                    </div>
+
+                    <div class="arch-layer">
+                        <div class="arch-layer-title">🔄 Estado (contexts/)</div>
+                        <div class="arch-boxes">
+                            <div class="arch-box highlight">AuthContext</div>
+                            <div class="arch-box highlight">ChatContext</div>
+                            <div class="arch-box">NotificationContext</div>
+                            <div class="arch-box">Redux (Calculator)</div>
+                        </div>
+                    </div>
+
+                    <div class="arch-layer">
+                        <div class="arch-layer-title">⚙️ Servicios (services/)</div>
+                        <div class="arch-boxes">
+                            <div class="arch-box highlight">supabaseService.ts</div>
+                            <div class="arch-box">apiService.ts</div>
+                        </div>
+                    </div>
+
+                    <div class="arch-layer">
+                        <div class="arch-layer-title">🗄️ Backend (Supabase)</div>
+                        <div class="arch-boxes">
+                            <div class="arch-box">PostgreSQL</div>
+                            <div class="arch-box highlight">Realtime</div>
+                            <div class="arch-box">Auth</div>
+                            <div class="arch-box">Storage</div>
+                            <div class="arch-box">RLS Policies</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Database Section -->
+            <section class="section" id="database">
+                <div class="section-header">
+                    <div class="section-icon">🗄️</div>
+                    <div>
+                        <h2 class="section-title">Esquema de Base de Datos</h2>
+                        <p class="section-subtitle">Tablas principales y relaciones</p>
+                    </div>
+                </div>
+
+                <div class="card-grid">
+                    <div class="schema-table">
+                        <div class="schema-table-name">👤 users</div>
+                        <div class="schema-columns">
+                            <span class="schema-column pk">id (PK)</span>
+                            <span class="schema-column">email</span>
+                            <span class="schema-column">nombre</span>
+                            <span class="schema-column">apellido_paterno</span>
+                            <span class="schema-column">apellido_materno</span>
+                            <span class="schema-column">empresa</span>
+                            <span class="schema-column">rol</span>
+                            <span class="schema-column">categoria</span>
+                            <span class="schema-column">zona</span>
+                            <span class="schema-column">is_online</span>
+                        </div>
+                    </div>
+
+                    <div class="schema-table">
+                        <div class="schema-table-name">📋 requests</div>
+                        <div class="schema-columns">
+                            <span class="schema-column pk">id (PK)</span>
+                            <span class="schema-column fk">usuario_id (FK)</span>
+                            <span class="schema-column fk">agente_id (FK)</span>
+                            <span class="schema-column">titulo</span>
+                            <span class="schema-column">mensaje</span>
+                            <span class="schema-column">tipo</span>
+                            <span class="schema-column">prioridad</span>
+                            <span class="schema-column">estatus</span>
+                            <span class="schema-column">archivos[]</span>
+                        </div>
+                    </div>
+
+                    <div class="schema-table">
+                        <div class="schema-table-name">💬 chat_rooms</div>
+                        <div class="schema-columns">
+                            <span class="schema-column pk">id (PK)</span>
+                            <span class="schema-column">name</span>
+                            <span class="schema-column">tipo</span>
+                            <span class="schema-column">participants[]</span>
+                            <span class="schema-column">is_group</span>
+                            <span class="schema-column">admin_ids[]</span>
+                            <span class="schema-column fk">created_by (FK)</span>
+                            <span class="schema-column">settings</span>
+                        </div>
+                    </div>
+
+                    <div class="schema-table">
+                        <div class="schema-table-name">✉️ messages</div>
+                        <div class="schema-columns">
+                            <span class="schema-column pk">id (PK)</span>
+                            <span class="schema-column fk">chat_room_id (FK)</span>
+                            <span class="schema-column fk">sender_id (FK)</span>
+                            <span class="schema-column">message</span>
+                            <span class="schema-column">type</span>
+                            <span class="schema-column">status</span>
+                            <span class="schema-column">file_url</span>
+                            <span class="schema-column">client_message_id</span>
+                        </div>
+                    </div>
+
+                    <div class="schema-table">
+                        <div class="schema-table-name">👥 chat_room_members</div>
+                        <div class="schema-columns">
+                            <span class="schema-column pk">id (PK)</span>
+                            <span class="schema-column fk">chat_room_id (FK)</span>
+                            <span class="schema-column fk">user_id (FK)</span>
+                            <span class="schema-column">role</span>
+                            <span class="schema-column">joined_at</span>
+                            <span class="schema-column">is_muted</span>
+                        </div>
+                    </div>
+
+                    <div class="schema-table">
+                        <div class="schema-table-name">📬 message_receipts</div>
+                        <div class="schema-columns">
+                            <span class="schema-column pk">id (PK)</span>
+                            <span class="schema-column fk">message_id (FK)</span>
+                            <span class="schema-column fk">user_id (FK)</span>
+                            <span class="schema-column">delivered_at</span>
+                            <span class="schema-column">read_at</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Flows Section -->
+            <section class="section" id="flows">
+                <div class="section-header">
+                    <div class="section-icon">🔄</div>
+                    <div>
+                        <h2 class="section-title">Flujos del Sistema</h2>
+                        <p class="section-subtitle">Procesos principales de la aplicación</p>
+                    </div>
+                </div>
+
+                <!-- Auth Flow -->
+                <div class="flow-container" style="margin-bottom: 20px;">
+                    <div class="flow-title">🔐 Flujo de Autenticación</div>
+                    <div class="flow-steps">
+                        <div class="flow-step">📱 App Launch</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-step">🔍 Check Session</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-step">📝 Login Form</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-step active">✅ Supabase Auth</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-step">👤 Load Profile</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-step">🏠 Home Screen</div>
+                    </div>
+                </div>
+
+                <!-- Request Flow -->
+                <div class="flow-container" style="margin-bottom: 20px;">
+                    <div class="flow-title">📋 Flujo de Solicitudes</div>
+                    <div class="flow-steps">
+                        <div class="flow-step active">🆕 nuevo</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-step">👤 asignado</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-step">⚙️ en_proceso</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-step">⏸️ pausado</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-step">✅ resuelto</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-step">🔒 cerrado</div>
+                    </div>
+                </div>
+
+                <!-- Message Delivery Flow -->
+                <div class="flow-container">
+                    <div class="flow-title">✉️ Flujo de Entrega de Mensajes (WhatsApp-like)</div>
+                    <div class="flow-steps">
+                        <div class="flow-step">⏱️ pending</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-step">✓ sent</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-step active">✓✓ delivered</div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-step" style="background: rgba(59, 130, 246, 0.3);">✓✓ read</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Deployment Section -->
+            <section class="section" id="deployment">
+                <div class="section-header">
+                    <div class="section-icon">🚀</div>
+                    <div>
+                        <h2 class="section-title">Configuración de Despliegue</h2>
+                        <p class="section-subtitle">Web (Netlify) y Mobile (EAS)</p>
+                    </div>
+                </div>
+
+                <div class="card-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="card-icon" style="background: rgba(0, 173, 181, 0.2);">🌐</div>
+                                Netlify (Web)
+                            </div>
+                            <span class="status status-ready">Listo</span>
+                        </div>
+                        <div class="code-block">
+                            <pre><span class="comment"># netlify.toml</span>
+[build]
+  <span class="variable">publish</span> = <span class="string">"dist"</span>
+  <span class="variable">command</span> = <span class="string">"npm ci && npm run build:production"</span>
+
+[build.environment]
+  <span class="variable">NODE_VERSION</span> = <span class="string">"20.19.4"</span></pre>
+                        </div>
+                        <ul class="feature-list">
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">Security Headers configurados</div>
+                                </div>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">Variables de entorno preparadas</div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="card-icon" style="background: rgba(99, 102, 241, 0.2);">📱</div>
+                                EAS Build (Mobile)
+                            </div>
+                            <span class="status status-ready">Listo</span>
+                        </div>
+                        <div class="code-block">
+                            <pre><span class="comment">// eas.json</span>
+{
+  <span class="string">"build"</span>: {
+    <span class="string">"preview"</span>: {
+      <span class="variable">"distribution"</span>: <span class="string">"internal"</span>,
+      <span class="variable">"android"</span>: { <span class="variable">"buildType"</span>: <span class="string">"apk"</span> }
+    },
+    <span class="string">"production"</span>: { ... }
+  }
+}</pre>
+                        </div>
+                        <ul class="feature-list">
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">Android APK builds</div>
+                                </div>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">iOS configurado</div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Security Section -->
+            <section class="section" id="security">
+                <div class="section-header">
+                    <div class="section-icon">🛡️</div>
+                    <div>
+                        <h2 class="section-title">Seguridad</h2>
+                        <p class="section-subtitle">Medidas de seguridad implementadas</p>
+                    </div>
+                </div>
+
+                <div class="card-grid card-grid-3">
+                    <div class="card">
+                        <div class="card-title" style="margin-bottom: 15px;">
+                            <div class="card-icon" style="background: rgba(16, 185, 129, 0.2);">🔐</div>
+                            Autenticación
+                        </div>
+                        <ul class="feature-list">
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">JWT Tokens (Supabase)</div>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">Auto-refresh habilitado</div>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">Sesión persistente</div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title" style="margin-bottom: 15px;">
+                            <div class="card-icon" style="background: rgba(59, 130, 246, 0.2);">🗄️</div>
+                            Base de Datos
+                        </div>
+                        <ul class="feature-list">
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">RLS Policies activas</div>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">Queries parametrizadas</div>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">Service Role no expuesto</div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title" style="margin-bottom: 15px;">
+                            <div class="card-icon" style="background: rgba(139, 92, 246, 0.2);">🌐</div>
+                            Transporte
+                        </div>
+                        <ul class="feature-list">
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">HTTPS/WSS forzado</div>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">CORS configurado</div>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-check">✓</span>
+                                <div class="feature-content">Security headers</div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Production Checklist -->
+            <section class="section" id="checklist">
+                <div class="section-header">
+                    <div class="section-icon">✅</div>
+                    <div>
+                        <h2 class="section-title">Checklist de Producción</h2>
+                        <p class="section-subtitle">Estado de preparación para despliegue</p>
+                    </div>
+                </div>
+
+                <div class="checklist-grid">
+                    <div class="checklist-item">
+                        <div class="checklist-icon">✓</div>
+                        <span>Supabase configurado</span>
+                    </div>
+                    <div class="checklist-item">
+                        <div class="checklist-icon">✓</div>
+                        <span>Esquema de BD completo</span>
+                    </div>
+                    <div class="checklist-item">
+                        <div class="checklist-icon">✓</div>
+                        <span>Políticas RLS implementadas</span>
+                    </div>
+                    <div class="checklist-item">
+                        <div class="checklist-icon">✓</div>
+                        <span>Storage buckets creados</span>
+                    </div>
+                    <div class="checklist-item">
+                        <div class="checklist-icon">✓</div>
+                        <span>Auth configurado</span>
+                    </div>
+                    <div class="checklist-item">
+                        <div class="checklist-icon">✓</div>
+                        <span>Realtime habilitado</span>
+                    </div>
+                    <div class="checklist-item">
+                        <div class="checklist-icon">✓</div>
+                        <span>TypeScript strict mode</span>
+                    </div>
+                    <div class="checklist-item">
+                        <div class="checklist-icon">✓</div>
+                        <span>ESLint configurado</span>
+                    </div>
+                    <div class="checklist-item">
+                        <div class="checklist-icon">✓</div>
+                        <span>Error handling completo</span>
+                    </div>
+                    <div class="checklist-item">
+                        <div class="checklist-icon">✓</div>
+                        <span>Soporte offline</span>
+                    </div>
+                    <div class="checklist-item">
+                        <div class="checklist-icon">✓</div>
+                        <span>Performance optimizado</span>
+                    </div>
+                    <div class="checklist-item">
+                        <div class="checklist-icon">✓</div>
+                        <span>netlify.toml configurado</span>
+                    </div>
+                    <div class="checklist-item">
+                        <div class="checklist-icon">✓</div>
+                        <span>Build scripts listos</span>
+                    </div>
+                    <div class="checklist-item">
+                        <div class="checklist-icon">✓</div>
+                        <span>Variables de entorno</span>
+                    </div>
+                    <div class="checklist-item">
+                        <div class="checklist-icon">✓</div>
+                        <span>Documentación completa</span>
+                    </div>
+                    <div class="checklist-item">
+                        <div class="checklist-icon">✓</div>
+                        <span>Sin secrets hardcodeados</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Progress Section -->
+            <section class="section">
+                <div class="section-header">
+                    <div class="section-icon">📈</div>
+                    <div>
+                        <h2 class="section-title">Progreso por Módulo</h2>
+                        <p class="section-subtitle">Porcentaje de completitud</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="progress-item">
+                        <div class="progress-header">
+                            <span class="progress-label">🔐 Autenticación</span>
+                            <span class="progress-value">100%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill green" style="width: 100%;"></div>
+                        </div>
+                    </div>
+
+                    <div class="progress-item">
+                        <div class="progress-header">
+                            <span class="progress-label">📋 Solicitudes</span>
+                            <span class="progress-value">100%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill green" style="width: 100%;"></div>
+                        </div>
+                    </div>
+
+                    <div class="progress-item">
+                        <div class="progress-header">
+                            <span class="progress-label">💬 Chat</span>
+                            <span class="progress-value">100%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill green" style="width: 100%;"></div>
+                        </div>
+                    </div>
+
+                    <div class="progress-item">
+                        <div class="progress-header">
+                            <span class="progress-label">👥 Directorio</span>
+                            <span class="progress-value">100%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill green" style="width: 100%;"></div>
+                        </div>
+                    </div>
+
+                    <div class="progress-item">
+                        <div class="progress-header">
+                            <span class="progress-label">🔢 Calculadora</span>
+                            <span class="progress-value">100%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill green" style="width: 100%;"></div>
+                        </div>
+                    </div>
+
+                    <div class="progress-item">
+                        <div class="progress-header">
+                            <span class="progress-label">📊 Dashboard Admin</span>
+                            <span class="progress-value">100%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill green" style="width: 100%;"></div>
+                        </div>
+                    </div>
+
+                    <div class="progress-item">
+                        <div class="progress-header">
+                            <span class="progress-label">🧪 Tests Automatizados</span>
+                            <span class="progress-value">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill purple" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Next Steps Section -->
+            <section class="section" id="next-steps">
+                <div class="section-header">
+                    <div class="section-icon">📍</div>
+                    <div>
+                        <h2 class="section-title">Próximos Pasos</h2>
+                        <p class="section-subtitle">Acciones recomendadas</p>
+                    </div>
+                </div>
+
+                <div class="card-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="card-icon" style="background: rgba(239, 68, 68, 0.2);">🔥</div>
+                                Inmediato
+                            </div>
+                        </div>
+                        <ul class="feature-list">
+                            <li class="feature-item">
+                                <span class="feature-check" style="background: var(--danger);">1</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">Deploy a Netlify</div>
+                                    <div class="feature-desc">Conectar repo, configurar env vars</div>
+                                </div>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-check" style="background: var(--danger);">2</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">Ejecutar Migraciones</div>
+                                    <div class="feature-desc">20251210_group_chat_and_delivery.sql</div>
+                                </div>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-check" style="background: var(--danger);">3</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">Smoke Testing</div>
+                                    <div class="feature-desc">Probar todos los flujos principales</div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="card-icon" style="background: rgba(245, 158, 11, 0.2);">⏳</div>
+                                Corto Plazo
+                            </div>
+                        </div>
+                        <ul class="feature-list">
+                            <li class="feature-item">
+                                <span class="feature-check" style="background: var(--warning);">1</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">Suite de Tests</div>
+                                    <div class="feature-desc">Crear tests Jest para features críticas</div>
+                                </div>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-check" style="background: var(--warning);">2</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">E2E Tests</div>
+                                    <div class="feature-desc">Agregar Cypress/Detox</div>
+                                </div>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-check" style="background: var(--warning);">3</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">Error Tracking</div>
+                                    <div class="feature-desc">Integrar Sentry</div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <div class="card-icon" style="background: rgba(59, 130, 246, 0.2);">🔮</div>
+                                Futuro
+                            </div>
+                        </div>
+                        <ul class="feature-list">
+                            <li class="feature-item">
+                                <span class="feature-check" style="background: var(--info);">1</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">App Store Submission</div>
+                                    <div class="feature-desc">Apple App Store & Google Play</div>
+                                </div>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-check" style="background: var(--info);">2</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">Llamadas de Voz/Video</div>
+                                    <div class="feature-desc">Integrar Twilio o similar</div>
+                                </div>
+                            </li>
+                            <li class="feature-item">
+                                <span class="feature-check" style="background: var(--info);">3</span>
+                                <div class="feature-content">
+                                    <div class="feature-name">AI Assistant</div>
+                                    <div class="feature-desc">Chatbot para solicitudes comunes</div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Recent Commits -->
+            <section class="section">
+                <div class="section-header">
+                    <div class="section-icon">📝</div>
+                    <div>
+                        <h2 class="section-title">Commits Recientes</h2>
+                        <p class="section-subtitle">Historial de desarrollo</p>
+                    </div>
+                </div>
+
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-date">8c7b2d9</div>
+                        <div class="timeline-title">fix(chat): improve createGroupChat with robust error handling</div>
+                        <div class="timeline-desc">Mejora de manejo de errores y compliance con RLS</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-date">b94e98d</div>
+                        <div class="timeline-title">feat: implement zone-based group chat restriction</div>
+                        <div class="timeline-desc">Restricción estilo WhatsApp por zona geográfica</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-date">a2f6b33</div>
+                        <div class="timeline-title">fix: multiple UI improvements and bug fixes</div>
+                        <div class="timeline-desc">Correcciones varias de interfaz de usuario</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-date">2b0868e</div>
+                        <div class="timeline-title">fix: handle undefined group name in chat header</div>
+                        <div class="timeline-desc">Manejo de nombre undefined en header de grupo</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-date">9149018</div>
+                        <div class="timeline-title">fix: remove null from names when apellido_materno is missing</div>
+                        <div class="timeline-desc">Eliminación de "null" en nombres de usuarios</div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-logo">ElmecV2</div>
+            <p class="footer-text">
+                Generado por <strong>R2-D2</strong> - Claude Code Assistant<br>
+                19 de Enero 2026 | React Native + Expo + Supabase
+            </p>
+        </footer>
+    </main>
+
+    <script>
+        // Mobile menu toggle
+        const sidebar = document.getElementById('sidebar');
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+
+        mobileMenuBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+        });
+
+        // Close sidebar when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!sidebar.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
+                sidebar.classList.remove('open');
+            }
+        });
+
+        // Active nav link on scroll
+        const sections = document.querySelectorAll('section[id]');
+        const navLinks = document.querySelectorAll('.nav-link');
+
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (window.scrollY >= sectionTop - 200) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === '#' + current) {
+                    link.classList.add('active');
+                }
+            });
+        });
+
+        // Smooth scroll for nav links
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetId = link.getAttribute('href');
+                const targetSection = document.querySelector(targetId);
+                if (targetSection) {
+                    targetSection.scrollIntoView({ behavior: 'smooth' });
+                    sidebar.classList.remove('open');
+                }
+            });
+        });
+
+        // Intersection Observer for animations
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animate-in');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.section').forEach(section => {
+            observer.observe(section);
+        });
+
+        // Progress bar animation
+        const progressBars = document.querySelectorAll('.progress-fill');
+        const progressObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const width = entry.target.style.width;
+                    entry.target.style.width = '0';
+                    setTimeout(() => {
+                        entry.target.style.width = width;
+                    }, 100);
+                }
+            });
+        }, { threshold: 0.5 });
+
+        progressBars.forEach(bar => {
+            progressObserver.observe(bar);
+        });
+    </script>
+</body>
+</html>
