@@ -52,6 +52,7 @@ import { ActivityIndicator } from 'react-native';
 import { AdvancedSearchComponent } from '@/components/AdvancedSearchComponent';
 import { FileUploadComponent } from '@/components/FileUploadComponent';
 import { uploadMultipleFiles, UploadResult } from '@/utils/fileUpload';
+import SupabaseService from '@/services/supabaseService';
 
 export default function Requests() {
   const [requests, setRequests] = useState<RequestWithRelations[]>([]);
@@ -81,6 +82,11 @@ export default function Requests() {
 
   useEffect(() => {
     if (user) {
+      // Ejecutar verificación de estados vencidos (semáforo automático)
+      // Solo para agentes y admins, para no sobrecargar con llamadas
+      if (user.rol === 'agent' || user.rol === 'admin') {
+        SupabaseService.runStatusCheck();
+      }
       loadRequests();
       loadAgents();
     }
@@ -281,13 +287,13 @@ export default function Requests() {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'baja':
-        return '#10b981';
+        return '#3b82f6'; // Azul
       case 'media':
-        return '#f59e0b';
+        return '#10b981'; // Verde
       case 'alta':
-        return '#ef4444';
+        return '#f59e0b'; // Naranja
       case 'urgente':
-        return '#dc2626';
+        return '#ef4444'; // Rojo
       default:
         return '#6b7280';
     }
@@ -900,6 +906,17 @@ export default function Requests() {
   const handleSearch = (filters: any) => {
     let filtered = requests;
 
+    // Filtrar por tipo de usuario (Agentes vs Clientes)
+    if (filters.userType && filters.userType !== 'all') {
+      if (filters.userType === 'agents') {
+        // Mostrar solicitudes que tienen agente asignado
+        filtered = filtered.filter(req => req.agente_id && req.agente);
+      } else if (filters.userType === 'clients') {
+        // Mostrar solicitudes sin agente asignado (solo del cliente)
+        filtered = filtered.filter(req => !req.agente_id);
+      }
+    }
+
     // Filtrar por texto
     if (filters.query) {
       const query = filters.query.toLowerCase();
@@ -907,17 +924,18 @@ export default function Requests() {
         req =>
           req.titulo.toLowerCase().includes(query) ||
           req.mensaje.toLowerCase().includes(query) ||
-          (req.agente && getFullName(req.agente).toLowerCase().includes(query))
+          (req.agente && getFullName(req.agente).toLowerCase().includes(query)) ||
+          (req.usuario && getFullName(req.usuario).toLowerCase().includes(query))
       );
     }
 
     // Filtrar por estado
-    if (filters.status.length > 0) {
+    if (filters.status && filters.status.length > 0) {
       filtered = filtered.filter(req => filters.status.includes(req.estatus));
     }
 
     // Filtrar por prioridad
-    if (filters.priority.length > 0) {
+    if (filters.priority && filters.priority.length > 0) {
       filtered = filtered.filter(req =>
         filters.priority.includes(req.prioridad)
       );

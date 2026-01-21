@@ -32,7 +32,7 @@ export class SupabaseService {
       if (authData.user) {
         // Crear perfil de usuario evitando duplicación de 'email'
         const { password, email, ...userProfile } = userData as any;
-        
+
         const { data, error } = await supabaseClient
           .from('users')
           .insert({
@@ -43,7 +43,7 @@ export class SupabaseService {
             is_online: false,
             last_seen: new Date().toISOString(),
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           })
           .select()
           .single();
@@ -72,7 +72,7 @@ export class SupabaseService {
     try {
       // Clear any existing session first
       await supabase.auth.signOut();
-      
+
       // Set timeout for authentication request
       const authPromise = supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
@@ -80,13 +80,19 @@ export class SupabaseService {
       });
 
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Tiempo de espera agotado. Verifica tu conexión.')), 15000);
+        setTimeout(
+          () =>
+            reject(
+              new Error('Tiempo de espera agotado. Verifica tu conexión.')
+            ),
+          15000
+        );
       });
 
-      const authResult = await Promise.race([
+      const authResult = (await Promise.race([
         authPromise,
-        timeoutPromise
-      ]) as any;
+        timeoutPromise,
+      ])) as any;
 
       const { data: authData, error: authError } = authResult;
 
@@ -99,7 +105,9 @@ export class SupabaseService {
           throw new Error('Debes confirmar tu email antes de iniciar sesión');
         }
         if (authError.message?.includes('Too many requests')) {
-          throw new Error('Demasiados intentos. Espera unos minutos antes de intentar de nuevo');
+          throw new Error(
+            'Demasiados intentos. Espera unos minutos antes de intentar de nuevo'
+          );
         }
         if (authError.message?.includes('User not found')) {
           throw new Error('No existe una cuenta con este email');
@@ -119,19 +127,24 @@ export class SupabaseService {
         .single();
 
       const profileTimeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Tiempo de espera agotado al cargar perfil')), 10000);
+        setTimeout(
+          () => reject(new Error('Tiempo de espera agotado al cargar perfil')),
+          10000
+        );
       });
 
-      const profileResult = await Promise.race([
+      const profileResult = (await Promise.race([
         profilePromise,
-        profileTimeoutPromise
-      ]) as any;
+        profileTimeoutPromise,
+      ])) as any;
 
       const { data: userData, error: profileError } = profileResult;
 
       if (profileError) {
         if (profileError.code === 'PGRST116') {
-          throw new Error('Perfil de usuario no encontrado. Contacta al administrador');
+          throw new Error(
+            'Perfil de usuario no encontrado. Contacta al administrador'
+          );
         }
         throw new Error('Error al cargar el perfil de usuario');
       }
@@ -142,7 +155,9 @@ export class SupabaseService {
 
       // Check if user is active
       if (userData.activo === false) {
-        throw new Error('Tu cuenta está desactivada. Contacta al administrador');
+        throw new Error(
+          'Tu cuenta está desactivada. Contacta al administrador'
+        );
       }
 
       // Update last login and online status (non-blocking)
@@ -160,7 +175,10 @@ export class SupabaseService {
             .update(updateData)
             .eq('id', authData.user.id);
           if (result?.error) {
-            console.warn('Warning: Could not update user status:', result.error);
+            console.warn(
+              'Warning: Could not update user status:',
+              result.error
+            );
           }
         } catch (updateErr) {
           console.warn('Warning: Failed to update user status:', updateErr);
@@ -172,15 +190,17 @@ export class SupabaseService {
       console.error('Login error details:', {
         message: error.message,
         email: email?.substring(0, 3) + '***', // Log partial email for debugging
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
-      
+
       // Re-throw with user-friendly message
       if (error.message && typeof error.message === 'string') {
         throw error;
       }
-      
-      throw new Error('Error de conexión. Verifica tu internet e intenta de nuevo');
+
+      throw new Error(
+        'Error de conexión. Verifica tu internet e intenta de nuevo'
+      );
     }
   }
 
@@ -197,7 +217,7 @@ export class SupabaseService {
           .update({
             is_online: false,
             last_seen: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           })
           .eq('id', user.id);
       }
@@ -773,7 +793,7 @@ export class SupabaseService {
         .update({
           message: newMessage,
           edited_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', messageId);
 
@@ -826,13 +846,59 @@ export class SupabaseService {
         .update({
           read: true,
           read_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', notificationId);
 
       if (error) throw error;
     } catch (error) {
       console.error('Error marking notification as read:', error);
+    }
+  }
+
+  // ==========================================
+  // AUTOMATIZACIÓN DE SEMÁFORO
+  // ==========================================
+
+  /**
+   * Ejecuta la verificación de estados vencidos de solicitudes
+   * Marca como 'sin_atender' las solicitudes que:
+   * - Son nuevas y tienen más de 3 días sin atender
+   * - Están en proceso y tienen más de 5 días sin resolver
+   *
+   * @returns Resultado de la verificación con cantidad de actualizaciones
+   */
+  static async runStatusCheck(): Promise<{
+    success: boolean;
+    checked_at: string;
+    updated_count: number;
+    updated_requests: Array<{
+      request_id: string;
+      old_status: string;
+      new_status: string;
+      reason: string;
+    }> | null;
+  } | null> {
+    try {
+      const { data, error } = await supabase.rpc('run_status_check');
+
+      if (error) {
+        // Si la función no existe aún, retornar null silenciosamente
+        if (error.message.includes('function') && error.message.includes('does not exist')) {
+          console.log('⚠️ Función run_status_check no disponible (ejecutar migración)');
+          return null;
+        }
+        throw error;
+      }
+
+      if (data && data.updated_count > 0) {
+        console.log(`📊 Semáforo: ${data.updated_count} solicitud(es) marcada(s) como sin_atender`);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error ejecutando verificación de estados:', error);
+      return null;
     }
   }
 }

@@ -478,10 +478,44 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
             isRead: false,
           };
 
-          setMessages(prev => ({
-            ...prev,
-            [roomId]: [...(prev[roomId] || []), messageWithUser],
-          }));
+          // DEDUPLICACIÓN: Verificar si el mensaje ya existe antes de agregarlo
+          setMessages(prev => {
+            const existingMessages = prev[roomId] || [];
+
+            // Verificar por ID del mensaje
+            const existsById = existingMessages.some(msg => msg.id === newMessage.id);
+            if (existsById) {
+              console.log('📩 Mensaje duplicado detectado (por ID), ignorando:', newMessage.id);
+              return prev;
+            }
+
+            // Verificar por client_message_id (para mensajes enviados localmente)
+            if (newMessage.client_message_id) {
+              const existsByClientId = existingMessages.some(
+                msg => msg.localId === newMessage.client_message_id ||
+                       msg.client_message_id === newMessage.client_message_id
+              );
+              if (existsByClientId) {
+                console.log('📩 Mensaje duplicado detectado (por client_id), actualizando:', newMessage.client_message_id);
+                // Actualizar el mensaje existente con el ID real del servidor
+                return {
+                  ...prev,
+                  [roomId]: existingMessages.map(msg =>
+                    (msg.localId === newMessage.client_message_id ||
+                     msg.client_message_id === newMessage.client_message_id)
+                      ? { ...msg, ...messageWithUser, deliveryStatus: 'sent' as const }
+                      : msg
+                  ),
+                };
+              }
+            }
+
+            // No existe, agregar el mensaje
+            return {
+              ...prev,
+              [roomId]: [...existingMessages, messageWithUser],
+            };
+          });
 
           // Send notification if message is from another user
           if (newMessage.sender_id !== user?.id) {

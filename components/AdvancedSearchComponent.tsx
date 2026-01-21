@@ -19,6 +19,7 @@ interface SearchFilters {
   };
   assignedTo: string;
   tags: string[];
+  userType: 'all' | 'agents' | 'clients'; // Filtro por tipo de usuario
 }
 
 interface AdvancedSearchComponentProps {
@@ -38,6 +39,7 @@ export const AdvancedSearchComponent: React.FC<
     dateRange: { start: '', end: '' },
     assignedTo: '',
     tags: [],
+    userType: 'all',
   });
   const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -50,10 +52,16 @@ export const AdvancedSearchComponent: React.FC<
   ];
 
   const priorityOptions = [
-    { value: 'baja', label: 'Baja', color: '#10b981' },
-    { value: 'media', label: 'Media', color: '#f59e0b' },
-    { value: 'alta', label: 'Alta', color: '#ef4444' },
-    { value: 'urgente', label: 'Urgente', color: '#dc2626' },
+    { value: 'baja', label: 'Baja', color: '#3b82f6' },      // Azul
+    { value: 'media', label: 'Media', color: '#10b981' },    // Verde
+    { value: 'alta', label: 'Alta', color: '#f59e0b' },      // Naranja
+    { value: 'urgente', label: 'Urgente', color: '#ef4444' }, // Rojo
+  ];
+
+  const userTypeOptions = [
+    { value: 'all', label: 'Todos', color: '#6b7280' },
+    { value: 'agents', label: 'Agentes', color: '#3b82f6' },
+    { value: 'clients', label: 'Clientes', color: '#10b981' },
   ];
 
   const handleSearch = () => {
@@ -68,6 +76,7 @@ export const AdvancedSearchComponent: React.FC<
       dateRange: { start: '', end: '' },
       assignedTo: '',
       tags: [],
+      userType: 'all',
     });
     onClear();
   };
@@ -125,6 +134,40 @@ export const AdvancedSearchComponent: React.FC<
       {/* Advanced Filters */}
       {showAdvanced && showFilters && (
         <View style={styles.advancedFilters}>
+          {/* User Type Filter - Filtro por Agentes/Clientes */}
+          <View style={styles.filterSection}>
+            <Text style={styles.filterLabel}>Ver solicitudes de:</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.filterOptions}
+            >
+              {userTypeOptions.map(option => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.filterChip,
+                    filters.userType === option.value && {
+                      backgroundColor: option.color,
+                      borderColor: option.color,
+                    },
+                  ]}
+                  onPress={() => updateFilters('userType', option.value)}
+                >
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      filters.userType === option.value &&
+                        styles.filterChipTextActive,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
           {/* Priority Filter */}
           <View style={styles.filterSection}>
             <Text style={styles.filterLabel}>Prioridad:</Text>
