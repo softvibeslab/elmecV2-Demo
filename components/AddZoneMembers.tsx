@@ -90,7 +90,7 @@ export default function AddZoneMembers({
           'id, nombre, apellido_paterno, apellido_materno, rol, zona, categoria, empresa'
         )
         .eq('activo', true)
-        .eq('zona', zona) // OBLIGATORIO: misma zona
+        .ilike('zona', zona.trim()) // OBLIGATORIO: misma zona
         .order('nombre', { ascending: true });
 
       if (error) {
@@ -165,15 +165,17 @@ export default function AddZoneMembers({
       const selectedNames = selectedUserData.map(u => getFullName(u));
 
       // Obtener datos actuales del chat
-      const { data: currentRoom, error: roomError } = await supabase
+      const { data: roomData, error: roomError } = await supabase
         .from('chat_rooms')
         .select('*')
         .eq('id', chatRoomId)
         .single();
 
-      if (roomError || !currentRoom) {
+      if (roomError || !roomData) {
         throw new Error('No se pudo obtener información del chat');
       }
+
+      const currentRoom = roomData as any;
 
       // Crear el nombre del grupo basado en la solicitud
       const groupName = requestTitle

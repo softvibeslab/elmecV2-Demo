@@ -1707,7 +1707,7 @@ export default function ChatRoom() {
           onClose={() => setShowAddMembers(false)}
           chatRoomId={roomId!}
           currentParticipants={chatRoom?.participants || []}
-          zona={chatRoom?.metadata?.zona}
+          zona={chatRoom?.metadata?.zona || user?.zona}
           requestTitle={chatRoom?.metadata?.request_title}
           onMembersAdded={newRoomId => {
             setShowAddMembers(false);
