@@ -80,11 +80,11 @@ export default function Directory() {
         // Clientes solo ven agentes de su zona
         query = query.eq('rol', 'agent');
         if (userZone) {
-          query = query.eq('zona', userZone);
+          query = query.ilike('zona', userZone.trim());
         }
       } else if (userRole === 'agent' && userZone) {
         // Agentes ven usuarios de su zona (clientes y otros agentes)
-        query = query.eq('zona', userZone);
+        query = query.ilike('zona', userZone.trim());
       }
       // Admins ven todos (sin filtros adicionales)
 
