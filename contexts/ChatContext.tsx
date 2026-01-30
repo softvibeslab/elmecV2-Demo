@@ -244,11 +244,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
             prev[pendingMsg.roomId]?.map(msg =>
               msg.localId === pendingMsg.id
                 ? {
-                    ...msg,
-                    ...data,
-                    deliveryStatus: 'sent' as const,
-                    id: data.id,
-                  }
+                  ...msg,
+                  ...data,
+                  deliveryStatus: 'sent' as const,
+                  id: data.id,
+                }
                 : msg
             ) || [],
         }));
@@ -441,7 +441,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
 
       setMessages(prev => ({
         ...prev,
-        [roomId]: data || [],
+        [roomId]: (data || []).map(msg => ({
+          ...msg,
+          isRead: msg.status === 'read',
+        })),
       }));
     } catch (error) {
       console.error('Error loading messages:', error);
@@ -493,7 +496,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
             if (newMessage.client_message_id) {
               const existsByClientId = existingMessages.some(
                 msg => msg.localId === newMessage.client_message_id ||
-                       msg.client_message_id === newMessage.client_message_id
+                  msg.client_message_id === newMessage.client_message_id
               );
               if (existsByClientId) {
                 console.log('📩 Mensaje duplicado detectado (por client_id), actualizando:', newMessage.client_message_id);
@@ -502,7 +505,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
                   ...prev,
                   [roomId]: existingMessages.map(msg =>
                     (msg.localId === newMessage.client_message_id ||
-                     msg.client_message_id === newMessage.client_message_id)
+                      msg.client_message_id === newMessage.client_message_id)
                       ? { ...msg, ...messageWithUser, deliveryStatus: 'sent' as const }
                       : msg
                   ),
@@ -532,10 +535,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
             prev.map(room =>
               room.id === roomId
                 ? {
-                    ...room,
-                    updated_at: newMessage.created_at,
-                    last_message: newMessage,
-                  }
+                  ...room,
+                  updated_at: newMessage.created_at,
+                  last_message: newMessage,
+                }
                 : room
             )
           );
@@ -557,7 +560,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
             [roomId]:
               prev[roomId]?.map(msg =>
                 msg.id === updatedMessage.id
-                  ? { ...msg, ...updatedMessage }
+                  ? {
+                    ...msg,
+                    ...updatedMessage,
+                    isRead: updatedMessage.status === 'read' || msg.isRead,
+                  }
                   : msg
               ) || [],
           }));
@@ -787,11 +794,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
             prev[roomId]?.map(msg =>
               msg.localId === tempId
                 ? {
-                    ...(data as any),
-                    user: (data as any).user,
-                    isDelivered: true,
-                    isRead: false,
-                  }
+                  ...(data as any),
+                  user: (data as any).user,
+                  isDelivered: true,
+                  isRead: false,
+                }
                 : msg
             ) || [],
         }));
@@ -1017,8 +1024,12 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const messageIds = unreadMessages.map(msg => msg.id);
 
-      // In a real implementation, you would update the read_by JSONB field
-      // For now, we'll update local state
+      // Update status in DB
+      await supabaseClient
+        .from('messages')
+        .update({ status: 'read' })
+        .in('id', messageIds);
+
       setMessages(prev => ({
         ...prev,
         [roomId]:
@@ -1092,10 +1103,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
             prev[roomId]?.map(msg =>
               msg.id === messageId
                 ? {
-                    ...msg,
-                    is_deleted: true,
-                    message: 'Este mensaje fue eliminado',
-                  }
+                  ...msg,
+                  is_deleted: true,
+                  message: 'Este mensaje fue eliminado',
+                }
                 : msg
             ) || [],
         }));
@@ -1128,10 +1139,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
             prev[roomId]?.map(msg =>
               msg.id === messageId
                 ? {
-                    ...msg,
-                    message: newMessage,
-                    edited_at: new Date().toISOString(),
-                  }
+                  ...msg,
+                  message: newMessage,
+                  edited_at: new Date().toISOString(),
+                }
                 : msg
             ) || [],
         }));
@@ -1577,9 +1588,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         prev.map(r =>
           r.id === roomId
             ? {
-                ...r,
-                participants: [...currentParticipants, ...newParticipants],
-              }
+              ...r,
+              participants: [...currentParticipants, ...newParticipants],
+            }
             : r
         )
       );
@@ -1751,11 +1762,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         prev.map(r =>
           r.id === roomId
             ? {
-                ...r,
-                name: updates.name ?? r.name,
-                description: updates.description ?? r.description,
-                avatar_url: updates.avatarUrl ?? r.avatar_url,
-              }
+              ...r,
+              name: updates.name ?? r.name,
+              description: updates.description ?? r.description,
+              avatar_url: updates.avatarUrl ?? r.avatar_url,
+            }
             : r
         )
       );
