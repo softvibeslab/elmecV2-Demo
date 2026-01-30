@@ -30,11 +30,14 @@ export default function Register() {
     celular: '',
     ciudad: '',
     estado: '',
+    zona: '', // Nuevo campo
     password: '',
   });
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const router = useRouter();
+
+  const zonas = ['Norte', 'Sur', 'Centro', 'Este', 'Oeste'];
 
   const updateField = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -64,6 +67,7 @@ export default function Register() {
         celular: formData.celular,
         ciudad: formData.ciudad,
         estado: formData.estado,
+        zona: formData.zona, // Nuevo campo agregado
         rol: 'customer' as const,
         activo: true,
         is_online: false,
@@ -196,6 +200,32 @@ export default function Register() {
             />
           </View>
 
+          {/* Selector de Zona */}
+          <View style={styles.zonaSelectorContainer}>
+            <Text style={styles.zonaLabel}>Zona:</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.zonaScroll}>
+              {zonas.map(zona => (
+                <TouchableOpacity
+                  key={zona}
+                  style={[
+                    styles.zonaChip,
+                    formData.zona === zona && styles.zonaChipActive,
+                  ]}
+                  onPress={() => updateField('zona', zona)}
+                >
+                  <Text
+                    style={[
+                      styles.zonaChipText,
+                      formData.zona === zona && styles.zonaChipTextActive,
+                    ]}
+                  >
+                    {zona}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
           <View style={styles.inputContainer}>
             <User size={20} color="#6b7280" style={styles.inputIcon} />
             <TextInput
@@ -316,5 +346,37 @@ const styles = StyleSheet.create({
   loginLinkBold: {
     fontFamily: 'Inter-SemiBold',
     color: '#ffffff',
+  },
+  zonaSelectorContainer: {
+    gap: 8,
+  },
+  zonaLabel: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#ffffff',
+  },
+  zonaScroll: {
+    flexGrow: 0,
+  },
+  zonaChip: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  zonaChipActive: {
+    backgroundColor: '#ffffff',
+    borderColor: '#ffffff',
+  },
+  zonaChipText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    color: 'rgba(255, 255, 255, 0.9)',
+  },
+  zonaChipTextActive: {
+    color: '#1e40af',
   },
 });

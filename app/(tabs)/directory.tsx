@@ -66,12 +66,29 @@ export default function Directory() {
       setLoading(true);
       setError(null);
 
-      // Obtener todos los usuarios activos
-      const { data, error } = await supabase
+      const userZone = currentUser?.zona;
+      const userRole = currentUser?.rol;
+
+      // Construir query base
+      let query = supabase
         .from('users')
         .select('*')
-        .eq('activo', true)
-        .order('nombre', { ascending: true });
+        .eq('activo', true);
+
+      // Aplicar filtros según rol del usuario actual
+      if (userRole === 'customer') {
+        // Clientes solo ven agentes de su zona
+        query = query.eq('rol', 'agent');
+        if (userZone) {
+          query = query.eq('zona', userZone);
+        }
+      } else if (userRole === 'agent' && userZone) {
+        // Agentes ven usuarios de su zona (clientes y otros agentes)
+        query = query.eq('zona', userZone);
+      }
+      // Admins ven todos (sin filtros adicionales)
+
+      const { data, error } = await query.order('nombre', { ascending: true });
 
       if (error) {
         console.error('Error loading personnel:', error);
@@ -171,6 +188,15 @@ export default function Directory() {
   };
 
   const handleStartChat = async (person: User) => {
+    // Validar que cliente solo pueda chatear con agentes
+    if (currentUser?.rol === 'customer' && person.rol === 'customer') {
+      Alert.alert(
+        'No permitido',
+        'Solo puedes iniciar conversaciones con agentes de servicio'
+      );
+      return;
+    }
+
     try {
       const roomId = await createChatRoom(person.id, getFullName(person));
       router.push(`/chat/${roomId}`);
@@ -463,7 +489,7 @@ export default function Directory() {
                     style={[
                       styles.filterChipText,
                       selectedCategory === category &&
-                        styles.filterChipTextActive,
+                      styles.filterChipTextActive,
                     ]}
                   >
                     {category}
