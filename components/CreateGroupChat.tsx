@@ -65,11 +65,12 @@ export default function CreateGroupChat({
         .single();
 
       if (error) throw error;
-      setUserZona(data?.zona || null);
+      const userData = data as { zona: string } | null;
+      setUserZona(userData?.zona || null);
 
       // Luego cargar usuarios de la misma zona
-      if (data?.zona) {
-        loadUsers(data.zona);
+      if (userData?.zona) {
+        loadUsers(userData.zona);
       } else {
         setLoadingUsers(false);
         Alert.alert(
@@ -93,7 +94,8 @@ export default function CreateGroupChat({
           'id, nombre, apellido_paterno, apellido_materno, foto, rol, is_online, empresa, zona'
         )
         .eq('activo', true)
-        .eq('zona', zona) // OBLIGATORIO: misma zona
+        .ilike('zona', zona.trim()) // OBLIGATORIO: misma zona (case insensitive)
+        .eq('rol', 'agent') // Solo mostrar agentes
         .neq('id', user?.id)
         .order('nombre', { ascending: true });
 
@@ -261,8 +263,8 @@ export default function CreateGroupChat({
             style={[
               styles.actionButton,
               step === 'select' &&
-                selectedUsers.length < 2 &&
-                styles.actionButtonDisabled,
+              selectedUsers.length < 2 &&
+              styles.actionButtonDisabled,
             ]}
             onPress={step === 'select' ? handleNext : handleCreateGroup}
             disabled={
