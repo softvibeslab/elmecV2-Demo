@@ -154,7 +154,7 @@ export default function Requests() {
 
       // Si el usuario es cliente, filtrar agentes por su misma zona
       if (user?.rol === 'customer' && user?.zona) {
-        query = query.eq('zona', user.zona);
+        query = query.ilike('zona', user.zona.trim());
       }
 
       const { data, error } = await query;
@@ -828,10 +828,10 @@ export default function Requests() {
         prev.map(req =>
           req.id === requestId
             ? {
-                ...req,
-                estatus: newStatus as any,
-                updated_at: new Date().toISOString(),
-              }
+              ...req,
+              estatus: newStatus as any,
+              updated_at: new Date().toISOString(),
+            }
             : req
         )
       );
@@ -1281,17 +1281,17 @@ export default function Requests() {
               {/* Botón Eliminar (solo para solicitudes terminadas) */}
               {(request.estatus === 'resuelto' ||
                 request.estatus === 'cerrado') && (
-                <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={e => {
-                    e.stopPropagation();
-                    handleDeleteRequest(request.id, request.titulo);
-                  }}
-                >
-                  <Trash2 size={18} color="#ffffff" />
-                  <Text style={styles.deleteButtonText}>Eliminar</Text>
-                </TouchableOpacity>
-              )}
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={e => {
+                      e.stopPropagation();
+                      handleDeleteRequest(request.id, request.titulo);
+                    }}
+                  >
+                    <Trash2 size={18} color="#ffffff" />
+                    <Text style={styles.deleteButtonText}>Eliminar</Text>
+                  </TouchableOpacity>
+                )}
             </View>
           </TouchableOpacity>
         ))}
@@ -1380,7 +1380,7 @@ export default function Requests() {
                       style={[
                         styles.agentChip,
                         newRequest.agente_id === agent.id &&
-                          styles.agentChipSelected,
+                        styles.agentChipSelected,
                       ]}
                       onPress={() =>
                         setNewRequest(prev => ({
@@ -1393,7 +1393,7 @@ export default function Requests() {
                         style={[
                           styles.agentChipText,
                           newRequest.agente_id === agent.id &&
-                            styles.agentChipTextSelected,
+                          styles.agentChipTextSelected,
                         ]}
                       >
                         {getAgentFullName(agent)}
@@ -1402,7 +1402,7 @@ export default function Requests() {
                         style={[
                           styles.agentChipCategory,
                           newRequest.agente_id === agent.id &&
-                            styles.agentChipCategorySelected,
+                          styles.agentChipCategorySelected,
                         ]}
                       >
                         {agent.categoria}
@@ -1420,8 +1420,8 @@ export default function Requests() {
                   style={[
                     styles.charCounter,
                     newRequest.mensaje.length > 0 &&
-                      newRequest.mensaje.length < 10 &&
-                      styles.charCounterWarning,
+                    newRequest.mensaje.length < 10 &&
+                    styles.charCounterWarning,
                   ]}
                 >
                   {newRequest.mensaje.length} caracteres
