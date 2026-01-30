@@ -240,9 +240,12 @@ export default function AddZoneMembers({
 
       onMembersAdded(chatRoomId);
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding members:', error);
-      Alert.alert('Error', 'No se pudieron agregar los miembros al chat');
+      Alert.alert(
+        'Error',
+        `No se pudieron agregar los miembros al chat: ${error.message || 'Error desconocido'}`
+      );
     } finally {
       setSaving(false);
     }
