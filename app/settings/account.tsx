@@ -36,7 +36,10 @@ export default function AccountSettings() {
     celular: user?.celular || '',
     ciudad: user?.ciudad || '',
     estado: user?.estado || '',
+    zona: user?.zona || '',
   });
+
+  const zonas = ['Norte', 'Sur', 'Centro', 'Este', 'Oeste'];
 
   const handleSave = async () => {
     if (!user) return;
@@ -44,6 +47,11 @@ export default function AccountSettings() {
     // Validaciones básicas
     if (!formData.nombre || !formData.apellido_paterno) {
       Alert.alert('Error', 'El nombre y apellido paterno son obligatorios');
+      return;
+    }
+
+    if (user.rol === 'customer' && !formData.zona) {
+      Alert.alert('Error', 'La zona es obligatoria');
       return;
     }
 
@@ -64,6 +72,7 @@ export default function AccountSettings() {
           celular: formData.celular.trim(),
           ciudad: formData.ciudad.trim(),
           estado: formData.estado.trim(),
+          zona: formData.zona,
         })
         .eq('id', user.id);
 
@@ -188,9 +197,7 @@ export default function AccountSettings() {
               placeholderTextColor="#9ca3af"
             />
           </View>
-          <Text style={styles.helperText}>
-            El correo no se puede modificar
-          </Text>
+          <Text style={styles.helperText}>El correo no se puede modificar</Text>
         </View>
 
         {/* Teléfono */}
@@ -210,6 +217,36 @@ export default function AccountSettings() {
               maxLength={15}
             />
           </View>
+        </View>
+
+        {/* Zona */}
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Zona</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.zonaScroll}
+          >
+            {zonas.map(zona => (
+              <TouchableOpacity
+                key={zona}
+                style={[
+                  styles.zonaChip,
+                  formData.zona === zona && styles.zonaChipActive,
+                ]}
+                onPress={() => setFormData(prev => ({ ...prev, zona }))}
+              >
+                <Text
+                  style={[
+                    styles.zonaChipText,
+                    formData.zona === zona && styles.zonaChipTextActive,
+                  ]}
+                >
+                  {zona}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
 
         {/* Ciudad */}
@@ -361,6 +398,31 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 16,
     fontFamily: 'Inter-SemiBold',
+    color: '#ffffff',
+  },
+  zonaScroll: {
+    flexGrow: 0,
+    marginBottom: 8,
+  },
+  zonaChip: {
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  zonaChipActive: {
+    backgroundColor: '#202B52',
+    borderColor: '#202B52',
+  },
+  zonaChipText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    color: '#6b7280',
+  },
+  zonaChipTextActive: {
     color: '#ffffff',
   },
 });

@@ -50,6 +50,10 @@ export default function Register() {
     );
 
     if (emptyFields.length > 0) {
+      if (emptyFields.includes('zona')) {
+        Alert.alert('Error', 'La zona es obligatoria. Por favor selecciona una.');
+        return;
+      }
       Alert.alert('Error', 'Por favor, completa todos los campos');
       return;
     }
