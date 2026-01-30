@@ -105,6 +105,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="mispedidos"
         options={{
+          href: null,
           title: 'Pedidos',
           tabBarIcon: ({ size, color }) => (
             <Package size={size} color={color} />

@@ -17,9 +17,11 @@ import {
   Alert,
   Platform,
   KeyboardAvoidingView,
+  Keyboard,
   Dimensions,
   Animated,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -329,6 +331,7 @@ export default function ChatRoom() {
   const [imageViewerImages, setImageViewerImages] = useState<{ uri: string }[]>(
     []
   );
+  const [isUploading, setIsUploading] = useState(false);
 
   const chatRoom = getChatRoom(roomId!);
   const roomMessages = messages[roomId!] || [];
@@ -346,6 +349,16 @@ export default function ChatRoom() {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);
   }, [roomMessages]);
+
+  // Scroll automático cuando aparece el teclado (especialmente importante en Android)
+  useEffect(() => {
+    const keyboardDidShow = Keyboard.addListener('keyboardDidShow', () => {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    });
+    return () => keyboardDidShow.remove();
+  }, []);
 
   useEffect(() => {
     // Recording timer
@@ -448,54 +461,72 @@ export default function ChatRoom() {
 
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
+        mediaTypes: ImagePicker.MediaTypeOptions.Images, // Video support requires MIME type config in bucket
+        allowsEditing: false, // Editing not supported with multiple selection
         aspect: [4, 3],
         quality: 0.8,
+        allowsMultipleSelection: true,
+        selectionLimit: 10,
       });
 
-      if (!result.canceled && result.assets[0]) {
-        const asset = result.assets[0];
+      if (!result.canceled && result.assets.length > 0) {
+        setShowAttachmentMenu(false);
+        setIsUploading(true);
 
-        console.log('Uploading image to storage...');
+        // Process all selected assets
+        let successCount = 0;
 
-        // Upload to Supabase Storage
-        const uploadResult = await uploadFileToStorage(
-          {
-            uri: asset.uri,
-            name: asset.fileName || `imagen_${Date.now()}.jpg`,
-            type: asset.type || 'image/jpeg',
-            size: asset.fileSize || 0,
-          },
-          'request-files',
-          `chat/${roomId}`
-        );
+        for (const asset of result.assets) {
+          try {
+            console.log('Uploading image to storage...', asset.fileName);
 
-        if (!uploadResult) {
-          throw new Error('No se pudo subir la imagen');
+            // Upload to Supabase Storage
+            const uploadResult = await uploadFileToStorage(
+              {
+                uri: asset.uri,
+                name: asset.fileName || `imagen_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`,
+                type: asset.mimeType || 'image/jpeg', // FIXED: use mimeType, not type
+                size: asset.fileSize || 0,
+              },
+              'request-files',
+              `chat/${roomId}`
+            );
+
+            if (uploadResult) {
+              console.log('Image uploaded successfully:', uploadResult.url);
+
+              await sendMessage(
+                roomId!,
+                'Imagen enviada',
+                'image',
+                uploadResult.url, // ✅ Public URL
+                uploadResult.name,
+                uploadResult.size
+              );
+              successCount++;
+            }
+          } catch (error) {
+            console.error('Error uploading individual asset:', error);
+            // Continue with other assets even if one fails
+          }
         }
 
-        console.log('Image uploaded successfully:', uploadResult.url);
+        if (successCount === 0) {
+          Alert.alert('Error', 'No se pudo subir ninguna imagen');
+        } else if (successCount < result.assets.length) {
+          Alert.alert('Aviso', `Se enviaron ${successCount} de ${result.assets.length} imágenes`);
+        } else {
+          // All success - optional toast
+        }
 
-        await sendMessage(
-          roomId!,
-          'Imagen enviada',
-          'image',
-          uploadResult.url, // ✅ Public URL
-          uploadResult.name,
-          uploadResult.size
-        );
-
-        Alert.alert('Éxito', 'Imagen enviada correctamente');
+        setIsUploading(false);
       }
     } catch (error) {
-      console.error('Error uploading image:', error);
-      Alert.alert(
-        'Error',
-        error instanceof Error ? error.message : 'No se pudo enviar la imagen'
-      );
+      console.error('Error picking images:', error);
+      Alert.alert('Error', 'No se pudo abrir la galería');
+      setIsUploading(false);
     }
-    setShowAttachmentMenu(false);
+    // setShowAttachmentMenu(false); // Already handled inside if block or catch
   };
 
   const handleCameraPicker = async () => {
@@ -516,47 +547,52 @@ export default function ChatRoom() {
       });
 
       if (!result.canceled && result.assets[0]) {
+        setShowAttachmentMenu(false);
+        setIsUploading(true);
         const asset = result.assets[0];
 
-        console.log('Uploading photo to storage...');
+        try {
+          console.log('Uploading photo to storage...');
 
-        // Upload to Supabase Storage
-        const uploadResult = await uploadFileToStorage(
-          {
-            uri: asset.uri,
-            name: asset.fileName || `foto_${Date.now()}.jpg`,
-            type: asset.type || 'image/jpeg',
-            size: asset.fileSize || 0,
-          },
-          'request-files',
-          `chat/${roomId}`
-        );
+          // Upload to Supabase Storage
+          const uploadResult = await uploadFileToStorage(
+            {
+              uri: asset.uri,
+              name: asset.fileName || `foto_${Date.now()}.jpg`,
+              type: asset.mimeType || 'image/jpeg', // FIXED: use mimeType, not type
+              size: asset.fileSize || 0,
+            },
+            'request-files',
+            `chat/${roomId}`
+          );
 
-        if (!uploadResult) {
-          throw new Error('No se pudo subir la foto');
+          if (!uploadResult) {
+            throw new Error('No se pudo subir la foto');
+          }
+
+          console.log('Photo uploaded successfully:', uploadResult.url);
+
+          await sendMessage(
+            roomId!,
+            'Foto tomada',
+            'image',
+            uploadResult.url, // ✅ Public URL
+            uploadResult.name,
+            uploadResult.size
+          );
+        } catch (error) {
+          console.error('Error uploading photo:', error);
+          Alert.alert(
+            'Error',
+            error instanceof Error ? error.message : 'No se pudo enviar la foto'
+          );
+        } finally {
+          setIsUploading(false);
         }
-
-        console.log('Photo uploaded successfully:', uploadResult.url);
-
-        await sendMessage(
-          roomId!,
-          'Foto tomada',
-          'image',
-          uploadResult.url, // ✅ Public URL
-          uploadResult.name,
-          uploadResult.size
-        );
-
-        Alert.alert('Éxito', 'Foto enviada correctamente');
       }
     } catch (error) {
-      console.error('Error uploading photo:', error);
-      Alert.alert(
-        'Error',
-        error instanceof Error ? error.message : 'No se pudo enviar la foto'
-      );
+      console.error('Error taking photo:', error);
     }
-    setShowAttachmentMenu(false);
   };
 
   const handleDocumentPicker = async () => {
@@ -567,49 +603,54 @@ export default function ChatRoom() {
       });
 
       if (!result.canceled && result.assets[0]) {
+        setShowAttachmentMenu(false);
+        setIsUploading(true);
         const asset = result.assets[0];
 
-        console.log('Uploading document to storage...');
+        try {
+          console.log('Uploading document to storage...');
 
-        // Upload to Supabase Storage
-        const uploadResult = await uploadFileToStorage(
-          {
-            uri: asset.uri,
-            name: asset.name,
-            type: asset.mimeType || 'application/octet-stream',
-            size: asset.size || 0,
-          },
-          'request-files',
-          `chat/${roomId}`
-        );
+          // Upload to Supabase Storage
+          const uploadResult = await uploadFileToStorage(
+            {
+              uri: asset.uri,
+              name: asset.name,
+              type: asset.mimeType || 'application/octet-stream',
+              size: asset.size || 0,
+            },
+            'request-files',
+            `chat/${roomId}`
+          );
 
-        if (!uploadResult) {
-          throw new Error('No se pudo subir el archivo');
+          if (!uploadResult) {
+            throw new Error('No se pudo subir el archivo');
+          }
+
+          console.log('Document uploaded successfully:', uploadResult.url);
+
+          await sendMessage(
+            roomId!,
+            'Archivo enviado',
+            'file',
+            uploadResult.url, // ✅ Public URL
+            uploadResult.name,
+            uploadResult.size
+          );
+
+        } catch (error) {
+          console.error('Error uploading document:', error);
+          Alert.alert(
+            'Error',
+            error instanceof Error ? error.message : 'No se pudo subir el archivo'
+          );
+        } finally {
+          setIsUploading(false);
         }
-
-        console.log('Document uploaded successfully:', uploadResult.url);
-
-        await sendMessage(
-          roomId!,
-          'Archivo enviado',
-          'file',
-          uploadResult.url, // ✅ Public URL
-          uploadResult.name,
-          uploadResult.size
-        );
-
-        Alert.alert('Éxito', 'Archivo enviado correctamente');
       }
     } catch (error) {
-      console.error('Error uploading document:', error);
-      Alert.alert(
-        'Error',
-        error instanceof Error
-          ? error.message
-          : 'No se pudo seleccionar el archivo'
-      );
+      console.error('Error selecting document:', error);
+      Alert.alert('Error', 'No se pudo seleccionar el archivo');
     }
-    setShowAttachmentMenu(false);
   };
 
   const handleVoiceRecording = async () => {
@@ -629,6 +670,7 @@ export default function ChatRoom() {
 
         const uri = recording.getURI();
         if (uri) {
+          setIsUploading(true);
           try {
             console.log('Uploading audio file to storage...');
 
@@ -671,7 +713,6 @@ export default function ChatRoom() {
               recordingDuration
             );
 
-            Alert.alert('Éxito', 'Audio enviado correctamente');
           } catch (uploadError) {
             console.error('Error uploading audio:', uploadError);
             Alert.alert(
@@ -680,6 +721,8 @@ export default function ChatRoom() {
                 ? uploadError.message
                 : 'No se pudo enviar el audio. Intenta de nuevo.'
             );
+          } finally {
+            setIsUploading(false);
           }
         }
 
@@ -924,8 +967,8 @@ export default function ChatRoom() {
       index === roomMessages.length - 1 ||
       roomMessages[index + 1]?.sender_id !== message.sender_id ||
       new Date(roomMessages[index + 1]?.created_at).getTime() -
-        new Date(message.created_at).getTime() >
-        300000; // 5 minutes
+      new Date(message.created_at).getTime() >
+      300000; // 5 minutes
 
     const replyMessage = message.reply_to
       ? roomMessages.find(m => m.id === message.reply_to)
@@ -1219,12 +1262,20 @@ export default function ChatRoom() {
     );
   }
 
+  // En Android con adjustResize, el sistema ya maneja el teclado.
+  // KeyboardAvoidingView solo es necesario en iOS.
+  const ChatWrapper = Platform.OS === 'ios' ? KeyboardAvoidingView : View;
+  const wrapperProps = Platform.OS === 'ios' ? {
+    style: styles.container,
+    behavior: 'padding' as const,
+    keyboardVerticalOffset: 90,
+  } : {
+    style: styles.container,
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+      <ChatWrapper {...wrapperProps}>
         {/* Header */}
         <LinearGradient colors={['#1e40af', '#3b82f6']} style={styles.header}>
           <TouchableOpacity
@@ -1405,7 +1456,7 @@ export default function ChatRoom() {
                   style={[
                     styles.emojiCategory,
                     selectedEmojiCategory === category &&
-                      styles.emojiCategoryActive,
+                    styles.emojiCategoryActive,
                   ]}
                   onPress={() => setSelectedEmojiCategory(category)}
                 >
@@ -1413,7 +1464,7 @@ export default function ChatRoom() {
                     style={[
                       styles.emojiCategoryText,
                       selectedEmojiCategory === category &&
-                        styles.emojiCategoryTextActive,
+                      styles.emojiCategoryTextActive,
                     ]}
                   >
                     {category}
@@ -1532,6 +1583,8 @@ export default function ChatRoom() {
                 <Text style={styles.saveEditText}>✓</Text>
               </TouchableOpacity>
             </View>
+          ) : isUploading ? (
+            <ActivityIndicator size="small" color="#1e40af" style={{ marginHorizontal: 10 }} />
           ) : messageText.trim() ? (
             <TouchableOpacity
               style={styles.sendButton}
@@ -1640,7 +1693,7 @@ export default function ChatRoom() {
           visible={imageViewerVisible}
           onRequestClose={() => setImageViewerVisible(false)}
         />
-      </KeyboardAvoidingView>
+      </ChatWrapper>
     </SafeAreaView>
   );
 }
