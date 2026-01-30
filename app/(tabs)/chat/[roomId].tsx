@@ -308,6 +308,10 @@ export default function ChatRoom() {
   const [playingAudio, setPlayingAudio] = useState<{
     [key: string]: Audio.Sound;
   }>({});
+  const [audioPlaybackPosition, setAudioPlaybackPosition] = useState<{
+    [key: string]: number; // messageId -> position in seconds
+  }>({});
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [showAddMembers, setShowAddMembers] = useState(false);
@@ -320,9 +324,6 @@ export default function ChatRoom() {
     null
   );
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(
-    null
-  );
-  const [timer, setTimer] = useState<ReturnType<typeof setInterval> | null>(
     null
   );
   const [isTyping, setIsTyping] = useState(false);
@@ -361,24 +362,26 @@ export default function ChatRoom() {
   }, []);
 
   useEffect(() => {
-    // Recording timer
+    // Recording timer - usando ref para evitar dependencia circular
     if (isRecording) {
-      const newTimer = setInterval(() => {
+      recordingTimerRef.current = setInterval(() => {
         setRecordingDuration(prev => prev + 1);
       }, 1000);
-      setTimer(newTimer);
     } else {
       setRecordingDuration(0);
-      if (timer) {
-        clearInterval(timer);
-        setTimer(null);
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
       }
     }
 
     return () => {
-      if (timer) clearInterval(timer);
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
     };
-  }, [isRecording, timer]);
+  }, [isRecording]); // Solo depender de isRecording
 
   // Cleanup audio on unmount
   useEffect(() => {
@@ -787,6 +790,12 @@ export default function ChatRoom() {
             delete newState[id];
             return newState;
           });
+          // Reset position for stopped audio
+          setAudioPlaybackPosition(prev => {
+            const newState = { ...prev };
+            delete newState[id];
+            return newState;
+          });
         }
       }
 
@@ -799,23 +808,44 @@ export default function ChatRoom() {
           delete newState[messageId];
           return newState;
         });
+        // Reset position
+        setAudioPlaybackPosition(prev => {
+          const newState = { ...prev };
+          delete newState[messageId];
+          return newState;
+        });
       } else {
         // Play new audio
         const { sound } = await Audio.Sound.createAsync(
           { uri: audioUrl },
-          { shouldPlay: true }
+          { shouldPlay: true, progressUpdateIntervalMillis: 500 }
         );
 
         setPlayingAudio(prev => ({ ...prev, [messageId]: sound }));
 
-        // Remove from playing state when finished
+        // Track playback position and remove from playing state when finished
         sound.setOnPlaybackStatusUpdate(status => {
-          if (status.isLoaded && status.didJustFinish) {
-            setPlayingAudio(prev => {
-              const newState = { ...prev };
-              delete newState[messageId];
-              return newState;
-            });
+          if (status.isLoaded) {
+            // Update current position
+            const positionSec = Math.floor(status.positionMillis / 1000);
+            setAudioPlaybackPosition(prev => ({
+              ...prev,
+              [messageId]: positionSec,
+            }));
+
+            if (status.didJustFinish) {
+              setPlayingAudio(prev => {
+                const newState = { ...prev };
+                delete newState[messageId];
+                return newState;
+              });
+              // Reset position when finished
+              setAudioPlaybackPosition(prev => {
+                const newState = { ...prev };
+                delete newState[messageId];
+                return newState;
+              });
+            }
           }
         });
       }
@@ -1113,7 +1143,9 @@ export default function ChatRoom() {
                       },
                     ]}
                   >
-                    {formatDuration(message.audio_duration || 0)}
+                    {playingAudio[message.id] && audioPlaybackPosition[message.id] !== undefined
+                      ? formatDuration(audioPlaybackPosition[message.id])
+                      : formatDuration(message.audio_duration || 0)}
                   </Text>
                 </View>
               )}
