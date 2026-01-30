@@ -1348,7 +1348,7 @@ export default function ChatRoom() {
 
           <View style={styles.headerActions}>
             {/* Botón agregar miembros (siempre visible para agregar al chat) */}
-            {!chatRoom?.is_group && (
+            {!chatRoom?.is_group && user?.rol !== 'customer' && (
               <TouchableOpacity
                 style={styles.headerActionButton}
                 onPress={() => setShowAddMembers(true)}
@@ -1361,13 +1361,16 @@ export default function ChatRoom() {
             {chatRoom?.is_group && (
               <TouchableOpacity
                 style={styles.groupIndicator}
+                disabled={user?.rol === 'customer'}
                 onPress={() => setShowAddMembers(true)}
               >
                 <Users size={18} color="#ffffff" />
                 <Text style={styles.groupCount}>
                   {chatRoom.participants?.length || 0}
                 </Text>
-                <UserPlus size={14} color="#ffffff" style={{ marginLeft: 4 }} />
+                {user?.rol !== 'customer' && (
+                  <UserPlus size={14} color="#ffffff" style={{ marginLeft: 4 }} />
+                )}
               </TouchableOpacity>
             )}
 
@@ -1383,20 +1386,22 @@ export default function ChatRoom() {
         {/* Header Menu Dropdown */}
         {showHeaderMenu && (
           <View style={styles.headerDropdown}>
-            <TouchableOpacity
-              style={styles.dropdownItem}
-              onPress={() => {
-                setShowHeaderMenu(false);
-                setShowAddMembers(true);
-              }}
-            >
-              <UserPlus size={18} color="#374151" />
-              <Text style={styles.dropdownText}>
-                {chatRoom?.is_group
-                  ? 'Agregar más miembros'
-                  : 'Agregar personas al chat'}
-              </Text>
-            </TouchableOpacity>
+            {user?.rol !== 'customer' && (
+              <TouchableOpacity
+                style={styles.dropdownItem}
+                onPress={() => {
+                  setShowHeaderMenu(false);
+                  setShowAddMembers(true);
+                }}
+              >
+                <UserPlus size={18} color="#374151" />
+                <Text style={styles.dropdownText}>
+                  {chatRoom?.is_group
+                    ? 'Agregar más miembros'
+                    : 'Agregar personas al chat'}
+                </Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity
               style={styles.dropdownItem}
               onPress={() => {
