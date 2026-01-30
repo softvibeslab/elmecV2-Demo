@@ -195,19 +195,18 @@ export default function Requests() {
   const getStatusText = (status: string) => {
     switch (status) {
       case 'sin_atender':
-        return 'Sin atender';
+        return 'SIN ATENDER';
       case 'nuevo':
-        return 'Nueva';
+        return 'NUEVO';
       case 'asignado':
-        return 'Asignado';
+        return 'ASIGNADO';
       case 'en_proceso':
-        return 'En proceso';
+        return 'EN PROCESO';
       case 'resuelto':
-        return 'Terminada';
       case 'cerrado':
-        return 'Terminada';
+        return 'TERMINADA';
       default:
-        return 'Desconocido';
+        return 'DESCONOCIDO';
     }
   };
 
@@ -1006,42 +1005,7 @@ export default function Requests() {
     }
   };
 
-  // Simular cambios de estado automáticos para demo
-  useEffect(() => {
-    if (requests.length === 0) return;
 
-    const interval = setInterval(() => {
-      // Cambiar estado aleatoriamente para demo
-      if (Math.random() > 0.95) {
-        const pendingRequests = requests.filter(r =>
-          ['nuevo', 'asignado', 'en_proceso'].includes(r.estatus)
-        );
-
-        if (pendingRequests.length > 0) {
-          const randomRequest =
-            pendingRequests[Math.floor(Math.random() * pendingRequests.length)];
-          let newStatus = randomRequest.estatus;
-
-          if (randomRequest.estatus === 'nuevo') {
-            newStatus = 'asignado';
-          } else if (randomRequest.estatus === 'asignado') {
-            newStatus = 'en_proceso';
-          } else if (
-            randomRequest.estatus === 'en_proceso' &&
-            Math.random() > 0.7
-          ) {
-            newStatus = 'resuelto';
-          }
-
-          if (newStatus !== randomRequest.estatus) {
-            handleUpdateRequestStatus(randomRequest.id, newStatus);
-          }
-        }
-      }
-    }, 15000); // Cada 15 segundos
-
-    return () => clearInterval(interval);
-  }, [requests]);
 
   if (loading) {
     return (
