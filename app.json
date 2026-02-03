@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "ELMEC Mobile App",
+    "name": "Elmec MFR",
     "slug": "elmec-mobile-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/branding/logo.png",
     "scheme": "elmec",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -19,7 +19,7 @@
     "web": {
       "bundler": "metro",
       "output": "single",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/branding/logo.png"
     },
     "plugins": [
       [
@@ -46,7 +46,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/icon.png",
+          "icon": "./assets/images/branding/logo.png",
           "color": "#ffffff",
           "defaultChannel": "default",
           "sounds": []
@@ -57,7 +57,7 @@
       "typedRoutes": true
     },
     "android": {
-      "package": "com.rogermck.boltexponativewind",
+      "package": "com.elmec.mfr",
       "minSdkVersion": 24,
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",
@@ -65,7 +65,7 @@
         "POST_NOTIFICATIONS"
       ],
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/icon.png",
+        "foregroundImage": "./assets/images/branding/logo.png",
         "backgroundColor": "#ffffff"
       }
     }

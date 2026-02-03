@@ -97,26 +97,94 @@ export default function Requests() {
       setLoading(true);
       setError(null);
 
-      let query = supabase
-        .from('requests')
-        .select(
-          `
-          *,
-          usuario:users!requests_usuario_id_fkey(id, nombre, apellido_paterno, apellido_materno, empresa, zona),
-          agente:users!requests_agente_id_fkey(id, nombre, apellido_paterno, apellido_materno, categoria, zona)
-        `
-        )
-        .order('created_at', { ascending: false });
+      let data: RequestWithRelations[] | null = null;
+      let error: any = null;
 
       // Filtrar según el rol del usuario
       if (user.rol === 'customer') {
-        query = query.eq('usuario_id', user.id);
-      } else if (user.rol === 'agent') {
-        query = query.eq('agente_id', user.id);
-      }
-      // Los admins pueden ver todas las solicitudes
+        // Clientes solo ven sus solicitudes
+        const query = supabase
+          .from('requests')
+          .select(
+            `
+            *,
+            usuario:users!requests_usuario_id_fkey(id, nombre, apellido_paterno, apellido_materno, empresa, zona),
+            agente:users!requests_agente_id_fkey(id, nombre, apellido_paterno, apellido_materno, categoria, zona)
+          `
+          )
+          .eq('usuario_id', user.id)
+          .order('created_at', { ascending: false });
 
-      const { data, error } = await query;
+        const result = await query;
+        data = result.data;
+        error = result.error;
+      } else if (user.rol === 'agent') {
+        // Agentes ven:
+        // 1. Solicitudes asignadas a ellos
+        // 2. Solicitudes sin asignar de clientes de su misma zona
+        const baseQuery = `
+          *,
+          usuario:users!requests_usuario_id_fkey(id, nombre, apellido_paterno, apellido_materno, empresa, zona),
+          agente:users!requests_agente_id_fkey(id, nombre, apellido_paterno, apellido_materno, categoria, zona)
+        `;
+
+        // Consulta 1: Solicitudes asignadas al agente
+        const assignedQuery = supabase
+          .from('requests')
+          .select(baseQuery)
+          .eq('agente_id', user.id);
+
+        // Consulta 2: Solicitudes sin asignar de su zona
+        let unassignedQuery: any = null;
+        if (user.zona) {
+          unassignedQuery = supabase
+            .from('requests')
+            .select(baseQuery)
+            .is('agente_id', null)
+            .order('created_at', { ascending: false });
+        }
+
+        // Ejecutar ambas consultas en paralelo
+        const [assignedResult, unassignedResult] = await Promise.all([
+          assignedQuery,
+          unassignedQuery || { data: null, error: null },
+        ]);
+
+        const assignedRequests = assignedResult.data || [];
+        const unassignedRequests = (unassignedResult?.data || []).filter(
+          (req: RequestWithRelations) => req.usuario?.zona === user.zona
+        );
+
+        // Combinar y eliminar duplicados (usando Set para IDs únicos)
+        const allRequests = [...assignedRequests, ...unassignedRequests];
+        const uniqueRequests = Array.from(
+          new Map(allRequests.map((req: RequestWithRelations) => [req.id, req])).values()
+        );
+
+        // Ordenar por fecha
+        data = uniqueRequests.sort(
+          (a: RequestWithRelations, b: RequestWithRelations) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+
+        error = assignedResult.error || unassignedResult?.error;
+      } else {
+        // Admins ven todas las solicitudes
+        const query = supabase
+          .from('requests')
+          .select(
+            `
+            *,
+            usuario:users!requests_usuario_id_fkey(id, nombre, apellido_paterno, apellido_materno, empresa, zona),
+            agente:users!requests_agente_id_fkey(id, nombre, apellido_paterno, apellido_materno, categoria, zona)
+          `
+          )
+          .order('created_at', { ascending: false });
+
+        const result = await query;
+        data = result.data;
+        error = result.error;
+      }
 
       if (error) {
         console.error('Error loading requests:', error);

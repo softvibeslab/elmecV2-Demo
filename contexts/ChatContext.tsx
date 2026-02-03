@@ -1112,12 +1112,22 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const getUnreadCount = (): number => {
-    return Object.values(messages).reduce((total, roomMessages) => {
-      return (
-        total +
-        roomMessages.filter(msg => msg.sender_id !== user?.id && !msg.isRead)
-          .length
-      );
+    if (!user) return 0;
+
+    return Object.entries(messages).reduce((total, [roomId, roomMessages]) => {
+      // Verificar que el usuario es participante de esta sala
+      const room = chatRooms.find(r => r.id === roomId);
+      if (!room || !room.participants?.includes(user.id)) {
+        // El usuario no es participante de este chat, no contar mensajes
+        return total;
+      }
+
+      // Contar mensajes no leídos de otros usuarios
+      const unreadCount = roomMessages.filter(
+        msg => msg.sender_id !== user.id && !msg.isRead
+      ).length;
+
+      return total + unreadCount;
     }, 0);
   };
 
