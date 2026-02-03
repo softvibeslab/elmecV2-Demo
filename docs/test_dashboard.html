@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ElmecV2 - Test Runner Dashboard</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-panel: #1e293b;
+            --border: #334155;
+            --primary: #3b82f6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 320px;
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .brand {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 32px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .suite-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .suite-item {
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text-muted);
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .suite-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .suite-item.active {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: rgba(59, 130, 246, 0.3);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* Main Area */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .header {
+            height: 80px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 10;
+        }
+
+        .header-title h2 {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        .header-title p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 24px;
+        }
+
+        .stat-box {
+            text-align: center;
+        }
+
+        .stat-val {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        /* Test Grid */
+        .test-container {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding-bottom: 80px;
+        }
+
+        .test-card {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            gap: 24px;
+            transition: all 0.2s;
+        }
+
+        .test-card:hover {
+            border-color: #475569;
+        }
+
+        .test-status {
+            width: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-right: 1px solid var(--border);
+            padding-right: 24px;
+            margin-right: -12px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #475569;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .test-content {
+            flex: 1;
+        }
+
+        .test-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .test-id {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: var(--text-muted);
+        }
+
+        .test-title {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .test-steps {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin: 12px 0;
+            line-height: 1.6;
+            white-space: pre-line;
+        }
+
+        .test-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 16px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+            opacity: 0.8;
+        }
+
+        .btn:hover {
+            opacity: 1;
+            transform: translateY(-1px);
+        }
+
+        .btn-pass {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .btn-pass:hover,
+        .test-card.passed .btn-pass {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-fail {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .btn-fail:hover,
+        .test-card.failed .btn-fail {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* Card States based on result */
+        .test-card.passed {
+            border-color: rgba(16, 185, 129, 0.3);
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .test-card.passed .status-indicator {
+            background: var(--success);
+            box-shadow: 0 0 10px var(--success);
+        }
+
+        .test-card.failed {
+            border-color: rgba(239, 68, 68, 0.3);
+            background: rgba(239, 68, 68, 0.05);
+        }
+
+        .test-card.failed .status-indicator {
+            background: var(--danger);
+            box-shadow: 0 0 10px var(--danger);
+        }
+
+        /* Progress Overlay */
+        .overall-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--success));
+            width: 0%;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="sidebar">
+        <div class="brand">
+            <i data-lucide="flask-conical" color="#3b82f6"></i>
+            Test Runner
+        </div>
+        <div class="suite-list" id="suiteList">
+            <!-- Populated by JS -->
+        </div>
+
+        <div style="margin-top: 20px;">
+            <button class="btn" style="width: 100%; justify-content: center; background: #334155; color: white;"
+                onclick="resetAll()">
+                <i data-lucide="rotate-ccw" size="14"></i> Reset All
+            </button>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="header">
+            <div class="header-title">
+                <h2 id="suiteTitle">Selecciona una Suite</h2>
+                <p id="suiteDesc">Gestión de pruebas manuales</p>
+            </div>
+            <div class="stats-bar">
+                <div class="stat-box">
+                    <div class="stat-val" id="totalCount">0</div>
+                    <div class="stat-label">Total</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-val" style="color: var(--success)" id="passedCount">0</div>
+                    <div class="stat-label">Passed</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-val" style="color: var(--danger)" id="failedCount">0</div>
+                    <div class="stat-label">Failed</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-container" id="testContainer">
+            <!-- Tests Cards -->
+        </div>
+
+        <div class="overall-progress">
+            <div class="progress-fill" id="overallProgress"></div>
+        </div>
+    </div>
+
+    <script>
+        // Extended Test Data
+        const testData = {
+            auth: {
+                title: "🔐 Autenticación y Perfil",
+                description: "Login, registro, recuperación y gestión de cuenta",
+                tests: [
+                    { id: 'AUTH-01', title: 'Login Exitoso (Cliente)', steps: '1. Ingresar usuario cliente demo\n2. Ingresar password correcto', expected: 'Acceso a Home Cliente', status: 'pending' },
+                    { id: 'AUTH-02', title: 'Login Exitoso (Agente)', steps: '1. Ingresar usuario agente demo\n2. Ingresar password correcto', expected: 'Acceso a Home Agente con panel de tareas', status: 'pending' },
+                    { id: 'AUTH-03', title: 'Login Exitoso (Admin)', steps: '1. Ingresar usuario admin demo\n2. Ingresar password correcto', expected: 'Acceso a Dashboard Admin', status: 'pending' },
+                    { id: 'AUTH-04', title: 'Login Fallido (Password)', steps: '1. Usuario válido\n2. Password incorrecto', expected: 'Error "Credenciales no válidas"', status: 'pending' },
+                    { id: 'AUTH-05', title: 'Login Fallido (Usuario)', steps: '1. Email no registrado\n2. Cualquier password', expected: 'Error "Usuario no encontrado"', status: 'pending' },
+                    { id: 'AUTH-06', title: 'Formato Email Inválido', steps: '1. Ingresar "usuario@@mail"', expected: 'Validación de formato en tiempo real', status: 'pending' },
+                    { id: 'AUTH-07', title: 'Campos Vacíos', steps: '1. Dejar campos en blanco\n2. Tap "Ingresar"', expected: 'Botón deshabilitado o alerta de requeridos', status: 'pending' },
+                    { id: 'AUTH-08', title: 'Persistencia de Sesión', steps: '1. Cerrar app completamente (kill)\n2. Reabrir', expected: 'Sesión activa sin pedir login', status: 'pending' },
+                    { id: 'AUTH-09', title: 'Logout', steps: '1. Perfil > Cerrar Sesión', expected: 'Redirección a pantalla Login', status: 'pending' },
+                    { id: 'AUTH-10', title: 'Recuperar Contraseña', steps: '1. Tap "¿Olvidaste tu contraseña?"\n2. Ingresar email', expected: 'Mensaje de correo enviado', status: 'pending' }
+                ]
+            },
+            requests_client: {
+                title: "📝 Gestión Solicitudes (Cliente)",
+                description: "Ciclo de vida de tickets desde el lado del cliente",
+                tests: [
+                    { id: 'REQ-01', title: 'Crear Solicitud (Soporte)', steps: '1. Nueva Solicitud > Tipo Soporte\n2. Prioridad Media\n3. Enviar', expected: 'Ticket creado exitosamente', status: 'pending' },
+                    { id: 'REQ-02', title: 'Crear Solicitud (Urgente)', steps: '1. Nueva Solicitud\n2. Prioridad Urgente', expected: 'Ticket creado con distintivo visual de urgencia', status: 'pending' },
+                    { id: 'REQ-03', title: 'Adjuntar Imagen (Cámara)', steps: '1. Nueva Solicitud > Adjuntar\n2. Tomar foto', expected: 'Foto adjuntada correctamente', status: 'pending' },
+                    { id: 'REQ-04', title: 'Adjuntar Imagen (Galería)', steps: '1. Nueva Solicitud > Adjuntar\n2. Seleccionar de galería', expected: 'Imagen adjuntada correctamente', status: 'pending' },
+                    { id: 'REQ-05', title: 'Límite Archivos (Max 3)', steps: '1. Intentar adjuntar 4 archivos', expected: 'Alerta de límite excedido', status: 'pending' },
+                    { id: 'REQ-06', title: 'Tamaño Archivo (>5MB)', steps: '1. Adjuntar archivo pesado', expected: 'Error de validación de tamaño', status: 'pending' },
+                    { id: 'REQ-07', title: 'Validación Título Corto', steps: '1. Título "Hola"', expected: 'Error "Mínimo 5 caracteres"', status: 'pending' },
+                    { id: 'REQ-08', title: 'Listado de Solicitudes', steps: '1. Ir a Mis Solicitudes', expected: 'Carga lista ordenada por fecha desc', status: 'pending' },
+                    { id: 'REQ-09', title: 'Filtrar por Estado', steps: '1. Filtro > "En Proceso"', expected: 'Solo muestra tickets verdes', status: 'pending' },
+                    { id: 'REQ-10', title: 'Detalle de Solicitud', steps: '1. Tap en una solicitud', expected: 'Muestra info completa, agente y chat', status: 'pending' }
+                ]
+            },
+            agent_flow: {
+                title: "�️ Flujo Agente y Chat",
+                description: "Atención, diagnóstico y comunicación",
+                tests: [
+                    { id: 'AGT-01', title: 'Notificación Nueva Asignación', steps: '1. Cliente crea ticket asignado\n2. Ver dispositivo agente', expected: 'Notificación Push recibida', status: 'pending' },
+                    { id: 'AGT-02', title: 'Visualizar Nuevos (Semáforo)', steps: '1. Ver lista tickets', expected: 'Nuevos tickets en Amarillo', status: 'pending' },
+                    { id: 'AGT-03', title: 'Aceptar Ticket (En Proceso)', steps: '1. Abrir ticket nuevo\n2. Cambiar estado a "En Proceso"', expected: 'Estado cambia a Verde, notifica al cliente', status: 'pending' },
+                    { id: 'AGT-04', title: 'Enviar Mensaje Texto', steps: '1. Chat room\n2. Escribir y enviar', expected: 'Mensaje aparece en hilo local y remoto', status: 'pending' },
+                    { id: 'AGT-05', title: 'Recibir Mensaje', steps: '1. Cliente responde', expected: 'Mensaje aparece en tiempo real', status: 'pending' },
+                    { id: 'AGT-06', title: 'Enviar Foto en Chat', steps: '1. Chat > Icono Cámara\n2. Enviar foto evidencia', expected: 'Imagen se carga en el chat', status: 'pending' },
+                    { id: 'AGT-07', title: 'Cerrar Ticket (Resuelto)', steps: '1. Cambiar estado a "Resuelto"', expected: 'Ticket pasa a histórico (Azul)', status: 'pending' },
+                    { id: 'AGT-08', title: 'Reabrir Ticket', steps: '1. Ir a cerrados\n2. Cambiar a "En Proceso"', expected: 'Ticket se reactiva', status: 'pending' }
+                ]
+            },
+            admin_dash: {
+                title: "📊 Admin y Métricas",
+                description: "Supervisión y gestión global",
+                tests: [
+                    { id: 'ADM-01', title: 'Carga Dashboard', steps: '1. Login Admin', expected: 'Gráficos de KPIs cargan correctamente', status: 'pending' },
+                    { id: 'ADM-02', title: 'Detectar Desatendidos', steps: '1. Buscar semáforos Rojos', expected: 'Identifica tickets vencidos', status: 'pending' },
+                    { id: 'ADM-03', title: 'Filtrar por Zona', steps: '1. Filtro Global > Zona Norte', expected: 'Métricas se actualizan a la zona', status: 'pending' },
+                    { id: 'ADM-04', title: 'Ver Todos los Usuarios', steps: '1. Ir a Usuarios', expected: 'Lista completa de clientes y agentes', status: 'pending' },
+                    { id: 'ADM-05', title: 'Editar Usuario', steps: '1. Seleccionar usuario\n2. Editar datos', expected: 'Cambios guardados', status: 'pending' }
+                ]
+            },
+            tools: {
+                title: "🧮 Herramientas Industriales",
+                description: "Calculadoras y Directorio",
+                tests: [
+                    { id: 'CALC-01', title: 'Calc Barrenado (Valid)', steps: '1. Ingresar RPM y Avance válidos', expected: 'Cálculo correcto', status: 'pending' },
+                    { id: 'CALC-02', title: 'Calc Barrenado (Zero)', steps: '1. Ingresar 0 en diámetro', expected: 'Error div/0 o validación', status: 'pending' },
+                    { id: 'CALC-03', title: 'Calc Fresado (Valid)', steps: '1. Ingresar parámetros', expected: 'Cálculo correcto', status: 'pending' },
+                    { id: 'DIR-01', title: 'Buscar en Directorio', steps: '1. Tab Directorio\n2. Buscar "Juan"', expected: 'Resultados filtrados', status: 'pending' },
+                    { id: 'DIR-02', title: 'Contactar desde Directorio', steps: '1. Tap botón llamar/mail', expected: 'Abre app teléfono/correo', status: 'pending' }
+                ]
+            },
+            ui_ux: {
+                title: "🎨 UI/UX y Performance",
+                description: "Aspectos visuales y de rendimiento",
+                tests: [
+                    { id: 'UI-01', title: 'Modo Oscuro/Claro', steps: '1. Cambiar tema sistema', expected: 'App se adapta correctamente', status: 'pending' },
+                    { id: 'UI-02', title: 'Responsive (Scroll)', steps: '1. Listas largas', expected: 'Scroll fluido sin saltos', status: 'pending' },
+                    { id: 'UI-03', title: 'Feedback de Carga', steps: '1. Acción lenta (ej. subir foto)', expected: 'Spinner o indicador visible', status: 'pending' },
+                    { id: 'UI-04', title: 'Navegación Tabs', steps: '1. Cambiar rápido entre tabs', expected: 'Sin lags ni pantallazos blancos', status: 'pending' }
+                ]
+            }
+        };
+
+        let currentSuite = 'auth';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            renderSidebar();
+            loadSuite(currentSuite);
+        });
+
+        function renderSidebar() {
+            const list = document.getElementById('suiteList');
+            list.innerHTML = '';
+
+            Object.keys(testData).forEach(key => {
+                const suite = testData[key];
+                const item = document.createElement('div');
+                item.className = `suite-item ${key === currentSuite ? 'active' : ''}`;
+                item.onclick = () => loadSuite(key);
+
+                // Calculate progress mini
+                const total = suite.tests.length;
+                const completed = suite.tests.filter(t => t.status !== 'pending').length;
+
+                item.innerHTML = `
+                    <span>${suite.title}</span>
+                    <span style="font-size: 11px; opacity: 0.6">${completed}/${total}</span>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function loadSuite(key) {
+            currentSuite = key;
+            const suite = testData[key];
+
+            document.getElementById('suiteTitle').innerText = suite.title;
+            document.getElementById('suiteDesc').innerText = suite.description;
+
+            renderSidebar(); // Update active state
+            renderTests();
+            updateStats();
+        }
+
+        function renderTests() {
+            const container = document.getElementById('testContainer');
+            container.innerHTML = '';
+            const suite = testData[currentSuite];
+
+            suite.tests.forEach((test, index) => {
+                const card = document.createElement('div');
+                card.className = `test-card ${test.status === 'passed' ? 'passed' : test.status === 'failed' ? 'failed' : ''}`;
+
+                card.innerHTML = `
+                    <div class="test-status">
+                         <div class="status-indicator"></div>
+                    </div>
+                    <div class="test-content">
+                        <div class="test-header">
+                            <span class="test-id">${test.id}</span>
+                            <span class="test-title">${test.title}</span>
+                        </div>
+                        <div class="test-steps">
+                            <strong>Pasos:</strong><br>
+                            ${test.steps}
+                            <br><br>
+                            <strong>Esperado:</strong> ${test.expected}
+                        </div>
+                        <div class="test-actions">
+                            <button class="btn btn-fail" onclick="updateTestStatus('${currentSuite}', ${index}, 'failed')">
+                                <i data-lucide="x-circle" size="16"></i> Fail
+                            </button>
+                            <button class="btn btn-pass" onclick="updateTestStatus('${currentSuite}', ${index}, 'passed')">
+                                <i data-lucide="check-circle" size="16"></i> Pass
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        function updateTestStatus(suiteKey, testIndex, status) {
+            testData[suiteKey].tests[testIndex].status = status;
+            renderTests(); // Re-render to show state change
+            renderSidebar(); // Update sidebar counts
+            updateStats();
+        }
+
+        function updateStats() {
+            let total = 0;
+            let passed = 0;
+            let failed = 0;
+
+            // Calculate Global Stats
+            Object.keys(testData).forEach(key => {
+                const suite = testData[key];
+                total += suite.tests.length;
+                passed += suite.tests.filter(t => t.status === 'passed').length;
+                failed += suite.tests.filter(t => t.status === 'failed').length;
+            });
+
+            document.getElementById('totalCount').innerText = total;
+            document.getElementById('passedCount').innerText = passed;
+            document.getElementById('failedCount').innerText = failed;
+
+            const pct = total === 0 ? 0 : ((passed + failed) / total) * 100;
+            document.getElementById('overallProgress').style.width = `${pct}%`;
+        }
+
+        function resetAll() {
+            Object.keys(testData).forEach(key => {
+                testData[key].tests.forEach(t => t.status = 'pending');
+            });
+            loadSuite(currentSuite);
+        }
+
+    </script>
+</body>
+
+</html>

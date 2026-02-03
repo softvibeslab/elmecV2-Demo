@@ -2,7 +2,7 @@
   "expo": {
     "name": "Elmec MFR",
     "slug": "elmec-mobile-app",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/branding/logo.png",
     "scheme": "elmec",
