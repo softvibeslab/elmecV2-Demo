@@ -1185,19 +1185,9 @@ export default function Requests() {
                       handleUpdateRequestStatus(request.id, 'en_proceso'),
                   },
                   {
-                    text: 'Pausar',
-                    onPress: () =>
-                      handleUpdateRequestStatus(request.id, 'pausado'),
-                  },
-                  {
-                    text: 'Resolver',
+                    text: 'Terminada',
                     onPress: () =>
                       handleUpdateRequestStatus(request.id, 'resuelto'),
-                  },
-                  {
-                    text: 'Cerrar',
-                    onPress: () =>
-                      handleUpdateRequestStatus(request.id, 'cerrado'),
                   },
                 ];
 
