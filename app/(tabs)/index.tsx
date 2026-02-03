@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,8 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { supabase } from '@/lib/supabase';
 import {
   Users,
   FileText,
@@ -49,32 +50,66 @@ export default function Home() {
     },
   ];
 
-  const recentActivity = [
-    {
-      id: '1',
-      type: 'solicitud',
-      title: 'Solicitud de soporte técnico',
-      status: 'en_proceso',
-      time: '2 horas',
-      agent: 'Carlos Mendoza',
-    },
-    {
-      id: '2',
-      type: 'solicitud',
-      title: 'Consulta sobre facturación',
-      status: 'resuelto',
-      time: '1 día',
-      agent: 'Ana García',
-    },
-    {
-      id: '3',
-      type: 'contacto',
-      title: 'Llamada a ventas',
-      status: 'completado',
-      time: '3 días',
-      agent: 'Luis Ramírez',
-    },
-  ];
+  // Estado para actividad reciente real
+  const [recentRequests, setRecentRequests] = useState<any[]>([]);
+  const [loadingActivity, setLoadingActivity] = useState(true);
+
+  // Cargar actividad reciente desde Supabase
+  const loadRecentActivity = useCallback(async () => {
+    try {
+      if (!user) return;
+
+      let query = supabase
+        .from('requests')
+        .select(`
+          id,
+          titulo,
+          estatus,
+          tipo,
+          updated_at,
+          created_at,
+          agente:users!requests_agente_id_fkey(nombre, apellido_paterno),
+          usuario:users!requests_usuario_id_fkey(nombre, apellido_paterno)
+        `)
+        .order('updated_at', { ascending: false })
+        .limit(3);
+
+      // Filtrar según rol
+      if (user.rol === 'customer') {
+        query = query.eq('usuario_id', user.id);
+      } else {
+        query = query.eq('agente_id', user.id);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      setRecentRequests(data || []);
+    } catch (error) {
+      console.error('Error loading activity:', error);
+    } finally {
+      setLoadingActivity(false);
+    }
+  }, [user]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadRecentActivity();
+    }, [loadRecentActivity])
+  );
+
+  // Helper para tiempo relativo
+  const getRelativeTime = (dateString: string) => {
+    if (!dateString) return '';
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 60) return `${diffMins} min`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours} h`;
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays} días`;
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -194,23 +229,40 @@ export default function Home() {
             </TouchableOpacity>
           </View>
           <View style={styles.activityList}>
-            {recentActivity.map(item => (
-              <View key={item.id} style={styles.activityItem}>
-                <View style={styles.activityIcon}>
-                  {getStatusIcon(item.status)}
-                </View>
-                <View style={styles.activityContent}>
-                  <Text style={styles.activityTitle}>{item.title}</Text>
-                  <Text style={styles.activityAgent}>Con: {item.agent}</Text>
-                  <View style={styles.activityMeta}>
-                    <Text style={styles.activityStatus}>
-                      {getStatusText(item.status)}
-                    </Text>
-                    <Text style={styles.activityTime}>hace {item.time}</Text>
-                  </View>
-                </View>
+            {loadingActivity ? (
+              <View style={{ padding: 20, alignItems: 'center' }}>
+                <Text style={{ color: '#6b7280' }}>Cargando...</Text>
               </View>
-            ))}
+            ) : recentRequests.length === 0 ? (
+              <View style={{ padding: 20, alignItems: 'center', backgroundColor: '#fff', borderRadius: 12 }}>
+                <Text style={{ color: '#6b7280', fontStyle: 'italic' }}>No hay actividad reciente</Text>
+              </View>
+            ) : (
+              recentRequests.map(item => {
+                const contacto = user?.rol === 'customer'
+                  ? (item.agente ? `${item.agente.nombre} ${item.agente.apellido_paterno}` : 'Sin asignar')
+                  : (item.usuario ? `${item.usuario.nombre} ${item.usuario.apellido_paterno}` : 'Desconocido');
+                return (
+                  <View key={item.id} style={styles.activityItem}>
+                    <View style={styles.activityIcon}>
+                      {getStatusIcon(item.estatus)}
+                    </View>
+                    <View style={styles.activityContent}>
+                      <Text style={styles.activityTitle}>{item.titulo}</Text>
+                      <Text style={styles.activityAgent}>
+                        {user?.rol === 'customer' ? 'Agente: ' : 'Cliente: '}{contacto}
+                      </Text>
+                      <View style={styles.activityMeta}>
+                        <Text style={styles.activityStatus}>
+                          {getStatusText(item.estatus)}
+                        </Text>
+                        <Text style={styles.activityTime}>hace {getRelativeTime(item.updated_at)}</Text>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })
+            )}
           </View>
         </View>
 
