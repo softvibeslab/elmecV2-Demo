@@ -999,9 +999,10 @@ export default function Requests() {
 
       // Navegar al chat
       router.push(`/chat/${roomId}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error starting chat:', error);
-      Alert.alert('Error', 'No se pudo iniciar el chat. Intenta de nuevo.');
+      const errorMessage = error?.message || error?.toString() || 'Error desconocido';
+      Alert.alert('Error Debug', `No se pudo iniciar el chat.\n\nDetalles:\n${errorMessage}`);
     }
   };
 
