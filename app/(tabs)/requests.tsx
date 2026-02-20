@@ -69,6 +69,7 @@ export default function Requests() {
   const [activeStatusFilters, setActiveStatusFilters] = useState<string[]>([]);
   const [activeAgentFilter, setActiveAgentFilter] = useState<string | null>(null);
   const [activeClientFilter, setActiveClientFilter] = useState<string | null>(null);
+  const [statusChangeRequest, setStatusChangeRequest] = useState<RequestWithRelations | null>(null);
   const [newRequest, setNewRequest] = useState({
     titulo: '',
     mensaje: '',
@@ -1302,37 +1303,9 @@ export default function Requests() {
             key={request.id}
             style={styles.requestCard}
             onPress={() => {
-              // Mostrar opciones para cambiar estado (solo para agentes y admins)
+              // Mostrar modal de cambio de estado (solo para agentes y admins)
               if (user?.rol === 'agent' || user?.rol === 'admin') {
-                const statusOptions = [
-                  { text: 'Cancelar', style: 'cancel' as const },
-                  {
-                    text: '🔴 Sin atender',
-                    onPress: () =>
-                      handleUpdateRequestStatus(request.id, 'sin_atender'),
-                  },
-                  {
-                    text: '🟡 Nueva',
-                    onPress: () =>
-                      handleUpdateRequestStatus(request.id, 'nuevo'),
-                  },
-                  {
-                    text: '🟢 En proceso',
-                    onPress: () =>
-                      handleUpdateRequestStatus(request.id, 'en_proceso'),
-                  },
-                  {
-                    text: '🔵 Terminada',
-                    onPress: () =>
-                      handleUpdateRequestStatus(request.id, 'resuelto'),
-                  },
-                ];
-
-                Alert.alert(
-                  'Cambiar Estado',
-                  `Solicitud: ${request.titulo}\nEstado actual: ${getStatusText(checkRequestExpiration(request))}`,
-                  statusOptions
-                );
+                setStatusChangeRequest(request);
               }
             }}
           >
@@ -1657,6 +1630,90 @@ export default function Requests() {
             <View style={{ height: 40 }} />
           </ScrollView>
         </SafeAreaView>
+      </Modal>
+
+      {/* Modal Cambiar Estado */}
+      <Modal
+        visible={!!statusChangeRequest}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setStatusChangeRequest(null)}
+      >
+        <TouchableOpacity
+          style={styles.statusModalOverlay}
+          activeOpacity={1}
+          onPress={() => setStatusChangeRequest(null)}
+        >
+          <View style={styles.statusModalContent}>
+            <Text style={styles.statusModalTitle}>Cambiar Estado</Text>
+            {statusChangeRequest && (
+              <Text style={styles.statusModalSubtitle}>
+                {statusChangeRequest.titulo}
+              </Text>
+            )}
+
+            <View style={styles.statusModalButtons}>
+              <TouchableOpacity
+                style={[styles.statusModalBtn, { backgroundColor: '#fef2f2', borderColor: '#ef4444' }]}
+                onPress={() => {
+                  if (statusChangeRequest) {
+                    handleUpdateRequestStatus(statusChangeRequest.id, 'sin_atender');
+                    setStatusChangeRequest(null);
+                  }
+                }}
+              >
+                <View style={[styles.statusDot, { backgroundColor: '#ef4444' }]} />
+                <Text style={[styles.statusModalBtnText, { color: '#ef4444' }]}>Sin atender</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.statusModalBtn, { backgroundColor: '#fffbeb', borderColor: '#f59e0b' }]}
+                onPress={() => {
+                  if (statusChangeRequest) {
+                    handleUpdateRequestStatus(statusChangeRequest.id, 'nuevo');
+                    setStatusChangeRequest(null);
+                  }
+                }}
+              >
+                <View style={[styles.statusDot, { backgroundColor: '#f59e0b' }]} />
+                <Text style={[styles.statusModalBtnText, { color: '#f59e0b' }]}>Nueva</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.statusModalBtn, { backgroundColor: '#f0fdf4', borderColor: '#22c55e' }]}
+                onPress={() => {
+                  if (statusChangeRequest) {
+                    handleUpdateRequestStatus(statusChangeRequest.id, 'en_proceso');
+                    setStatusChangeRequest(null);
+                  }
+                }}
+              >
+                <View style={[styles.statusDot, { backgroundColor: '#22c55e' }]} />
+                <Text style={[styles.statusModalBtnText, { color: '#22c55e' }]}>En proceso</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.statusModalBtn, { backgroundColor: '#eff6ff', borderColor: '#3b82f6' }]}
+                onPress={() => {
+                  if (statusChangeRequest) {
+                    handleUpdateRequestStatus(statusChangeRequest.id, 'resuelto');
+                    setStatusChangeRequest(null);
+                  }
+                }}
+              >
+                <View style={[styles.statusDot, { backgroundColor: '#3b82f6' }]} />
+                <Text style={[styles.statusModalBtnText, { color: '#3b82f6' }]}>Terminada</Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              style={styles.statusModalCancel}
+              onPress={() => setStatusChangeRequest(null)}
+            >
+              <Text style={styles.statusModalCancelText}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
       </Modal>
     </SafeAreaView>
   );
@@ -2193,5 +2250,63 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Inter-SemiBold',
     color: '#ffffff',
+  },
+  statusModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  statusModalContent: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 360,
+  },
+  statusModalTitle: {
+    fontSize: 20,
+    fontFamily: 'Inter-Bold',
+    color: '#111827',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  statusModalSubtitle: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: '#6b7280',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  statusModalButtons: {
+    gap: 10,
+  },
+  statusModalBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+  },
+  statusDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    marginRight: 12,
+  },
+  statusModalBtnText: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+  },
+  statusModalCancel: {
+    marginTop: 16,
+    padding: 14,
+    alignItems: 'center',
+  },
+  statusModalCancelText: {
+    fontSize: 16,
+    fontFamily: 'Inter-Medium',
+    color: '#6b7280',
   },
 });

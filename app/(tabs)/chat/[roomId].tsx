@@ -1221,7 +1221,7 @@ export default function ChatRoom() {
           <Text style={styles.errorText}>Chat no encontrado</Text>
           <TouchableOpacity
             style={styles.backToChatsButton}
-            onPress={() => router.back()}
+            onPress={() => router.replace('/chat')}
           >
             <Text style={styles.backToChatsButtonText}>Volver a Chats</Text>
           </TouchableOpacity>
@@ -1239,7 +1239,7 @@ export default function ChatRoom() {
         {/* Header */}
         <LinearGradient colors={['#1e40af', '#3b82f6']} style={styles.header}>
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={() => router.replace('/chat')}
             style={styles.backButton}
           >
             <ArrowLeft size={24} color="#ffffff" />
