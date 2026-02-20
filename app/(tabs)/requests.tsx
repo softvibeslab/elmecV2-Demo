@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -49,7 +49,6 @@ import {
   MapPin,
 } from 'lucide-react-native';
 import { ActivityIndicator } from 'react-native';
-import { AdvancedSearchComponent } from '@/components/AdvancedSearchComponent';
 import { FileUploadComponent } from '@/components/FileUploadComponent';
 import { uploadMultipleFiles, UploadResult } from '@/utils/fileUpload';
 
@@ -66,6 +65,10 @@ export default function Requests() {
   const [selectedFiles, setSelectedFiles] = useState<
     Array<{ uri: string; name: string; type: string; size: number }>
   >([]);
+  // Filter state for agent/admin view
+  const [activeStatusFilters, setActiveStatusFilters] = useState<string[]>([]);
+  const [activeAgentFilter, setActiveAgentFilter] = useState<string | null>(null);
+  const [activeClientFilter, setActiveClientFilter] = useState<string | null>(null);
   const [newRequest, setNewRequest] = useState({
     titulo: '',
     mensaje: '',
@@ -890,10 +893,10 @@ export default function Requests() {
         prev.map(req =>
           req.id === requestId
             ? {
-                ...req,
-                estatus: newStatus as any,
-                updated_at: new Date().toISOString(),
-              }
+              ...req,
+              estatus: newStatus as any,
+              updated_at: new Date().toISOString(),
+            }
             : req
         )
       );
@@ -997,6 +1000,57 @@ export default function Requests() {
   const handleClearSearch = () => {
     setFilteredRequests(requests);
   };
+
+  // Apply inline filters (status, agent, client) for agent/admin view
+  const applyInlineFilters = useCallback(() => {
+    let filtered = requests;
+
+    if (activeStatusFilters.length > 0) {
+      filtered = filtered.filter(req => activeStatusFilters.includes(req.estatus));
+    }
+
+    if (activeAgentFilter) {
+      filtered = filtered.filter(req => req.agente_id === activeAgentFilter);
+    }
+
+    if (activeClientFilter) {
+      filtered = filtered.filter(req => req.usuario_id === activeClientFilter);
+    }
+
+    setFilteredRequests(filtered);
+  }, [requests, activeStatusFilters, activeAgentFilter, activeClientFilter]);
+
+  useEffect(() => {
+    if (user?.rol === 'agent' || user?.rol === 'admin') {
+      applyInlineFilters();
+    }
+  }, [activeStatusFilters, activeAgentFilter, activeClientFilter, applyInlineFilters]);
+
+  const toggleStatusFilter = (status: string) => {
+    setActiveStatusFilters(prev =>
+      prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]
+    );
+  };
+
+  const clearAllFilters = () => {
+    setActiveStatusFilters([]);
+    setActiveAgentFilter(null);
+    setActiveClientFilter(null);
+  };
+
+  // Get unique clients from requests for client filter
+  const uniqueClients = useMemo(() => {
+    const clientMap = new Map<string, { id: string; name: string }>();
+    requests.forEach(req => {
+      if (req.usuario_id && req.usuario) {
+        clientMap.set(req.usuario_id, {
+          id: req.usuario_id,
+          name: getFullName(req.usuario),
+        });
+      }
+    });
+    return Array.from(clientMap.values());
+  }, [requests]);
 
   const handleFileSelected = (file: {
     uri: string;
@@ -1153,14 +1207,92 @@ export default function Requests() {
         </View>
       </View>
 
-      {/* Advanced Search - Solo para agentes y admins */}
+      {/* Filtros inline - Solo para agentes y admins */}
       {(user?.rol === 'agent' || user?.rol === 'admin') && (
-        <View style={styles.searchSection}>
-          <AdvancedSearchComponent
-            onSearch={handleSearch}
-            onClear={handleClearSearch}
-            placeholder="Buscar solicitudes..."
-          />
+        <View style={styles.filterSection}>
+          {/* Filtro por estatus (semáforo) */}
+          <View style={styles.filterRow}>
+            <Text style={styles.filterLabel}>Estatus:</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+              {[
+                { key: 'sin_atender', label: 'Sin atender', color: '#ef4444' },
+                { key: 'nuevo', label: 'Nueva', color: '#f59e0b' },
+                { key: 'en_proceso', label: 'En proceso', color: '#22c55e' },
+                { key: 'asignado', label: 'Asignado', color: '#22c55e' },
+                { key: 'resuelto', label: 'Terminada', color: '#3b82f6' },
+                { key: 'cerrado', label: 'Cerrada', color: '#3b82f6' },
+              ].map(s => (
+                <TouchableOpacity
+                  key={s.key}
+                  style={[
+                    styles.filterChip,
+                    activeStatusFilters.includes(s.key) && { backgroundColor: s.color, borderColor: s.color },
+                  ]}
+                  onPress={() => toggleStatusFilter(s.key)}
+                >
+                  <Circle size={10} color={activeStatusFilters.includes(s.key) ? '#fff' : s.color} fill={activeStatusFilters.includes(s.key) ? '#fff' : s.color} />
+                  <Text style={[styles.filterChipText, activeStatusFilters.includes(s.key) && styles.filterChipTextActive]}>
+                    {s.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
+          {/* Filtro por agente */}
+          {agents.length > 0 && (
+            <View style={styles.filterRow}>
+              <Text style={styles.filterLabel}>Agente:</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+                {agents.map(agent => (
+                  <TouchableOpacity
+                    key={agent.id}
+                    style={[
+                      styles.filterChip,
+                      activeAgentFilter === agent.id && styles.filterChipActive,
+                    ]}
+                    onPress={() => setActiveAgentFilter(prev => prev === agent.id ? null : agent.id)}
+                  >
+                    <UserIcon size={10} color={activeAgentFilter === agent.id ? '#fff' : '#6b7280'} />
+                    <Text style={[styles.filterChipText, activeAgentFilter === agent.id && styles.filterChipTextActive]}>
+                      {getAgentFullName(agent)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* Filtro por cliente */}
+          {uniqueClients.length > 0 && (
+            <View style={styles.filterRow}>
+              <Text style={styles.filterLabel}>Cliente:</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+                {uniqueClients.map(client => (
+                  <TouchableOpacity
+                    key={client.id}
+                    style={[
+                      styles.filterChip,
+                      activeClientFilter === client.id && styles.filterChipActive,
+                    ]}
+                    onPress={() => setActiveClientFilter(prev => prev === client.id ? null : client.id)}
+                  >
+                    <Text style={[styles.filterChipText, activeClientFilter === client.id && styles.filterChipTextActive]}>
+                      {client.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* Botón limpiar filtros */}
+          {(activeStatusFilters.length > 0 || activeAgentFilter || activeClientFilter) && (
+            <TouchableOpacity style={styles.clearFiltersButton} onPress={clearAllFilters}>
+              <X size={14} color="#6b7280" />
+              <Text style={styles.clearFiltersText}>Limpiar filtros</Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
 
@@ -1175,17 +1307,22 @@ export default function Requests() {
                 const statusOptions = [
                   { text: 'Cancelar', style: 'cancel' as const },
                   {
-                    text: 'Asignar',
+                    text: '🔴 Sin atender',
                     onPress: () =>
-                      handleUpdateRequestStatus(request.id, 'asignado'),
+                      handleUpdateRequestStatus(request.id, 'sin_atender'),
                   },
                   {
-                    text: 'En Proceso',
+                    text: '🟡 Nueva',
+                    onPress: () =>
+                      handleUpdateRequestStatus(request.id, 'nuevo'),
+                  },
+                  {
+                    text: '🟢 En proceso',
                     onPress: () =>
                       handleUpdateRequestStatus(request.id, 'en_proceso'),
                   },
                   {
-                    text: 'Terminada',
+                    text: '🔵 Terminada',
                     onPress: () =>
                       handleUpdateRequestStatus(request.id, 'resuelto'),
                   },
@@ -1193,7 +1330,7 @@ export default function Requests() {
 
                 Alert.alert(
                   'Cambiar Estado',
-                  `Solicitud: ${request.titulo}`,
+                  `Solicitud: ${request.titulo}\nEstado actual: ${getStatusText(checkRequestExpiration(request))}`,
                   statusOptions
                 );
               }
@@ -1321,17 +1458,17 @@ export default function Requests() {
               {/* Botón Eliminar (solo para solicitudes terminadas) */}
               {(request.estatus === 'resuelto' ||
                 request.estatus === 'cerrado') && (
-                <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={e => {
-                    e.stopPropagation();
-                    handleDeleteRequest(request.id, request.titulo);
-                  }}
-                >
-                  <Trash2 size={18} color="#ffffff" />
-                  <Text style={styles.deleteButtonText}>Eliminar</Text>
-                </TouchableOpacity>
-              )}
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={e => {
+                      e.stopPropagation();
+                      handleDeleteRequest(request.id, request.titulo);
+                    }}
+                  >
+                    <Trash2 size={18} color="#ffffff" />
+                    <Text style={styles.deleteButtonText}>Eliminar</Text>
+                  </TouchableOpacity>
+                )}
             </View>
           </TouchableOpacity>
         ))}
@@ -1420,7 +1557,7 @@ export default function Requests() {
                       style={[
                         styles.agentChip,
                         newRequest.agente_id === agent.id &&
-                          styles.agentChipSelected,
+                        styles.agentChipSelected,
                       ]}
                       onPress={() =>
                         setNewRequest(prev => ({
@@ -1433,7 +1570,7 @@ export default function Requests() {
                         style={[
                           styles.agentChipText,
                           newRequest.agente_id === agent.id &&
-                            styles.agentChipTextSelected,
+                          styles.agentChipTextSelected,
                         ]}
                       >
                         {getAgentFullName(agent)}
@@ -1442,7 +1579,7 @@ export default function Requests() {
                         style={[
                           styles.agentChipCategory,
                           newRequest.agente_id === agent.id &&
-                            styles.agentChipCategorySelected,
+                          styles.agentChipCategorySelected,
                         ]}
                       >
                         {agent.categoria}
@@ -1460,8 +1597,8 @@ export default function Requests() {
                   style={[
                     styles.charCounter,
                     newRequest.mensaje.length > 0 &&
-                      newRequest.mensaje.length < 10 &&
-                      styles.charCounterWarning,
+                    newRequest.mensaje.length < 10 &&
+                    styles.charCounterWarning,
                   ]}
                 >
                   {newRequest.mensaje.length} caracteres
@@ -1602,9 +1739,60 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 24,
   },
-  searchSection: {
+  filterSection: {
     paddingHorizontal: 24,
     marginBottom: 16,
+    gap: 10,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  filterLabel: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#374151',
+    minWidth: 52,
+  },
+  filterScroll: {
+    flexGrow: 0,
+  },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    backgroundColor: '#ffffff',
+    marginRight: 6,
+    gap: 4,
+  },
+  filterChipActive: {
+    backgroundColor: '#1e40af',
+    borderColor: '#1e40af',
+  },
+  filterChipText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Medium',
+    color: '#6b7280',
+  },
+  filterChipTextActive: {
+    color: '#ffffff',
+  },
+  clearFiltersButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 4,
+    paddingVertical: 4,
+  },
+  clearFiltersText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Medium',
+    color: '#6b7280',
   },
   requestCard: {
     backgroundColor: '#ffffff',

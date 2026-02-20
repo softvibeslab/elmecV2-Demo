@@ -57,6 +57,7 @@ import {
   Users,
 } from 'lucide-react-native';
 import AddZoneMembers from '@/components/AddZoneMembers';
+import { supabase } from '@/lib/supabase';
 
 const { width, height } = Dimensions.get('window');
 
@@ -331,7 +332,17 @@ export default function ChatRoom() {
   );
 
   const chatRoom = getChatRoom(roomId!);
-  const roomMessages = messages[roomId!] || [];
+  const rawRoomMessages = messages[roomId!] || [];
+  // Deduplicate messages by ID to prevent duplicate text display
+  const roomMessages = useMemo(() => {
+    const seen = new Set<string>();
+    return rawRoomMessages.filter(msg => {
+      const key = msg.id || msg.localId || '';
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [rawRoomMessages]);
   const roomTypingUsers = typingUsers[roomId!] || [];
 
   useEffect(() => {
@@ -924,8 +935,8 @@ export default function ChatRoom() {
       index === roomMessages.length - 1 ||
       roomMessages[index + 1]?.sender_id !== message.sender_id ||
       new Date(roomMessages[index + 1]?.created_at).getTime() -
-        new Date(message.created_at).getTime() >
-        300000; // 5 minutes
+      new Date(message.created_at).getTime() >
+      300000; // 5 minutes
 
     const replyMessage = message.reply_to
       ? roomMessages.find(m => m.id === message.reply_to)
@@ -1316,11 +1327,40 @@ export default function ChatRoom() {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.dropdownItem}
-              onPress={() => {
+              onPress={async () => {
                 setShowHeaderMenu(false);
+                const participantCount = chatRoom?.participants?.length || 0;
+                let namesList: string[] = [];
+
+                // Try to get names from metadata first
+                if (chatRoom?.metadata?.participant_names && chatRoom.metadata.participant_names.length > 0) {
+                  namesList = chatRoom.metadata.participant_names;
+                } else if (chatRoom?.participants && chatRoom.participants.length > 0) {
+                  // Fetch names from DB
+                  try {
+                    const { data } = await supabase
+                      .from('users')
+                      .select('nombre, apellido_paterno, apellido_materno')
+                      .in('id', chatRoom.participants);
+                    if (data) {
+                      namesList = data.map((u: any) =>
+                        [u.nombre, u.apellido_paterno, u.apellido_materno].filter(Boolean).join(' ')
+                      );
+                    }
+                  } catch (e) {
+                    console.error('Error fetching participant names:', e);
+                  }
+                }
+
+                const header = chatRoom?.is_group ? `Grupo: ${chatRoom.name || 'Sin nombre'}\n\n` : '';
+                const zona = chatRoom?.metadata?.zona ? `\nZona: ${chatRoom.metadata.zona}` : '';
+                const namesText = namesList.length > 0
+                  ? namesList.map(n => `• ${n}`).join('\n')
+                  : 'No hay participantes';
+
                 Alert.alert(
                   chatRoom?.is_group ? 'Info del Grupo' : 'Info del Chat',
-                  `${chatRoom?.is_group ? `Grupo: ${chatRoom.name || 'Sin nombre'}\n` : ''}Participantes: ${chatRoom?.participants?.length || 0}${chatRoom?.metadata?.zona ? `\nZona: ${chatRoom.metadata.zona}` : ''}`
+                  `${header}Participantes (${participantCount}):\n${namesText}${zona}`
                 );
               }}
             >
@@ -1405,7 +1445,7 @@ export default function ChatRoom() {
                   style={[
                     styles.emojiCategory,
                     selectedEmojiCategory === category &&
-                      styles.emojiCategoryActive,
+                    styles.emojiCategoryActive,
                   ]}
                   onPress={() => setSelectedEmojiCategory(category)}
                 >
@@ -1413,7 +1453,7 @@ export default function ChatRoom() {
                     style={[
                       styles.emojiCategoryText,
                       selectedEmojiCategory === category &&
-                        styles.emojiCategoryTextActive,
+                      styles.emojiCategoryTextActive,
                     ]}
                   >
                     {category}

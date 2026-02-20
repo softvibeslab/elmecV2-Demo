@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -106,7 +106,17 @@ export default function ChatList() {
       .toUpperCase();
   };
 
-  const filteredRooms = chatRooms.filter(room => {
+  // Deduplicate rooms by ID before filtering (defensive against duplicate text bug)
+  const uniqueRooms = useMemo(() => {
+    const seen = new Set<string>();
+    return chatRooms.filter(room => {
+      if (seen.has(room.id)) return false;
+      seen.add(room.id);
+      return true;
+    });
+  }, [chatRooms]);
+
+  const filteredRooms = uniqueRooms.filter(room => {
     if (room.is_group) {
       return room.name?.toLowerCase().includes(searchQuery.toLowerCase());
     }
@@ -266,11 +276,11 @@ export default function ChatList() {
                 style={[
                   styles.connectionIndicator,
                   connectionStatus === 'connected' &&
-                    styles.connectionConnected,
+                  styles.connectionConnected,
                   connectionStatus === 'connecting' &&
-                    styles.connectionConnecting,
+                  styles.connectionConnecting,
                   connectionStatus === 'disconnected' &&
-                    styles.connectionDisconnected,
+                  styles.connectionDisconnected,
                 ]}
               >
                 {connectionStatus === 'connected' ? (
