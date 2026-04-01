@@ -20,7 +20,10 @@ import {
   ChartBar as BarChart3,
   ChartPie as PieChart,
   Activity,
+  UserCheck,
+  ChevronLeft,
 } from 'lucide-react-native';
+import { UserApprovalManagement } from './UserApprovalManagement';
 
 const { width } = Dimensions.get('window');
 
@@ -55,6 +58,7 @@ export const AdminDashboard: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState('7d');
+  const [showApprovals, setShowApprovals] = useState(false);
 
   // Mock data - En producción esto vendría de la API
   useEffect(() => {
@@ -173,134 +177,168 @@ export const AdminDashboard: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Panel de Administración</Text>
-          <Text style={styles.subtitle}>Dashboard ejecutivo - ELMEC</Text>
-        </View>
-
-        {/* Period Selector */}
-        <View style={styles.periodSelector}>
-          {['24h', '7d', '30d', '90d'].map(period => (
-            <TouchableOpacity
-              key={period}
-              style={[
-                styles.periodButton,
-                selectedPeriod === period && styles.periodButtonActive,
-              ]}
-              onPress={() => setSelectedPeriod(period)}
+      <View style={styles.header}>
+        <View style={styles.headerTitleContainer}>
+          {showApprovals && (
+            <TouchableOpacity 
+              style={styles.backButton} 
+              onPress={() => setShowApprovals(false)}
             >
-              <Text
-                style={[
-                  styles.periodButtonText,
-                  selectedPeriod === period && styles.periodButtonTextActive,
-                ]}
-              >
-                {period}
-              </Text>
+              <ChevronLeft size={24} color="#335686" />
             </TouchableOpacity>
-          ))}
+          )}
+          <View>
+            <Text style={styles.title}>
+              {showApprovals ? 'Aprobación de Clientes' : 'Panel de Administración'}
+            </Text>
+            <Text style={styles.subtitle}>
+              {showApprovals ? 'Gestiona los nuevos registros' : `Dashboard ejecutivo - ELMEC`}
+            </Text>
+          </View>
         </View>
+        {!showApprovals && (
+          <TouchableOpacity 
+            style={styles.approvalHeaderBtn}
+            onPress={() => setShowApprovals(true)}
+          >
+            <UserCheck size={24} color="#335686" />
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>3</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+      </View>
 
-        {/* Stats Grid */}
-        <View style={styles.statsGrid}>
-          <StatCard
-            title="Total Usuarios"
-            value={stats.totalUsers}
-            subtitle={`${stats.activeUsers} activos`}
-            icon={<Users />}
-            color="#3b82f6"
-            trend={{ value: 12, isPositive: true }}
-          />
-          <StatCard
-            title="Solicitudes"
-            value={stats.totalRequests}
-            subtitle={`${stats.pendingRequests} pendientes`}
-            icon={<FileText />}
-            color="#10b981"
-            trend={{ value: 8, isPositive: true }}
-          />
-          <StatCard
-            title="Mensajes"
-            value={stats.totalMessages}
-            subtitle="Total enviados"
-            icon={<MessageCircle />}
-            color="#f59e0b"
-            trend={{ value: 15, isPositive: true }}
-          />
-          <StatCard
-            title="Tiempo Respuesta"
-            value={`${stats.avgResponseTime}h`}
-            subtitle="Promedio"
-            icon={<Clock />}
-            color="#8b5cf6"
-            trend={{ value: 5, isPositive: false }}
-          />
-        </View>
+      {showApprovals ? (
+        <UserApprovalManagement />
+      ) : (
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {/* Period Selector */}
+          <View style={styles.periodSelector}>
+            {['24h', '7d', '30d', '90d'].map(period => (
+              <TouchableOpacity
+                key={period}
+                style={[
+                  styles.periodButton,
+                  selectedPeriod === period && styles.periodButtonActive,
+                ]}
+                onPress={() => setSelectedPeriod(period)}
+              >
+                <Text
+                  style={[
+                    styles.periodButtonText,
+                    selectedPeriod === period && styles.periodButtonTextActive,
+                  ]}
+                >
+                  {period}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
-        {/* Charts Section */}
-        <View style={styles.chartsSection}>
-          <SimpleChart data={requestsChartData} />
+          {/* Stats Grid */}
+          <View style={styles.statsGrid}>
+            <StatCard
+              title="Total Usuarios"
+              value={stats.totalUsers}
+              subtitle={`${stats.activeUsers} activos`}
+              icon={<Users />}
+              color="#3b82f6"
+              trend={{ value: 12, isPositive: true }}
+            />
+            <StatCard
+              title="Solicitudes"
+              value={stats.totalRequests}
+              subtitle={`${stats.pendingRequests} pendientes`}
+              icon={<FileText />}
+              color="#10b981"
+              trend={{ value: 8, isPositive: true }}
+            />
+            <StatCard
+              title="Mensajes"
+              value={stats.totalMessages}
+              subtitle="Total enviados"
+              icon={<MessageCircle />}
+              color="#f59e0b"
+              trend={{ value: 15, isPositive: true }}
+            />
+            <StatCard
+              title="Tiempo Respuesta"
+              value={`${stats.avgResponseTime}h`}
+              subtitle="Promedio"
+              icon={<Clock />}
+              color="#8b5cf6"
+              trend={{ value: 5, isPositive: false }}
+            />
+          </View>
 
-          <View style={styles.metricsCard}>
-            <Text style={styles.metricsTitle}>Métricas Clave</Text>
-            <View style={styles.metricsList}>
-              <View style={styles.metricItem}>
-                <CheckCircle size={20} color="#10b981" />
-                <View style={styles.metricContent}>
-                  <Text style={styles.metricLabel}>Tasa de Resolución</Text>
-                  <Text style={styles.metricValue}>
-                    {(
-                      (stats.resolvedRequests / stats.totalRequests) *
-                      100
-                    ).toFixed(1)}
-                    %
-                  </Text>
+          {/* Charts Section */}
+          <View style={styles.chartsSection}>
+            <SimpleChart data={requestsChartData} />
+
+            <View style={styles.metricsCard}>
+              <Text style={styles.metricsTitle}>Métricas Clave</Text>
+              <View style={styles.metricsList}>
+                <View style={styles.metricItem}>
+                  <CheckCircle size={20} color="#10b981" />
+                  <View style={styles.metricContent}>
+                    <Text style={styles.metricLabel}>Tasa de Resolución</Text>
+                    <Text style={styles.metricValue}>
+                      {(
+                        (stats.resolvedRequests / stats.totalRequests) *
+                        100
+                      ).toFixed(1)}
+                      %
+                    </Text>
+                  </View>
                 </View>
-              </View>
 
-              <View style={styles.metricItem}>
-                <Activity size={20} color="#3b82f6" />
-                <View style={styles.metricContent}>
-                  <Text style={styles.metricLabel}>Satisfacción Cliente</Text>
-                  <Text style={styles.metricValue}>
-                    {stats.satisfactionRate}/5.0
-                  </Text>
+                <View style={styles.metricItem}>
+                  <Activity size={20} color="#3b82f6" />
+                  <View style={styles.metricContent}>
+                    <Text style={styles.metricLabel}>Satisfacción Cliente</Text>
+                    <Text style={styles.metricValue}>
+                      {stats.satisfactionRate}/5.0
+                    </Text>
+                  </View>
                 </View>
-              </View>
 
-              <View style={styles.metricItem}>
-                <TrendingUp size={20} color="#f59e0b" />
-                <View style={styles.metricContent}>
-                  <Text style={styles.metricLabel}>Usuarios Activos</Text>
-                  <Text style={styles.metricValue}>
-                    {((stats.activeUsers / stats.totalUsers) * 100).toFixed(1)}%
-                  </Text>
+                <View style={styles.metricItem}>
+                  <TrendingUp size={20} color="#f59e0b" />
+                  <View style={styles.metricContent}>
+                    <Text style={styles.metricLabel}>Usuarios Activos</Text>
+                    <Text style={styles.metricValue}>
+                      {((stats.activeUsers / stats.totalUsers) * 100).toFixed(1)}%
+                    </Text>
+                  </View>
                 </View>
               </View>
             </View>
           </View>
-        </View>
 
-        {/* Quick Actions */}
-        <View style={styles.quickActions}>
-          <Text style={styles.quickActionsTitle}>Acciones Rápidas</Text>
-          <View style={styles.actionButtons}>
-            <TouchableOpacity style={styles.actionButton}>
-              <Users size={20} color="#3b82f6" />
-              <Text style={styles.actionButtonText}>Gestionar Usuarios</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton}>
-              <FileText size={20} color="#10b981" />
-              <Text style={styles.actionButtonText}>Ver Solicitudes</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton}>
-              <BarChart3 size={20} color="#f59e0b" />
-              <Text style={styles.actionButtonText}>Reportes</Text>
-            </TouchableOpacity>
+          {/* Quick Actions */}
+          <View style={styles.quickActions}>
+            <Text style={styles.quickActionsTitle}>Acciones Rápidas</Text>
+            <View style={styles.actionButtons}>
+              <TouchableOpacity 
+                style={styles.actionButton}
+                onPress={() => setShowApprovals(true)}
+              >
+                <UserCheck size={20} color="#3b82f6" />
+                <Text style={styles.actionButtonText}>Aprobar Usuarios</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.actionButton}>
+                <FileText size={20} color="#10b981" />
+                <Text style={styles.actionButtonText}>Ver Solicitudes</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.actionButton}>
+                <BarChart3 size={20} color="#f59e0b" />
+                <Text style={styles.actionButtonText}>Reportes</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 };
@@ -313,6 +351,46 @@ const styles = StyleSheet.create({
   header: {
     padding: 24,
     paddingTop: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  headerTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backButton: {
+    marginRight: 16,
+    padding: 4,
+  },
+  approvalHeaderBtn: {
+    position: 'relative',
+    padding: 8,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#ef4444',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#ffffff',
+  },
+  badgeText: {
+    color: '#ffffff',
+    fontSize: 10,
+    fontWeight: '700',
   },
   title: {
     fontSize: 28,

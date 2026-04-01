@@ -199,23 +199,37 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [user?.id, loadNotificationsFromDB]);
 
   useEffect(() => {
-    // Only run notification setup on mobile platforms
+    // Solo configurar notificaciones en móviles
     if (Platform.OS !== 'web') {
-      registerForPushNotifications().then(token => setExpoPushToken(token));
+      const setupNotifications = async () => {
+        const token = await registerForPushNotifications();
+        setExpoPushToken(token);
+      };
 
-      // Listen for incoming notifications
+      setupNotifications();
+
+      // Escuchar notificaciones entrantes
       notificationListener.current =
         Notifications.addNotificationReceivedListener(notification => {
+          console.log('Notificación recibida en primer plano:', notification);
           setNotification(notification);
+          
+          // Opcional: Mostrar un toast o alerta personalizada
         });
 
-      // Listen for notification responses (when user taps notification)
+      // Escuchar respuestas (clics)
       responseListener.current =
         Notifications.addNotificationResponseReceivedListener(response => {
-          console.log('Notification response:', response);
+          console.log('El usuario interactuó con la notificación:', response);
+          
+          // Aquí se puede manejar la navegación profunda (deep linking)
+          const data = response.notification.request.content.data;
+          if (data?.roomId) {
+            // Ejemplo: router.push(`/chat/${data.roomId}`);
+          }
         });
     } else {
-      // Request web notification permissions
+      // Solicitar permisos en web
       requestWebNotificationPermission();
     }
 
@@ -233,7 +247,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       }
     };
-  }, []);
+  }, [user?.id]); // Re-ejecutar cuando el usuario cambia para asegurar que el token se guarde
 
   const requestWebNotificationPermission = async () => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -265,18 +279,34 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
         return null;
       }
 
-      // Try to get push token, but don't fail if project ID is missing
+      // Try to get push token
       const token = (
         await Notifications.getExpoPushTokenAsync({
           projectId:
-            process.env.EXPO_PUBLIC_EAS_PROJECT_ID || 'demo-project-id-12345',
+            process.env.EXPO_PUBLIC_EAS_PROJECT_ID || '656caaad-2849-4ea2-8374-1632acab1368',
         })
       ).data;
       console.log('Expo push token:', token);
+
+      // Guardar token en Supabase si el usuario está autenticado
+      if (user?.id) {
+        try {
+          const { error } = await supabaseClient
+            .from('users')
+            .update({ metadata: { push_token: token } } as any)
+            .eq('id', user.id);
+          
+          if (error) console.error('Error saving push token to DB:', error);
+          else console.log('Push token guardado en DB con éxito');
+        } catch (dbError) {
+          console.error('Exception saving push token:', dbError);
+        }
+      }
+
       return token;
     } catch (error) {
       console.log(
-        'Push token not available (likely missing project ID):',
+        'Push token not available:',
         error instanceof Error ? error.message : String(error)
       );
       return null;

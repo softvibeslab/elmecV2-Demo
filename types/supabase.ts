@@ -11,6 +11,7 @@ export interface User {
   ciudad: string;
   estado: string;
   rol: 'customer' | 'agent' | 'admin';
+  status_aprobacion?: 'pendiente' | 'aprobado' | 'rechazado';
   categoria?: 'Agentes de venta' | 'Servicio al Cliente' | 'Soporte';
   zona?: string;
   activo: boolean;

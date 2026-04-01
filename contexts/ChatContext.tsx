@@ -370,7 +370,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         .select(
           `
           *,
-          requests!chat_rooms_request_id_fkey(titulo, estatus)
+          requests!chat_rooms_request_id_fkey(titulo, estatus, metadata)
         `
         )
         .contains('participants', [session.user.id])
@@ -744,6 +744,69 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       console.log('Message sent successfully:', data.id);
+
+      // Transición automática a 'en_proceso' si el agente envía el primer mensaje
+      if (user.rol === 'agent' && room.request_id) {
+        // Tipado seguro para el estatus
+        const requestInfo = (room as any).requests;
+        const currentStatus = requestInfo?.estatus;
+
+        if (currentStatus === 'asignado') {
+          console.log(
+            `🚀 Transición automática: asignado -> en_proceso para request ${room.request_id}`
+          );
+
+          try {
+            const now = new Date().toISOString();
+            const { error: updateError } = await supabaseClient
+              .from('requests')
+              .update({
+                estatus: 'en_proceso',
+                updated_at: now,
+                metadata: {
+                  ...(requestInfo?.metadata || {}),
+                  status_history: [
+                    ...(requestInfo?.metadata?.status_history || []),
+                    {
+                      from: 'asignado',
+                      to: 'en_proceso',
+                      timestamp: now,
+                      reason: 'Iniciada interacción por chat del agente',
+                    },
+                  ],
+                },
+              } as any)
+              .eq('id', room.request_id);
+
+            if (updateError) {
+              console.error(
+                'Error actualizando estatus automáticamente:',
+                updateError
+              );
+            } else {
+              // Actualizar el estado local de la sala de chat
+              setChatRooms(prev =>
+                prev.map(r =>
+                  r.id === roomId
+                    ? {
+                        ...r,
+                        requests: {
+                          ...(r as any).requests,
+                          estatus: 'en_proceso',
+                        },
+                      }
+                    : r
+                )
+              );
+            }
+          } catch (updateErr) {
+            console.error(
+              'Excepción al actualizar estatus automáticamente:',
+              updateErr
+            );
+          }
+        }
+      }
 
       // Replace optimistic message with real message
       if (data) {

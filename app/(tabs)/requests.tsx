@@ -593,13 +593,21 @@ export default function Requests() {
         mensaje: newRequest.mensaje.trim(),
         tipo: newRequest.tipo,
         prioridad: newRequest.prioridad,
-        estatus: 'nuevo',
+        estatus: 'asignado', // Estado inicial automático según requerimiento
         usuario_id: user.id,
         agente_id: newRequest.agente_id || null,
         tags: [],
         metadata: {
           created_from: 'mobile',
           app_version: '1.0.0',
+          status_history: [
+            {
+              from: null,
+              to: 'asignado',
+              timestamp: new Date().toISOString(),
+              reason: 'Creación inicial de solicitud',
+            },
+          ],
         },
       };
 
@@ -875,17 +883,43 @@ export default function Requests() {
     newStatus: string
   ) => {
     try {
+      // Buscar la solicitud actual para validar la transición y obtener metadata
+      const currentRequest = requests.find(r => r.id === requestId);
+      if (!currentRequest) return;
+
+      // Validación de transición (ejemplo simple)
+      if (currentRequest.estatus === 'resuelto' && newStatus !== 'en_proceso' && newStatus !== 'cerrado') {
+        Alert.alert('Transición inválida', 'No se puede cambiar el estado de una solicitud ya resuelta a menos que se reabra (En proceso).');
+        return;
+      }
+
+      const now = new Date().toISOString();
+      const updatedMetadata = {
+        ...(currentRequest.metadata || {}),
+        status_history: [
+          ...(currentRequest.metadata?.status_history || []),
+          {
+            from: currentRequest.estatus,
+            to: newStatus,
+            timestamp: now,
+            reason: `Cambio manual por ${user?.nombre} (${user?.rol})`,
+          },
+        ],
+      };
+
       // Usar el cliente sin tipos estrictos para evitar errores de 'never'
       const { error } = await supabaseClient
         .from('requests')
         .update({
           estatus: newStatus,
-          updated_at: new Date().toISOString(),
+          updated_at: now,
+          metadata: updatedMetadata,
         } as any)
         .eq('id', requestId);
 
       if (error) {
         console.error('Error updating request status:', error);
+        Alert.alert('Error', 'No se pudo actualizar el estado de la solicitud.');
         return;
       }
 
@@ -896,21 +930,21 @@ export default function Requests() {
             ? {
               ...req,
               estatus: newStatus as any,
-              updated_at: new Date().toISOString(),
+              updated_at: now,
+              metadata: updatedMetadata,
             }
             : req
         )
       );
 
       // Enviar notificación al usuario propietario de la solicitud (en tiempo real)
-      const request = requests.find(r => r.id === requestId);
-      if (request && request.usuario_id) {
+      if (currentRequest && currentRequest.usuario_id) {
         // Notificar al cliente que su solicitud cambió de estado
         try {
           await sendNotificationToUser(
-            request.usuario_id,
+            currentRequest.usuario_id,
             'Solicitud actualizada',
-            `Tu solicitud "${request.titulo}" cambió a: ${getStatusText(newStatus)}`,
+            `Tu solicitud "${currentRequest.titulo}" cambió a: ${getStatusText(newStatus)}`,
             'info',
             { requestId, newStatus }
           );
@@ -920,10 +954,10 @@ export default function Requests() {
       }
 
       // También mostrar notificación local al agente
-      if (request) {
+      if (currentRequest) {
         await sendDemoNotification(
           'Estado actualizado',
-          `La solicitud "${request.titulo}" cambió a: ${getStatusText(newStatus)}`,
+          `La solicitud "${currentRequest.titulo}" cambió a: ${getStatusText(newStatus)}`,
           'success',
           { requestId }
         );
@@ -1702,7 +1736,7 @@ export default function Requests() {
                 }}
               >
                 <View style={[styles.statusDot, { backgroundColor: '#3b82f6' }]} />
-                <Text style={[styles.statusModalBtnText, { color: '#3b82f6' }]}>Terminada</Text>
+                <Text style={[styles.statusModalBtnText, { color: '#3b82f6' }]}>Marcar como Resuelto</Text>
               </TouchableOpacity>
             </View>
 

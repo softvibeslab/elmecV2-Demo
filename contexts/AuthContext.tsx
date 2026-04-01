@@ -154,6 +154,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
       
       // Set user data
+      if (data.status_aprobacion === 'rechazado') {
+        setLoading(false);
+        throw new Error('Tu cuenta ha sido rechazada por el equipo de ELMEC.');
+      }
+
+      if (data.status_aprobacion === 'pendiente' && data.rol === 'customer') {
+        setLoading(false);
+        throw new Error('Tu cuenta está pendiente de aprobación. Te notificaremos una vez activa.');
+      }
+
       setUser(data);
 
       // Update user online status (non-blocking)
