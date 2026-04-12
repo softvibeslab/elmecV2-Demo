@@ -8,12 +8,13 @@ import {
   TextInput,
   Alert,
   Modal,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { useChat } from '@/contexts/ChatContext';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { supabase, supabaseClient } from '@/lib/supabase';
 import { Request, User } from '@/types/supabase';
 
@@ -34,6 +35,13 @@ interface RequestWithRelations extends Request {
     zona?: string;
   };
 }
+
+interface RequestAttachment {
+  url: string;
+  name: string;
+  type: string;
+  size: number;
+}
 import {
   Plus,
   Clock,
@@ -47,6 +55,8 @@ import {
   Circle,
   Trash2,
   MapPin,
+  Paperclip,
+  FileText,
 } from 'lucide-react-native';
 import { ActivityIndicator } from 'react-native';
 import { FileUploadComponent } from '@/components/FileUploadComponent';
@@ -98,18 +108,7 @@ export default function Requests() {
   const { createChatRoom } = useChat();
   const router = useRouter();
 
-  useEffect(() => {
-    if (user) {
-      loadRequests();
-      loadAgents();
-    }
-  }, [user]);
-
-  useEffect(() => {
-    setFilteredRequests(requests);
-  }, [requests]);
-
-  const loadRequests = async () => {
+  const loadRequests = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -222,9 +221,9 @@ export default function Requests() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const loadAgents = async () => {
+  const loadAgents = useCallback(async () => {
     try {
       let query = supabase
         .from('users')
@@ -251,7 +250,26 @@ export default function Requests() {
     } catch (error) {
       console.error('Error loading agents:', error);
     }
-  };
+  }, [user?.rol, user?.zona]);
+
+  useEffect(() => {
+    if (user) {
+      loadRequests();
+      loadAgents();
+    }
+  }, [user, loadRequests, loadAgents]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        loadRequests();
+      }
+    }, [user, loadRequests])
+  );
+
+  useEffect(() => {
+    setFilteredRequests(requests);
+  }, [requests]);
 
   // Sistema de semáforo:
   // ROJO: Sin atender (solicitud que excedió tiempos de respuesta)
@@ -410,6 +428,77 @@ export default function Requests() {
       agent.apellido_materno,
     ].filter(Boolean);
     return parts.join(' ').trim() || 'Agente';
+  };
+
+  const formatFileSize = (size?: number) => {
+    if (!size || Number.isNaN(size)) return null;
+
+    if (size < 1024) {
+      return `${size} B`;
+    }
+
+    if (size < 1024 * 1024) {
+      return `${(size / 1024).toFixed(1)} KB`;
+    }
+
+    return `${(size / (1024 * 1024)).toFixed(2)} MB`;
+  };
+
+  const getAttachmentNameFromUrl = (url: string, index: number) => {
+    try {
+      const rawName = url.split('/').pop()?.split('?')[0];
+      if (!rawName) {
+        return `Adjunto ${index + 1}`;
+      }
+
+      return decodeURIComponent(rawName);
+    } catch {
+      return `Adjunto ${index + 1}`;
+    }
+  };
+
+  const getRequestAttachments = (
+    request: RequestWithRelations
+  ): RequestAttachment[] => {
+    const metadataFiles = Array.isArray(request.metadata?.files)
+      ? request.metadata.files
+      : [];
+
+    if (metadataFiles.length > 0) {
+      return metadataFiles.map((file: any, index: number) => ({
+        url: file.url || request.archivos?.[index] || '',
+        name:
+          file.name ||
+          getAttachmentNameFromUrl(file.url || request.archivos?.[index] || '', index),
+        type: file.type || '',
+        size: file.size || 0,
+      }));
+    }
+
+    return (request.archivos || []).map((url, index) => ({
+      url,
+      name: getAttachmentNameFromUrl(url, index),
+      type: '',
+      size: 0,
+    }));
+  };
+
+  const handleOpenRequestAttachment = async (attachmentUrl: string) => {
+    try {
+      const supported = await Linking.canOpenURL(attachmentUrl);
+
+      if (!supported) {
+        throw new Error('No se puede abrir el archivo en este dispositivo');
+      }
+
+      await Linking.openURL(attachmentUrl);
+    } catch (error) {
+      console.error('Error opening request attachment:', error);
+      Alert.alert(
+        'Error',
+        'No se pudo abrir el archivo adjunto. Intenta de nuevo.'
+      );
+    }
   };
 
   const handleCreateRequest = async () => {
@@ -586,7 +675,7 @@ export default function Requests() {
         mensaje: newRequest.mensaje.trim(),
         tipo: newRequest.tipo,
         prioridad: newRequest.prioridad,
-        estatus: 'asignado', // Estado inicial automático según requerimiento
+        estatus: 'nuevo',
         usuario_id: user.id,
         agente_id: newRequest.agente_id || null,
         tags: [],
@@ -596,7 +685,7 @@ export default function Requests() {
           status_history: [
             {
               from: null,
-              to: 'asignado',
+              to: 'nuevo',
               timestamp: new Date().toISOString(),
               reason: 'Creación inicial de solicitud',
             },
@@ -793,7 +882,8 @@ export default function Requests() {
 
           const chatRoomId = await createChatRoom(
             data.agente_id,
-            data.id, // request_id para vincular
+            agenteName,
+            data.id,
             {
               request_title: data.titulo,
               request_id: data.id,
@@ -1143,6 +1233,17 @@ export default function Requests() {
     // For example, showing a toast notification
   };
 
+  const selectedRequestStatus = statusChangeRequest
+    ? checkRequestExpiration(statusChangeRequest)
+    : null;
+  const selectedRequestAttachments = statusChangeRequest
+    ? getRequestAttachments(statusChangeRequest)
+    : [];
+  const canResolveSelectedRequest =
+    !!statusChangeRequest &&
+    (user?.rol === 'agent' || user?.rol === 'admin') &&
+    !['resuelto', 'cerrado'].includes(statusChangeRequest.estatus);
+
   const handleStartChat = async (request: RequestWithRelations) => {
     try {
       // Determinar el ID del otro participante
@@ -1187,43 +1288,6 @@ export default function Requests() {
       Alert.alert('Error', 'No se pudo iniciar el chat. Intenta de nuevo.');
     }
   };
-
-  // Simular cambios de estado automáticos para demo
-  useEffect(() => {
-    if (requests.length === 0) return;
-
-    const interval = setInterval(() => {
-      // Cambiar estado aleatoriamente para demo
-      if (Math.random() > 0.95) {
-        const pendingRequests = requests.filter(r =>
-          ['nuevo', 'asignado', 'en_proceso'].includes(r.estatus)
-        );
-
-        if (pendingRequests.length > 0) {
-          const randomRequest =
-            pendingRequests[Math.floor(Math.random() * pendingRequests.length)];
-          let newStatus = randomRequest.estatus;
-
-          if (randomRequest.estatus === 'nuevo') {
-            newStatus = 'asignado';
-          } else if (randomRequest.estatus === 'asignado') {
-            newStatus = 'en_proceso';
-          } else if (
-            randomRequest.estatus === 'en_proceso' &&
-            Math.random() > 0.7
-          ) {
-            newStatus = 'resuelto';
-          }
-
-          if (newStatus !== randomRequest.estatus) {
-            handleUpdateRequestStatus(randomRequest.id, newStatus);
-          }
-        }
-      }
-    }, 15000); // Cada 15 segundos
-
-    return () => clearInterval(interval);
-  }, [requests]);
 
   if (loading) {
     return (
@@ -1439,12 +1503,7 @@ export default function Requests() {
           <TouchableOpacity
             key={request.id}
             style={styles.requestCard}
-            onPress={() => {
-              // Mostrar modal de cambio de estado (solo para agentes y admins)
-              if (user?.rol === 'agent' || user?.rol === 'admin') {
-                setStatusChangeRequest(request);
-              }
-            }}
+            onPress={() => setStatusChangeRequest(request)}
           >
             <View style={styles.requestHeader}>
               <View style={styles.statusAndAreaContainer}>
@@ -1774,125 +1833,287 @@ export default function Requests() {
         </SafeAreaView>
       </Modal>
 
-      {/* Modal Cambiar Estado */}
+      {/* Modal Detalle de Solicitud */}
       <Modal
         visible={!!statusChangeRequest}
         transparent={true}
         animationType="fade"
         onRequestClose={() => setStatusChangeRequest(null)}
       >
-        <TouchableOpacity
-          style={styles.statusModalOverlay}
-          activeOpacity={1}
-          onPress={() => setStatusChangeRequest(null)}
-        >
+        <View style={styles.statusModalOverlay}>
+          <TouchableOpacity
+            style={styles.statusModalBackdrop}
+            activeOpacity={1}
+            onPress={() => setStatusChangeRequest(null)}
+          />
           <View style={styles.statusModalContent}>
-            <Text style={styles.statusModalTitle}>Cambiar Estado</Text>
             {statusChangeRequest && (
-              <Text style={styles.statusModalSubtitle}>
-                {statusChangeRequest.titulo}
-              </Text>
+              <>
+                <View style={styles.statusModalHeader}>
+                  <View style={styles.statusModalHeaderText}>
+                    <Text style={styles.statusModalTitle}>
+                      Detalle de Solicitud
+                    </Text>
+                    <Text style={styles.statusModalSubtitle}>
+                      {statusChangeRequest.titulo}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.statusModalCloseButton}
+                    onPress={() => setStatusChangeRequest(null)}
+                  >
+                    <X size={20} color="#6b7280" />
+                  </TouchableOpacity>
+                </View>
+
+                <ScrollView
+                  style={styles.statusModalScroll}
+                  contentContainerStyle={styles.statusModalScrollContent}
+                  showsVerticalScrollIndicator={false}
+                >
+                  <View style={styles.requestDetailSummaryCard}>
+                    <View style={styles.requestDetailSummaryHeader}>
+                      <View
+                        style={[
+                          styles.requestDetailStatusBadge,
+                          {
+                            backgroundColor: `${getStatusColor(selectedRequestStatus || statusChangeRequest.estatus)}15`,
+                          },
+                        ]}
+                      >
+                        {getStatusIcon(
+                          selectedRequestStatus || statusChangeRequest.estatus
+                        )}
+                        <Text
+                          style={[
+                            styles.requestDetailStatusText,
+                            {
+                              color: getStatusColor(
+                                selectedRequestStatus || statusChangeRequest.estatus
+                              ),
+                            },
+                          ]}
+                        >
+                          {getStatusText(
+                            selectedRequestStatus || statusChangeRequest.estatus
+                          )}
+                        </Text>
+                      </View>
+                      <View
+                        style={[
+                          styles.requestDetailAreaBadge,
+                          {
+                            backgroundColor: `${getAreaColor(statusChangeRequest.tipo)}20`,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.requestDetailAreaText,
+                            { color: getAreaColor(statusChangeRequest.tipo) },
+                          ]}
+                        >
+                          {getAreaName(statusChangeRequest.tipo)}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.requestDetailMetaGrid}>
+                      <View style={styles.requestDetailMetaItem}>
+                        <Text style={styles.requestDetailMetaLabel}>Fecha</Text>
+                        <Text style={styles.requestDetailMetaValue}>
+                          {formatDate(statusChangeRequest.created_at)}
+                        </Text>
+                      </View>
+                      <View style={styles.requestDetailMetaItem}>
+                        <Text style={styles.requestDetailMetaLabel}>
+                          Prioridad
+                        </Text>
+                        <Text
+                          style={[
+                            styles.requestDetailMetaValue,
+                            {
+                              color: getPriorityColor(
+                                statusChangeRequest.prioridad
+                              ),
+                            },
+                          ]}
+                        >
+                          {statusChangeRequest.prioridad.toUpperCase()}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.requestDetailSection}>
+                    <View style={styles.requestDetailSectionHeader}>
+                      <FileText size={18} color="#1e40af" />
+                      <Text style={styles.requestDetailSectionTitle}>
+                        Resumen de la solicitud
+                      </Text>
+                    </View>
+                    <Text style={styles.requestDetailMessage}>
+                      {statusChangeRequest.mensaje}
+                    </Text>
+                  </View>
+
+                  <View style={styles.requestDetailSection}>
+                    <Text style={styles.requestDetailSectionTitle}>
+                      Participantes
+                    </Text>
+
+                    <View style={styles.requestDetailInfoCard}>
+                      <Text style={styles.requestDetailInfoLabel}>Cliente</Text>
+                      <Text style={styles.requestDetailInfoValue}>
+                        {statusChangeRequest.usuario
+                          ? `${getFullName(statusChangeRequest.usuario)}${statusChangeRequest.usuario.empresa ? ` - ${statusChangeRequest.usuario.empresa}` : ''}`
+                          : 'Sin información disponible'}
+                      </Text>
+                      {statusChangeRequest.usuario?.zona && (
+                        <Text style={styles.requestDetailInfoHint}>
+                          Zona: {statusChangeRequest.usuario.zona}
+                        </Text>
+                      )}
+                    </View>
+
+                    <View style={styles.requestDetailInfoCard}>
+                      <Text style={styles.requestDetailInfoLabel}>Agente</Text>
+                      <Text style={styles.requestDetailInfoValue}>
+                        {statusChangeRequest.agente
+                          ? getFullName(statusChangeRequest.agente)
+                          : 'Sin agente asignado'}
+                      </Text>
+                      {statusChangeRequest.agente?.categoria && (
+                        <Text style={styles.requestDetailInfoHint}>
+                          {statusChangeRequest.agente.categoria}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+
+                  <View style={styles.requestDetailSection}>
+                    <View style={styles.requestDetailSectionHeader}>
+                      <Paperclip size={18} color="#1e40af" />
+                      <Text style={styles.requestDetailSectionTitle}>
+                        Archivos adjuntos
+                      </Text>
+                    </View>
+
+                    {selectedRequestAttachments.length > 0 ? (
+                      <View style={styles.requestDetailAttachmentsList}>
+                        {selectedRequestAttachments.map(
+                          (attachment: RequestAttachment, index: number) => (
+                          <TouchableOpacity
+                            key={`${attachment.url}-${index}`}
+                            style={styles.requestDetailAttachmentItem}
+                            onPress={() =>
+                              attachment.url &&
+                              handleOpenRequestAttachment(attachment.url)
+                            }
+                          >
+                            <View style={styles.requestDetailAttachmentIcon}>
+                              <Paperclip size={16} color="#1e40af" />
+                            </View>
+                            <View style={styles.requestDetailAttachmentInfo}>
+                              <Text
+                                style={styles.requestDetailAttachmentName}
+                                numberOfLines={1}
+                              >
+                                {attachment.name}
+                              </Text>
+                              <Text style={styles.requestDetailAttachmentMeta}>
+                                {formatFileSize(attachment.size) || 'Archivo adjunto'}
+                              </Text>
+                            </View>
+                            <Text style={styles.requestDetailAttachmentAction}>
+                              Ver
+                            </Text>
+                          </TouchableOpacity>
+                          )
+                        )}
+                      </View>
+                    ) : (
+                      <Text style={styles.requestDetailEmptyText}>
+                        Esta solicitud no tiene archivos adjuntos.
+                      </Text>
+                    )}
+                  </View>
+
+                  {statusChangeRequest.estatus === 'resuelto' &&
+                    statusChangeRequest.feedback && (
+                      <View style={styles.feedbackContainer}>
+                        <Text style={styles.feedbackLabel}>Comentarios:</Text>
+                        <Text style={styles.feedbackText}>
+                          {statusChangeRequest.feedback}
+                        </Text>
+                        {statusChangeRequest.rating && (
+                          <Text style={styles.ratingText}>
+                            Calificación: {'⭐'.repeat(statusChangeRequest.rating)} (
+                            {statusChangeRequest.rating}/5)
+                          </Text>
+                        )}
+                      </View>
+                    )}
+                </ScrollView>
+
+                <View style={styles.statusModalButtons}>
+                  <TouchableOpacity
+                    style={[styles.statusModalBtn, styles.statusModalBtnSecondary]}
+                    onPress={() => handleStartChat(statusChangeRequest)}
+                  >
+                    <MessageCircle size={18} color="#1e40af" />
+                    <Text
+                      style={[
+                        styles.statusModalBtnText,
+                        styles.statusModalBtnTextSecondary,
+                      ]}
+                    >
+                      Abrir chat
+                    </Text>
+                  </TouchableOpacity>
+
+                  {canResolveSelectedRequest && (
+                    <TouchableOpacity
+                      style={[
+                        styles.statusModalBtn,
+                        styles.statusModalBtnPrimary,
+                      ]}
+                      onPress={() => {
+                        handleUpdateRequestStatus(
+                          statusChangeRequest.id,
+                          'resuelto'
+                        );
+                        setStatusChangeRequest(null);
+                      }}
+                    >
+                      <View
+                        style={[
+                          styles.statusDot,
+                          { backgroundColor: '#ffffff' },
+                        ]}
+                      />
+                      <Text
+                        style={[
+                          styles.statusModalBtnText,
+                          styles.statusModalBtnTextPrimary,
+                        ]}
+                      >
+                        Marcar como Resuelto
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                <TouchableOpacity
+                  style={styles.statusModalCancel}
+                  onPress={() => setStatusChangeRequest(null)}
+                >
+                  <Text style={styles.statusModalCancelText}>Cerrar</Text>
+                </TouchableOpacity>
+              </>
             )}
-
-            <View style={styles.statusModalButtons}>
-              <TouchableOpacity
-                style={[
-                  styles.statusModalBtn,
-                  { backgroundColor: '#fef2f2', borderColor: '#ef4444' },
-                ]}
-                onPress={() => {
-                  if (statusChangeRequest) {
-                    handleUpdateRequestStatus(
-                      statusChangeRequest.id,
-                      'sin_atender'
-                    );
-                    setStatusChangeRequest(null);
-                  }
-                }}
-              >
-                <View
-                  style={[styles.statusDot, { backgroundColor: '#ef4444' }]}
-                />
-                <Text style={[styles.statusModalBtnText, { color: '#ef4444' }]}>
-                  Sin atender
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.statusModalBtn,
-                  { backgroundColor: '#fffbeb', borderColor: '#f59e0b' },
-                ]}
-                onPress={() => {
-                  if (statusChangeRequest) {
-                    handleUpdateRequestStatus(statusChangeRequest.id, 'nuevo');
-                    setStatusChangeRequest(null);
-                  }
-                }}
-              >
-                <View
-                  style={[styles.statusDot, { backgroundColor: '#f59e0b' }]}
-                />
-                <Text style={[styles.statusModalBtnText, { color: '#f59e0b' }]}>
-                  Nueva
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.statusModalBtn,
-                  { backgroundColor: '#f0fdf4', borderColor: '#22c55e' },
-                ]}
-                onPress={() => {
-                  if (statusChangeRequest) {
-                    handleUpdateRequestStatus(
-                      statusChangeRequest.id,
-                      'en_proceso'
-                    );
-                    setStatusChangeRequest(null);
-                  }
-                }}
-              >
-                <View
-                  style={[styles.statusDot, { backgroundColor: '#22c55e' }]}
-                />
-                <Text style={[styles.statusModalBtnText, { color: '#22c55e' }]}>
-                  En proceso
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.statusModalBtn,
-                  { backgroundColor: '#eff6ff', borderColor: '#3b82f6' },
-                ]}
-                onPress={() => {
-                  if (statusChangeRequest) {
-                    handleUpdateRequestStatus(
-                      statusChangeRequest.id,
-                      'resuelto'
-                    );
-                    setStatusChangeRequest(null);
-                  }
-                }}
-              >
-                <View
-                  style={[styles.statusDot, { backgroundColor: '#3b82f6' }]}
-                />
-                <Text style={[styles.statusModalBtnText, { color: '#3b82f6' }]}>
-                  Marcar como Resuelto
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity
-              style={styles.statusModalCancel}
-              onPress={() => setStatusChangeRequest(null)}
-            >
-              <Text style={styles.statusModalCancelText}>Cancelar</Text>
-            </TouchableOpacity>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
     </SafeAreaView>
   );
@@ -2437,50 +2658,256 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 24,
   },
+  statusModalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+  },
   statusModalContent: {
     backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: 20,
     width: '100%',
-    maxWidth: 360,
+    maxWidth: 420,
+    maxHeight: '85%',
+    overflow: 'hidden',
+  },
+  statusModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  statusModalHeaderText: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  statusModalCloseButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f3f4f6',
   },
   statusModalTitle: {
     fontSize: 20,
     fontFamily: 'Inter-Bold',
     color: '#111827',
-    textAlign: 'center',
     marginBottom: 4,
   },
   statusModalSubtitle: {
     fontSize: 14,
     fontFamily: 'Inter-Regular',
     color: '#6b7280',
-    textAlign: 'center',
-    marginBottom: 20,
+    lineHeight: 20,
+  },
+  statusModalScroll: {
+    flexGrow: 0,
+  },
+  statusModalScrollContent: {
+    padding: 24,
+    gap: 16,
+  },
+  requestDetailSummaryCard: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    gap: 16,
+  },
+  requestDetailSummaryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+  },
+  requestDetailStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  requestDetailStatusText: {
+    fontSize: 13,
+    fontFamily: 'Inter-SemiBold',
+  },
+  requestDetailAreaBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  requestDetailAreaText: {
+    fontSize: 12,
+    fontFamily: 'Inter-Bold',
+  },
+  requestDetailMetaGrid: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  requestDetailMetaItem: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 12,
+  },
+  requestDetailMetaLabel: {
+    fontSize: 12,
+    fontFamily: 'Inter-Medium',
+    color: '#6b7280',
+    marginBottom: 4,
+  },
+  requestDetailMetaValue: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#111827',
+  },
+  requestDetailSection: {
+    gap: 12,
+  },
+  requestDetailSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  requestDetailSectionTitle: {
+    fontSize: 16,
+    fontFamily: 'Inter-SemiBold',
+    color: '#111827',
+  },
+  requestDetailMessage: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: '#374151',
+    lineHeight: 22,
+    backgroundColor: '#f9fafb',
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  requestDetailInfoCard: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  requestDetailInfoLabel: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#6b7280',
+    marginBottom: 4,
+  },
+  requestDetailInfoValue: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#111827',
+    lineHeight: 20,
+  },
+  requestDetailInfoHint: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: '#6b7280',
+    marginTop: 4,
+  },
+  requestDetailAttachmentsList: {
+    gap: 10,
+  },
+  requestDetailAttachmentItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 14,
+    padding: 14,
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    gap: 12,
+  },
+  requestDetailAttachmentIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#dbeafe',
+  },
+  requestDetailAttachmentInfo: {
+    flex: 1,
+  },
+  requestDetailAttachmentName: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#111827',
+    marginBottom: 2,
+  },
+  requestDetailAttachmentMeta: {
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    color: '#6b7280',
+  },
+  requestDetailAttachmentAction: {
+    fontSize: 13,
+    fontFamily: 'Inter-SemiBold',
+    color: '#1e40af',
+  },
+  requestDetailEmptyText: {
+    fontSize: 13,
+    fontFamily: 'Inter-Regular',
+    color: '#6b7280',
+    backgroundColor: '#f9fafb',
+    borderRadius: 14,
+    padding: 14,
   },
   statusModalButtons: {
     gap: 10,
+    paddingHorizontal: 24,
+    paddingTop: 8,
   },
   statusModalBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     padding: 16,
     borderRadius: 12,
     borderWidth: 1.5,
+    gap: 10,
+  },
+  statusModalBtnSecondary: {
+    backgroundColor: '#eff6ff',
+    borderColor: '#bfdbfe',
+  },
+  statusModalBtnPrimary: {
+    backgroundColor: '#2563eb',
+    borderColor: '#2563eb',
   },
   statusDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    marginRight: 12,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   statusModalBtnText: {
     fontSize: 16,
     fontFamily: 'Inter-SemiBold',
   },
+  statusModalBtnTextSecondary: {
+    color: '#1e40af',
+  },
+  statusModalBtnTextPrimary: {
+    color: '#ffffff',
+  },
   statusModalCancel: {
     marginTop: 16,
-    padding: 14,
+    paddingTop: 4,
+    paddingBottom: 20,
     alignItems: 'center',
   },
   statusModalCancelText: {

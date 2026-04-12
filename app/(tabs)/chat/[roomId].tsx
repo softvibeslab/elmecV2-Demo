@@ -16,12 +16,16 @@ import {
   Image,
   Alert,
   Platform,
+  Keyboard,
   KeyboardAvoidingView,
   Dimensions,
   Animated,
   Pressable,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useChat, ChatMessage } from '@/contexts/ChatContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -294,8 +298,12 @@ export default function ChatRoom() {
   } = useChat();
   const { user } = useAuth();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const scrollViewRef = useRef<FlatList<ChatMessage>>(null);
   const textInputRef = useRef<TextInput>(null);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const playingAudioRef = useRef<{ [key: string]: Audio.Sound }>({});
+  const recordingRef = useRef<Audio.Recording | null>(null);
 
   const [messageText, setMessageText] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -306,6 +314,9 @@ export default function ChatRoom() {
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [playingAudio, setPlayingAudio] = useState<{
     [key: string]: Audio.Sound;
+  }>({});
+  const [audioProgress, setAudioProgress] = useState<{
+    [key: string]: { positionMillis: number; durationMillis: number };
   }>({});
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
@@ -321,10 +332,8 @@ export default function ChatRoom() {
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(
     null
   );
-  const [timer, setTimer] = useState<ReturnType<typeof setInterval> | null>(
-    null
-  );
   const [isTyping, setIsTyping] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [imageViewerVisible, setImageViewerVisible] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [imageViewerImages, setImageViewerImages] = useState<{ uri: string }[]>(
@@ -345,6 +354,29 @@ export default function ChatRoom() {
   }, [rawRoomMessages]);
   const roomTypingUsers = typingUsers[roomId!] || [];
 
+  const scrollToBottom = useCallback((animated = true) => {
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated });
+    }, 100);
+  }, []);
+
+  const stopRecordingTimer = useCallback(() => {
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+  }, []);
+
+  const getWaveformHeights = useCallback((messageId: string) => {
+    const seed = messageId
+      .split('')
+      .reduce((total, char) => total + char.charCodeAt(0), 0);
+
+    return Array.from({ length: 20 }, (_, index) => {
+      return ((seed * (index + 5)) % 18) + 6;
+    });
+  }, []);
+
   useEffect(() => {
     if (roomId) {
       markMessagesAsRead(roomId);
@@ -353,36 +385,64 @@ export default function ChatRoom() {
 
   useEffect(() => {
     // Scroll to bottom when new messages arrive
-    setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-  }, [roomMessages]);
+    scrollToBottom();
+  }, [roomMessages, scrollToBottom]);
 
   useEffect(() => {
-    // Recording timer
-    if (isRecording) {
-      const newTimer = setInterval(() => {
-        setRecordingDuration(prev => prev + 1);
-      }, 1000);
-      setTimer(newTimer);
-    } else {
-      setRecordingDuration(0);
-      if (timer) {
-        clearInterval(timer);
-        setTimer(null);
-      }
+    if (!isRecording) {
+      stopRecordingTimer();
+      return;
     }
 
+    stopRecordingTimer();
+    recordingTimerRef.current = setInterval(() => {
+      setRecordingDuration(prev => prev + 1);
+    }, 1000);
+
     return () => {
-      if (timer) clearInterval(timer);
+      stopRecordingTimer();
     };
-  }, [isRecording, timer]);
+  }, [isRecording, stopRecordingTimer]);
+
+  useEffect(() => {
+    playingAudioRef.current = playingAudio;
+  }, [playingAudio]);
+
+  useEffect(() => {
+    recordingRef.current = recording;
+  }, [recording]);
+
+  useEffect(() => {
+    const showEvent =
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent =
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSubscription = Keyboard.addListener(showEvent, event => {
+      if (Platform.OS === 'android') {
+        setKeyboardHeight(Math.max(event.endCoordinates.height - insets.bottom, 0));
+      }
+
+      scrollToBottom();
+    });
+
+    const hideSubscription = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, [insets.bottom, scrollToBottom]);
 
   // Cleanup audio on unmount
   useEffect(() => {
     return () => {
+      stopRecordingTimer();
+
       // Stop and unload all playing audio
-      Object.values(playingAudio).forEach(async sound => {
+      Object.values(playingAudioRef.current).forEach(async sound => {
         try {
           await sound.stopAsync();
           await sound.unloadAsync();
@@ -392,11 +452,11 @@ export default function ChatRoom() {
       });
 
       // Stop recording if active
-      if (recording) {
-        recording.stopAndUnloadAsync().catch(console.error);
+      if (recordingRef.current) {
+        recordingRef.current.stopAndUnloadAsync().catch(console.error);
       }
     };
-  }, []);
+  }, [stopRecordingTimer]);
 
   const handleTextChange = (text: string) => {
     setMessageText(text);
@@ -635,10 +695,14 @@ export default function ChatRoom() {
     try {
       if (isRecording && recording) {
         // Stop recording
-        setIsRecording(false);
-        await recording.stopAndUnloadAsync();
+        const activeRecording = recording;
+        const finalRecordingDuration = recordingDuration;
 
-        const uri = recording.getURI();
+        setIsRecording(false);
+        stopRecordingTimer();
+        await activeRecording.stopAndUnloadAsync();
+
+        const uri = activeRecording.getURI();
         if (uri) {
           try {
             console.log('Uploading audio file to storage...');
@@ -679,7 +743,7 @@ export default function ChatRoom() {
               uploadResult.url, // ✅ Public URL from Supabase Storage
               uploadResult.name,
               uploadResult.size,
-              recordingDuration
+              finalRecordingDuration
             );
 
             Alert.alert('Éxito', 'Audio enviado correctamente');
@@ -718,14 +782,17 @@ export default function ChatRoom() {
           Audio.RecordingOptionsPresets.HIGH_QUALITY
         );
 
+        setRecordingDuration(0);
         setRecording(newRecording);
         setIsRecording(true);
       }
     } catch (error) {
       console.error('Error with audio recording:', error);
       Alert.alert('Error', 'No se pudo grabar el audio');
+      stopRecordingTimer();
       setIsRecording(false);
       setRecording(null);
+      setRecordingDuration(0);
     }
   };
 
@@ -742,7 +809,29 @@ export default function ChatRoom() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handlePlayAudio = async (messageId: string, audioUrl: string) => {
+  const getAudioDurationLabel = (
+    messageId: string,
+    fallbackDurationInSeconds = 0
+  ) => {
+    const progress = audioProgress[messageId];
+
+    if (!progress || !playingAudio[messageId]) {
+      return formatDuration(fallbackDurationInSeconds);
+    }
+
+    const currentSeconds = Math.floor(progress.positionMillis / 1000);
+    const totalSeconds = Math.floor(
+      (progress.durationMillis || fallbackDurationInSeconds * 1000) / 1000
+    );
+
+    return `${formatDuration(currentSeconds)} / ${formatDuration(totalSeconds)}`;
+  };
+
+  const handlePlayAudio = async (
+    messageId: string,
+    audioUrl: string,
+    fallbackDurationInSeconds = 0
+  ) => {
     try {
       // Stop any currently playing audio
       const currentlyPlaying = Object.keys(playingAudio);
@@ -751,6 +840,11 @@ export default function ChatRoom() {
           await playingAudio[id].stopAsync();
           await playingAudio[id].unloadAsync();
           setPlayingAudio(prev => {
+            const newState = { ...prev };
+            delete newState[id];
+            return newState;
+          });
+          setAudioProgress(prev => {
             const newState = { ...prev };
             delete newState[id];
             return newState;
@@ -767,22 +861,61 @@ export default function ChatRoom() {
           delete newState[messageId];
           return newState;
         });
+        setAudioProgress(prev => {
+          const newState = { ...prev };
+          delete newState[messageId];
+          return newState;
+        });
       } else {
         // Play new audio
+        setAudioProgress(prev => ({
+          ...prev,
+          [messageId]: {
+            positionMillis: 0,
+            durationMillis: fallbackDurationInSeconds * 1000,
+          },
+        }));
+
         const { sound } = await Audio.Sound.createAsync(
           { uri: audioUrl },
-          { shouldPlay: true }
+          {
+            shouldPlay: true,
+            progressUpdateIntervalMillis: 250,
+          }
         );
 
         setPlayingAudio(prev => ({ ...prev, [messageId]: sound }));
 
         // Remove from playing state when finished
         sound.setOnPlaybackStatusUpdate(status => {
-          if (status.isLoaded && status.didJustFinish) {
+          if (!status.isLoaded) {
+            return;
+          }
+
+          setAudioProgress(prev => ({
+            ...prev,
+            [messageId]: {
+              positionMillis: status.positionMillis ?? 0,
+              durationMillis:
+                status.durationMillis ??
+                prev[messageId]?.durationMillis ??
+                fallbackDurationInSeconds * 1000,
+            },
+          }));
+
+          if (status.didJustFinish) {
             setPlayingAudio(prev => {
               const newState = { ...prev };
               delete newState[messageId];
               return newState;
+            });
+            setAudioProgress(prev => {
+              const newState = { ...prev };
+              delete newState[messageId];
+              return newState;
+            });
+            sound.unloadAsync().catch(error => {
+              console.error('Error unloading completed audio:', error);
             });
           }
         });
@@ -1038,7 +1171,11 @@ export default function ChatRoom() {
                     style={styles.playButton}
                     onPress={() =>
                       message.file_url &&
-                      handlePlayAudio(message.id, message.file_url)
+                      handlePlayAudio(
+                        message.id,
+                        message.file_url,
+                        message.audio_duration || 0
+                      )
                     }
                   >
                     {playingAudio[message.id] ? (
@@ -1054,13 +1191,13 @@ export default function ChatRoom() {
                     )}
                   </TouchableOpacity>
                   <View style={styles.audioWaveform}>
-                    {[...Array(20)].map((_, i) => (
+                    {getWaveformHeights(message.id).map((barHeight, i) => (
                       <View
                         key={`${message.id}-waveform-${i}`}
                         style={[
                           styles.waveformBar,
                           {
-                            height: Math.random() * 20 + 5,
+                            height: barHeight,
                             backgroundColor: isOwnMessage
                               ? 'rgba(255,255,255,0.7)'
                               : playingAudio[message.id]
@@ -1081,7 +1218,7 @@ export default function ChatRoom() {
                       },
                     ]}
                   >
-                    {formatDuration(message.audio_duration || 0)}
+                    {getAudioDurationLabel(message.id, message.audio_duration || 0)}
                   </Text>
                 </View>
               )}
@@ -1230,12 +1367,14 @@ export default function ChatRoom() {
     );
   }
 
+  const androidKeyboardOffset = Platform.OS === 'android' ? keyboardHeight : 0;
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
       >
         {/* Header */}
         <LinearGradient colors={['#1e40af', '#3b82f6']} style={styles.header}>
@@ -1388,10 +1527,17 @@ export default function ChatRoom() {
         <FlatList
           ref={scrollViewRef}
           style={styles.messagesContainer}
+          contentContainerStyle={[
+            styles.messagesContentContainer,
+            androidKeyboardOffset > 0 && {
+              paddingBottom: 24 + androidKeyboardOffset,
+            },
+          ]}
           data={roomMessages}
           keyExtractor={item => item.id}
           renderItem={({ item, index }) => renderMessage(item, index)}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
           removeClippedSubviews={true}
           maxToRenderPerBatch={10}
           windowSize={10}
@@ -1541,7 +1687,14 @@ export default function ChatRoom() {
         )}
 
         {/* Input */}
-        <View style={styles.inputContainer}>
+        <View
+          style={[
+            styles.inputContainer,
+            Platform.OS === 'ios' && {
+              paddingBottom: Math.max(insets.bottom, 16),
+            },
+          ]}
+        >
           <TouchableOpacity
             style={styles.attachmentButton}
             onPress={() => setShowAttachmentMenu(!showAttachmentMenu)}
@@ -1559,6 +1712,7 @@ export default function ChatRoom() {
               placeholderTextColor="#9ca3af"
               value={messageText}
               onChangeText={handleTextChange}
+              onFocus={() => scrollToBottom(false)}
               multiline
               maxLength={1000}
             />
@@ -1615,6 +1769,9 @@ export default function ChatRoom() {
             </TouchableOpacity>
           )}
         </View>
+        {Platform.OS === 'android' && androidKeyboardOffset > 0 && (
+          <View style={{ height: androidKeyboardOffset }} />
+        )}
 
         {/* Message Actions Modal */}
         {showMessageActions && selectedMessage && (
@@ -1829,6 +1986,8 @@ const styles = StyleSheet.create({
   },
   messagesContainer: {
     flex: 1,
+  },
+  messagesContentContainer: {
     padding: 16,
   },
   loadMoreButton: {

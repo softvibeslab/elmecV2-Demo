@@ -76,7 +76,8 @@ interface ChatContextType {
   createChatRoom: (
     participantId: string,
     participantName: string,
-    requestId?: string
+    requestId?: string,
+    metadata?: Record<string, any>
   ) => Promise<string>;
   getChatRoom: (roomId: string) => ChatRoom | undefined;
   // Chat grupal
@@ -745,15 +746,16 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
 
       console.log('Message sent successfully:', data.id);
 
-      // Transición automática a 'en_proceso' si el agente envía el primer mensaje
-      if (user.rol === 'agent' && room.request_id) {
+      // Transición automática a 'en_proceso' cuando inicia una conversación real en chat
+      if (room.request_id && messageType !== 'system') {
         // Tipado seguro para el estatus
         const requestInfo = (room as any).requests;
         const currentStatus = requestInfo?.estatus;
 
-        if (currentStatus === 'asignado') {
+        if (currentStatus === 'nuevo' || currentStatus === 'asignado') {
+          const previousStatus = currentStatus;
           console.log(
-            `🚀 Transición automática: asignado -> en_proceso para request ${room.request_id}`
+            `🚀 Transición automática: ${previousStatus} -> en_proceso para request ${room.request_id}`
           );
 
           try {
@@ -768,10 +770,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
                   status_history: [
                     ...(requestInfo?.metadata?.status_history || []),
                     {
-                      from: 'asignado',
+                      from: previousStatus,
                       to: 'en_proceso',
                       timestamp: now,
-                      reason: 'Iniciada interacción por chat del agente',
+                      reason: 'Iniciada conversación en chat',
                     },
                   ],
                 },
@@ -885,7 +887,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
   const createChatRoom = async (
     participantId: string,
     participantName: string,
-    requestId?: string
+    requestId?: string,
+    metadata?: Record<string, any>
   ): Promise<string> => {
     if (!user || !session) throw new Error('User not authenticated');
 
@@ -897,11 +900,18 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
       });
 
       // Validate participant exists
-      const { data: participantData, error: participantError } = await supabase
+      const { data: participantDataRaw, error: participantError } =
+        await supabase
         .from('users')
         .select('id, nombre, apellido_paterno, apellido_materno, activo')
         .eq('id', participantId)
         .single();
+      const participantData = participantDataRaw as
+        | Pick<
+            User,
+            'id' | 'nombre' | 'apellido_paterno' | 'apellido_materno' | 'activo'
+          >
+        | null;
 
       if (participantError || !participantData) {
         console.error('Participant not found:', participantError);
@@ -916,22 +926,24 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
 
       // Check if chat room already exists between these participants
       // Use proper array comparison for PostgreSQL
-      const { data: existingRooms, error: searchError } = await supabase
+      const { data: existingRoomsRaw, error: searchError } = await supabase
         .from('chat_rooms')
         .select('*')
         .eq('is_active', true);
+      const existingRooms = (existingRoomsRaw || []) as ChatRoom[];
 
       if (searchError) {
         console.error('Error searching for existing rooms:', searchError);
       }
 
       // Filter rooms that contain both participants
-      const existingRoom = existingRooms?.find(room => {
+      const existingRoom = existingRooms.find(room => {
         const participants = room.participants || [];
         return (
           participants.includes(user.id) &&
           participants.includes(participantId) &&
-          participants.length === 2
+          participants.length === 2 &&
+          (requestId ? room.request_id === requestId : !room.request_id)
         );
       });
 
@@ -994,6 +1006,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
             participant_ids: [user.id, participantId],
             created_by: user.id,
             created_at: new Date().toISOString(),
+            ...(metadata || {}),
           },
         })
         .select()
