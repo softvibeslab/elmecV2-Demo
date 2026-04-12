@@ -8,30 +8,34 @@
 
 ## 📈 Resumen Ejecutivo
 
-| Métrica | Valor |
-|---------|-------|
-| **Total de Pruebas** | 13 |
-| **✅ Exitosas** | 9 (69.2%) |
-| **❌ Fallidas** | 4 (30.8%) |
-| **Estado General** | ✅ Funcional con limitaciones |
+| Métrica              | Valor                         |
+| -------------------- | ----------------------------- |
+| **Total de Pruebas** | 13                            |
+| **✅ Exitosas**      | 9 (69.2%)                     |
+| **❌ Fallidas**      | 4 (30.8%)                     |
+| **Estado General**   | ✅ Funcional con limitaciones |
 
 ---
 
 ## ✅ Pruebas Exitosas (9/13)
 
 ### CREATE - Operaciones de Creación
+
 - ✅ **CREATE - Upload texto** - Archivo .txt subido correctamente
 - ✅ **CREATE - Upload CSV** - Archivo .csv subido correctamente
 
 ### READ - Operaciones de Lectura
+
 - ✅ **READ - Listar archivos** - Lista correctamente archivos en carpeta (2 encontrados)
 - ✅ **READ - URL pública** - Genera URLs públicas correctamente
 - ✅ **READ - Descargar archivo** - Descarga y verifica contenido correctamente
 
 ### UPDATE - Operaciones de Actualización
+
 - ✅ **UPDATE - Actualizar archivo** - Comando ejecutado sin errores
 
 ### DELETE - Operaciones de Eliminación
+
 - ✅ **DELETE - Eliminar archivo** - Elimina archivos individuales
 - ✅ **DELETE - Eliminar múltiples** - Elimina múltiples archivos en batch
 - ✅ **CLEANUP - Limpiar carpeta** - Limpieza automática funciona
@@ -41,6 +45,7 @@
 ## ❌ Pruebas Fallidas (4/13)
 
 ### 1. CREATE - Upload JSON ❌
+
 **Error:** `mime type application/json is not supported`
 
 **Causa:** El bucket tiene restricciones de MIME types y no acepta `application/json`
@@ -48,6 +53,7 @@
 **Impacto:** ⚠️ **MEDIO** - Los archivos JSON no se pueden subir
 
 **Solución:**
+
 ```
 Ve a Supabase Dashboard:
 Storage → request-files → Configuration → Allowed MIME types
@@ -57,12 +63,14 @@ Agrega:
 ```
 
 **¿Afecta la app?**
-- ❌ NO - La app principalmente usa imágenes (image/*) y PDFs
+
+- ❌ NO - La app principalmente usa imágenes (image/\*) y PDFs
 - ✅ CSV y texto funcionan correctamente
 
 ---
 
 ### 2. UPDATE - Verificar actualización ❌
+
 **Error:** Contenido no cambió después de update
 
 **Causa:** Posible cache de Supabase o timing issue
@@ -70,17 +78,20 @@ Agrega:
 **Impacto:** ⚠️ **BAJO** - El update se ejecuta, pero la verificación inmediata puede fallar
 
 **Análisis:**
+
 - La operación de UPDATE retorna éxito
 - La verificación inmediata muestra contenido antiguo
 - Esto puede ser un problema de cache temporal
 
 **¿Afecta la app?**
+
 - ✅ NO - En uso real habrá tiempo entre update y read
 - ✅ NO - La app principalmente hace CREATE y DELETE, no UPDATE frecuente
 
 ---
 
 ### 3. UPDATE - Mover archivo ❌
+
 **Error:** No hay archivo para probar
 
 **Causa:** El archivo JSON no se pudo crear (ver error #1)
@@ -88,11 +99,13 @@ Agrega:
 **Impacto:** ⚠️ **BAJO** - Prueba dependiente de otra fallida
 
 **¿Afecta la app?**
+
 - ✅ NO - La app no usa la funcionalidad de mover/renombrar archivos
 
 ---
 
 ### 4. DELETE - Verificar eliminación ❌
+
 **Error:** Archivo aún existe después de eliminar
 
 **Causa:** Posible cache o timing issue similar al UPDATE
@@ -100,11 +113,13 @@ Agrega:
 **Impacto:** ⚠️ **BAJO** - El DELETE se ejecuta correctamente
 
 **Análisis:**
+
 - La operación DELETE retorna éxito
 - La verificación inmediata aún puede acceder al archivo
 - Cache temporal de Supabase
 
 **¿Afecta la app?**
+
 - ✅ NO - En uso real el usuario no verifica inmediatamente
 - ✅ NO - La funcionalidad principal de DELETE funciona
 
@@ -112,15 +127,15 @@ Agrega:
 
 ## 🎯 Funcionalidades Críticas para la App
 
-| Funcionalidad | Estado | Notas |
-|---------------|--------|-------|
-| **Subir imágenes (JPG/PNG)** | ✅ Funciona | Tipo: image/* permitido |
-| **Subir PDFs** | ✅ Funciona | Tipo: application/pdf permitido |
-| **Subir documentos (Word/Excel)** | ✅ Funciona | Tipos permitidos |
-| **Listar archivos** | ✅ Funciona | Perfecto |
-| **Obtener URLs públicas** | ✅ Funciona | Perfecto |
-| **Descargar archivos** | ✅ Funciona | Perfecto |
-| **Eliminar archivos** | ✅ Funciona | Perfecto |
+| Funcionalidad                     | Estado      | Notas                           |
+| --------------------------------- | ----------- | ------------------------------- |
+| **Subir imágenes (JPG/PNG)**      | ✅ Funciona | Tipo: image/\* permitido        |
+| **Subir PDFs**                    | ✅ Funciona | Tipo: application/pdf permitido |
+| **Subir documentos (Word/Excel)** | ✅ Funciona | Tipos permitidos                |
+| **Listar archivos**               | ✅ Funciona | Perfecto                        |
+| **Obtener URLs públicas**         | ✅ Funciona | Perfecto                        |
+| **Descargar archivos**            | ✅ Funciona | Perfecto                        |
+| **Eliminar archivos**             | ✅ Funciona | Perfecto                        |
 
 ---
 
@@ -157,13 +172,16 @@ Las operaciones más importantes para el módulo de solicitudes están **100% fu
 ## 📋 Recomendaciones
 
 ### Prioridad ALTA - Opcional
+
 - [ ] Agregar `application/json` a MIME types permitidos (para futura extensibilidad)
 
 ### Prioridad MEDIA - Opcional
+
 - [ ] Investigar el delay en verificación de UPDATE/DELETE
 - [ ] Agregar delay de 1-2 segundos antes de verificar cambios
 
 ### Prioridad BAJA - No Necesario
+
 - [ ] Funcionalidad de mover/renombrar archivos (no usada en la app)
 
 ---
@@ -237,9 +255,11 @@ Operaciones críticas:  100% funcionales ✅
 ## 🎉 Resumen para el Usuario
 
 **¿Puedo usar el sistema de carga de archivos?**
+
 ### ✅ SÍ, absolutamente.
 
 **¿Qué funciona?**
+
 - ✅ Adjuntar imágenes desde galería
 - ✅ Tomar fotos con cámara
 - ✅ Adjuntar documentos (PDF, Word, Excel)
@@ -247,9 +267,11 @@ Operaciones críticas:  100% funcionales ✅
 - ✅ URLs públicas para compartir
 
 **¿Qué no funciona?**
+
 - ❌ Archivos JSON (no necesario para tu app)
 
 **¿Debo preocuparme?**
+
 - ✅ NO - Todo lo que tu app necesita funciona perfectamente
 
 ---

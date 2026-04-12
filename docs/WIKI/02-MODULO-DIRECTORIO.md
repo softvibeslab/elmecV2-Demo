@@ -1,6 +1,7 @@
 # MÓDULO 2: DIRECTORIO (Directory)
 
 ## 📋 Índice
+
 1. [Visión General](#visión-general)
 2. [Arquitectura del Módulo](#arquitectura-del-módulo)
 3. [Funciones y Variables](#funciones-y-variables)
@@ -14,9 +15,11 @@
 ## 📱 Visión General
 
 ### Propósito
+
 El módulo Directorio permite a los usuarios buscar y contactar a otros miembros de la organización ELMEC. Funciona como una libreta de contactos empresarial con capacidades avanzadas de búsqueda, filtrado y múltiples métodos de contacto.
 
 ### Funcionalidades Principales
+
 - 🔍 Búsqueda en tiempo real por nombre, email, empresa
 - 🎯 Filtrado por categoría y zona geográfica
 - 📞 Llamadas telefónicas directas
@@ -27,11 +30,13 @@ El módulo Directorio permite a los usuarios buscar y contactar a otros miembros
 - 🟢 Indicador de presencia online
 
 ### Ubicación
+
 **Archivo**: `/app/(tabs)/directory.tsx`
 **Ruta**: `/directory`
 **Layout Padre**: `app/(tabs)/_layout.tsx`
 
 ### Rol de Usuario
+
 - ✅ Disponible para: **Todos los roles** (customer, agent, admin)
 - 🔒 Los usuarios NO ven su propio perfil en la lista
 
@@ -70,16 +75,16 @@ export default function Directory() {
 
 ### Dependencias Externas
 
-| Dependencia | Propósito | Crítico |
-|------------|-----------|---------|
-| `@/lib/supabase` | Conexión a base de datos | ✅ |
-| `@/hooks/useChat` | Creación de salas de chat | ✅ |
-| `@/contexts/NotificationContext` | Notificaciones in-app | ✅ |
-| `@/contexts/AuthContext` | Usuario actual | ✅ |
-| `expo-router` | Navegación | ✅ |
-| `react-native/Linking` | Llamadas, Email, WhatsApp | ✅ |
-| `lucide-react-native` | Iconografía | ⚠️ |
-| `react-native-safe-area-context` | SafeAreaView | ⚠️ |
+| Dependencia                      | Propósito                 | Crítico |
+| -------------------------------- | ------------------------- | ------- |
+| `@/lib/supabase`                 | Conexión a base de datos  | ✅      |
+| `@/hooks/useChat`                | Creación de salas de chat | ✅      |
+| `@/contexts/NotificationContext` | Notificaciones in-app     | ✅      |
+| `@/contexts/AuthContext`         | Usuario actual            | ✅      |
+| `expo-router`                    | Navegación                | ✅      |
+| `react-native/Linking`           | Llamadas, Email, WhatsApp | ✅      |
+| `lucide-react-native`            | Iconografía               | ⚠️      |
+| `react-native-safe-area-context` | SafeAreaView              | ⚠️      |
 
 ### Estructura Visual
 
@@ -122,40 +127,42 @@ export default function Directory() {
 
 ### Variables de Estado
 
-| Variable | Tipo | Inicial | Descripción | Persistencia |
-|----------|------|---------|-------------|--------------|
-| `personnel` | `User[]` | `[]` | Lista completa de usuarios de BD | Runtime |
-| `filteredPersonnel` | `User[]` | `[]` | Lista filtrada para mostrar | Computed |
-| `searchQuery` | `string` | `''` | Texto de búsqueda | Runtime |
-| `selectedCategory` | `string` | `'Todos'` | Categoría seleccionada | Runtime |
-| `selectedZone` | `string` | `'Todas'` | Zona seleccionada | Runtime |
-| `showFilters` | `boolean` | `false` | Toggle de filtros avanzados | Runtime |
-| `loading` | `boolean` | `true` | Estado de carga inicial | Runtime |
-| `error` | `string\|null` | `null` | Mensaje de error | Runtime |
+| Variable            | Tipo           | Inicial   | Descripción                      | Persistencia |
+| ------------------- | -------------- | --------- | -------------------------------- | ------------ |
+| `personnel`         | `User[]`       | `[]`      | Lista completa de usuarios de BD | Runtime      |
+| `filteredPersonnel` | `User[]`       | `[]`      | Lista filtrada para mostrar      | Computed     |
+| `searchQuery`       | `string`       | `''`      | Texto de búsqueda                | Runtime      |
+| `selectedCategory`  | `string`       | `'Todos'` | Categoría seleccionada           | Runtime      |
+| `selectedZone`      | `string`       | `'Todas'` | Zona seleccionada                | Runtime      |
+| `showFilters`       | `boolean`      | `false`   | Toggle de filtros avanzados      | Runtime      |
+| `loading`           | `boolean`      | `true`    | Estado de carga inicial          | Runtime      |
+| `error`             | `string\|null` | `null`    | Mensaje de error                 | Runtime      |
 
 ### Constantes de Configuración
 
 #### categories
+
 ```typescript
 const categories = [
-  'Todos',                    // Opción por defecto
-  'Agentes de venta',        // Filtro específico
-  'Servicio al Cliente',     // Filtro específico
-  'Soporte Técnico',         // Filtro específico
+  'Todos', // Opción por defecto
+  'Agentes de venta', // Filtro específico
+  'Servicio al Cliente', // Filtro específico
+  'Soporte Técnico', // Filtro específico
 ];
 
 // Mapea a: users.categoria
 ```
 
 #### zones
+
 ```typescript
 const zones = [
-  'Todas',    // Opción por defecto
-  'Norte',    // Mapea a users.zona
+  'Todas', // Opción por defecto
+  'Norte', // Mapea a users.zona
   'Sur',
   'Centro',
   'Este',
-  'Oeste'
+  'Oeste',
 ];
 ```
 
@@ -164,6 +171,7 @@ const zones = [
 ### Funciones Principales
 
 #### 1. **loadPersonnel()**
+
 ```typescript
 Propósito: Cargar todos los usuarios activos desde Supabase
 Flujo:
@@ -186,6 +194,7 @@ Ejecutada en:
 ```
 
 #### 2. **applyFilters()**
+
 ```typescript
 Propósito: Aplicar filtros de búsqueda y categorías
 Entrada: Usa states (searchQuery, selectedCategory, selectedZone)
@@ -208,6 +217,7 @@ Ejecutada en:
 ```
 
 #### 3. **getFullName(person: User)**
+
 ```typescript
 Propósito: Construir nombre completo
 Entrada: User object
@@ -218,6 +228,7 @@ Código:
 ```
 
 #### 4. **handleCall(phoneNumber: string)**
+
 ```typescript
 Propósito: Iniciar llamada telefónica
 Entrada: phoneNumber - string con formato libre
@@ -236,6 +247,7 @@ Plataformas:
 ```
 
 #### 5. **handleEmail(email: string)**
+
 ```typescript
 Propósito: Abrir cliente de email
 Entrada: email - dirección de correo
@@ -254,6 +266,7 @@ Comportamiento:
 ```
 
 #### 6. **handleWhatsApp(phoneNumber: string)**
+
 ```typescript
 Propósito: Abrir chat de WhatsApp
 Entrada: phoneNumber - puede tener formato
@@ -272,6 +285,7 @@ Formato Esperado:
 ```
 
 #### 7. **handleStartChat(person: User)**
+
 ```typescript
 Propósito: Iniciar chat interno con el usuario
 Entrada: person - User object
@@ -290,6 +304,7 @@ Interacción con Hooks:
 ```
 
 #### 8. **handleSendRequest(person: User)**
+
 ```typescript
 Propósito: Navegar a crear solicitud con agente pre-seleccionado
 Entrada: person - User object
@@ -311,6 +326,7 @@ Recepción en Requests:
 ### Funciones de Utilidad
 
 #### getCategoryColor(category: string)
+
 ```typescript
 Propósito: Asignar color a badge de categoría
 Mapeo:
@@ -323,6 +339,7 @@ Usado en: CategoryBadge backgroundColor
 ```
 
 #### getRoleDisplayName(rol: string)
+
 ```typescript
 Propósito: Traducir rol a texto legible
 Mapeo:
@@ -343,6 +360,7 @@ Usado en: Texto de rol en PersonCard
 #### 1. **users** (Principal)
 
 **Query Principal**:
+
 ```sql
 SELECT *
 FROM users
@@ -352,43 +370,44 @@ ORDER BY nombre ASC;
 
 **Campos Utilizados en UI**:
 
-| Campo DB | Tipo | Uso en UI | Ejemplo |
-|----------|------|-----------|---------|
-| `id` | uuid | Identificador único | `43fdc40e-ca9a-...` |
-| `nombre` | varchar | Nombre en card | `"Carlos"` |
-| `apellido_paterno` | varchar | Apellido en card | `"Rosales"` |
-| `apellido_materno` | varchar | Apellido en card | `"García"` |
-| `correo_electronico` | varchar | Email en card + contacto | `"c.rosales@elmec.com.mx"` |
-| `celular` | varchar | Teléfono + WhatsApp | `"+52 123 456 7890"` |
-| `ciudad` | varchar | Ubicación | `"Monterrey"` |
-| `estado` | varchar | Ubicación | `"Nuevo León"` |
-| `empresa` | varchar | Info de la card | `"ELMEC"` |
-| `rol` | enum | Badge de rol | `'agent'` |
-| `categoria` | varchar? | Badge + Filtro | `"Agentes de venta"` |
-| `zona` | varchar? | Badge + Filtro | `"Norte"` |
-| `is_online` | boolean | Indicador verde | `true`/`false` |
-| `activo` | boolean | Filtro WHERE | `true` |
+| Campo DB             | Tipo     | Uso en UI                | Ejemplo                    |
+| -------------------- | -------- | ------------------------ | -------------------------- |
+| `id`                 | uuid     | Identificador único      | `43fdc40e-ca9a-...`        |
+| `nombre`             | varchar  | Nombre en card           | `"Carlos"`                 |
+| `apellido_paterno`   | varchar  | Apellido en card         | `"Rosales"`                |
+| `apellido_materno`   | varchar  | Apellido en card         | `"García"`                 |
+| `correo_electronico` | varchar  | Email en card + contacto | `"c.rosales@elmec.com.mx"` |
+| `celular`            | varchar  | Teléfono + WhatsApp      | `"+52 123 456 7890"`       |
+| `ciudad`             | varchar  | Ubicación                | `"Monterrey"`              |
+| `estado`             | varchar  | Ubicación                | `"Nuevo León"`             |
+| `empresa`            | varchar  | Info de la card          | `"ELMEC"`                  |
+| `rol`                | enum     | Badge de rol             | `'agent'`                  |
+| `categoria`          | varchar? | Badge + Filtro           | `"Agentes de venta"`       |
+| `zona`               | varchar? | Badge + Filtro           | `"Norte"`                  |
+| `is_online`          | boolean  | Indicador verde          | `true`/`false`             |
+| `activo`             | boolean  | Filtro WHERE             | `true`                     |
 
 **Relaciones**:
+
 - Ninguna en esta vista (select flat)
 
 ---
 
 ### Relación Detallada UI ↔ Base de Datos
 
-| Elemento UI | Query | Campo(s) | Transformación |
-|-------------|-------|----------|----------------|
-| Nombre completo | `SELECT nombre, apellido_paterno, apellido_materno` | `${nombre} ${apellido_paterno} ${apellido_materno}` | `getFullName()` |
-| Email clickeable | `SELECT correo_electronico` | Directa | `mailto:${correo_electronico}` |
-| Teléfono (Llamar) | `SELECT celular` | Directa | `tel:${celular}` |
-| WhatsApp | `SELECT celular` | Limpiar formato | `whatsapp://send?phone=${cleanPhone}` |
-| Ubicación | `SELECT ciudad, estado` | Concatenar | `${ciudad}, ${estado}` |
-| Badge Categoría | `SELECT categoria` | Directa + color | `getCategoryColor(categoria)` |
-| Badge Zona | `SELECT zona` | Directa | Con icono MapPin |
-| Indicador online | `SELECT is_online` | Boolean → componente | Círculo verde/gris |
-| Filtro Categoría | `WHERE categoria = ?` | Comparación | `selectedCategory` |
-| Filtro Zona | `WHERE zona = ?` | Comparación | `selectedZone` |
-| Búsqueda texto | `WHERE nombre ILIKE '%q%'` | Texto parcial | `searchQuery.toLowerCase()` |
+| Elemento UI       | Query                                               | Campo(s)                                            | Transformación                        |
+| ----------------- | --------------------------------------------------- | --------------------------------------------------- | ------------------------------------- |
+| Nombre completo   | `SELECT nombre, apellido_paterno, apellido_materno` | `${nombre} ${apellido_paterno} ${apellido_materno}` | `getFullName()`                       |
+| Email clickeable  | `SELECT correo_electronico`                         | Directa                                             | `mailto:${correo_electronico}`        |
+| Teléfono (Llamar) | `SELECT celular`                                    | Directa                                             | `tel:${celular}`                      |
+| WhatsApp          | `SELECT celular`                                    | Limpiar formato                                     | `whatsapp://send?phone=${cleanPhone}` |
+| Ubicación         | `SELECT ciudad, estado`                             | Concatenar                                          | `${ciudad}, ${estado}`                |
+| Badge Categoría   | `SELECT categoria`                                  | Directa + color                                     | `getCategoryColor(categoria)`         |
+| Badge Zona        | `SELECT zona`                                       | Directa                                             | Con icono MapPin                      |
+| Indicador online  | `SELECT is_online`                                  | Boolean → componente                                | Círculo verde/gris                    |
+| Filtro Categoría  | `WHERE categoria = ?`                               | Comparación                                         | `selectedCategory`                    |
+| Filtro Zona       | `WHERE zona = ?`                                    | Comparación                                         | `selectedZone`                        |
+| Búsqueda texto    | `WHERE nombre ILIKE '%q%'`                          | Texto parcial                                       | `searchQuery.toLowerCase()`           |
 
 ---
 
@@ -515,10 +534,12 @@ Toca [Solicitud]         →     handleSendRequest(person)
 **Actor**: Usuario autenticado
 
 **Precondiciones**:
+
 - Usuario autenticado con sesión válida
 - Tabla `users` contiene registros
 
 **Flujo Principal**:
+
 1. Usuario navega a `/directory`
 2. Sistema ejecuta `loadPersonnel()`
 3. Sistema consulta Supabase:
@@ -532,12 +553,14 @@ Toca [Solicitud]         →     handleSendRequest(person)
 8. Sistema renderiza lista en FlatList
 
 **Postcondiciones**:
+
 - `personnel` contiene todos los usuarios activos excepto el actual
 - `filteredPersonnel` contiene el mismo array inicialmente
 - Lista visible en pantalla
 - `loading = false`
 
 **Flujos Alternativos**:
+
 - **3a. Error de conexión**: Sistema muestra mensaje de error y botón "Reintentar"
 - **4a. No hay usuarios**: Sistema muestra estado vacío con mensaje
 
@@ -548,10 +571,12 @@ Toca [Solicitud]         →     handleSendRequest(person)
 **Actor**: Usuario
 
 **Precondiciones**:
+
 - Directorio cargado (`personnel.length > 0`)
 - Usuario en pantalla Directory
 
 **Flujo Principal**:
+
 1. Usuario toca campo de búsqueda
 2. Sistema muestra teclado
 3. Usuario escribe texto (ej: "Carlos")
@@ -566,11 +591,13 @@ Toca [Solicitud]         →     handleSendRequest(person)
 9. FlatList re-renderiza con resultados filtrados
 
 **Postcondiciones**:
+
 - Solo usuarios que coinciden con búsqueda son visibles
 - Contador actualizado: "X personas disponibles"
 - Si no hay resultados: mostrar estado vacío
 
 **Variantes**:
+
 - Usuario puede buscar por email completo
 - Usuario puede buscar por empresa
 - Búsqueda es case-insensitive
@@ -582,10 +609,12 @@ Toca [Solicitud]         →     handleSendRequest(person)
 **Actor**: Usuario
 
 **Precondiciones**:
+
 - Directorio cargado
 - Filtros visibles (`showFilters = true`)
 
 **Flujo Principal**:
+
 1. Usuario toca botón [Filter]
 2. Sistema muestra `setShowFilters(true)`
 3. Sistema renderiza chips de categorías
@@ -598,11 +627,13 @@ Toca [Solicitud]         →     handleSendRequest(person)
 10. Chip seleccionado cambia de estilo (backgroundColor azul)
 
 **Postcondiciones**:
+
 - Solo usuarios de la categoría seleccionada visibles
 - Chip activo destacado visualmente
 - Otros filtros se mantienen activos
 
 **Flujo Alternativo**:
+
 - **4a. Usuario toca "Todos"**: Sistema limpia filtro de categoría
 
 ---
@@ -612,11 +643,13 @@ Toca [Solicitud]         →     handleSendRequest(person)
 **Actor**: Usuario
 
 **Precondiciones**:
+
 - Directorio cargado
 - Usuario seleccionado tiene `celular` válido
 - Dispositivo soporta llamadas
 
 **Flujo Principal**:
+
 1. Usuario visualiza PersonCard de "Carlos Rosales"
 2. Usuario toca botón [Llamar]
 3. Sistema ejecuta `handleCall(person.celular)`
@@ -628,10 +661,12 @@ Toca [Solicitud]         →     handleSendRequest(person)
 9. Usuario confirma llamada en dialer
 
 **Postcondiciones**:
+
 - App permanece en segundo plano
 - Llamada iniciada en Phone app nativa
 
 **Flujos Alternativos**:
+
 - **6a. No soportado (Web)**: Alert "No se puede realizar la llamada"
 - **8a. Usuario cancela**: Vuelve a la app
 
@@ -642,10 +677,12 @@ Toca [Solicitud]         →     handleSendRequest(person)
 **Actor**: Usuario
 
 **Precondiciones**:
+
 - WhatsApp instalado en dispositivo
 - Usuario seleccionado tiene `celular` válido
 
 **Flujo Principal**:
+
 1. Usuario toca botón [WhatsApp] en PersonCard
 2. Sistema ejecuta `handleWhatsApp(person.celular)`
 3. Sistema limpia número: `celular.replace(/\D/g, '')`
@@ -658,10 +695,12 @@ Toca [Solicitud]         →     handleSendRequest(person)
 8. Usuario puede escribir mensaje
 
 **Postcondiciones**:
+
 - WhatsApp abierto con contacto
 - App ELMEC en segundo plano
 
 **Flujos Alternativos**:
+
 - **5a. WhatsApp no instalado**: Alert "WhatsApp no está instalado"
 - **3a. Número inválido**: Puede fallar silenciosamente en WhatsApp
 
@@ -672,11 +711,13 @@ Toca [Solicitud]         →     handleSendRequest(person)
 **Actor**: Usuario
 
 **Precondiciones**:
+
 - Directorio cargado
 - Usuario seleccionado existe
 - Sistema de chat configurado
 
 **Flujo Principal**:
+
 1. Usuario toca botón [Chat] en PersonCard de "Ana García"
 2. Sistema ejecuta `handleStartChat(person)`
 3. Sistema llama `createChatRoom(person.id, "Ana García")`
@@ -692,11 +733,13 @@ Toca [Solicitud]         →     handleSendRequest(person)
 9. Sistema envía notificación demo: "Chat iniciado con Ana García"
 
 **Postcondiciones**:
+
 - Usuario en pantalla de chat
 - Sala creada o reutilizada en BD
 - Notificación toast mostrada
 
 **Flujos Alternativos**:
+
 - **6a. Error creando sala**: Alert "No se pudo iniciar el chat"
 
 ---
@@ -706,10 +749,12 @@ Toca [Solicitud]         →     handleSendRequest(person)
 **Actor**: Usuario (Customer)
 
 **Precondiciones**:
+
 - Usuario es customer
 - Agente seleccionado tiene `rol = 'agent'`
 
 **Flujo Principal**:
+
 1. Usuario visualiza agente "Carlos Rosales"
 2. Usuario toca botón [Solicitud]
 3. Sistema ejecuta `handleSendRequest(person)`
@@ -725,6 +770,7 @@ Toca [Solicitud]         →     handleSendRequest(person)
 7. Agente "Carlos Rosales" pre-seleccionado en dropdown
 
 **Postcondiciones**:
+
 - Usuario en pantalla Requests
 - Modal de nueva solicitud abierto
 - Campo agente pre-lleno
@@ -735,90 +781,90 @@ Toca [Solicitud]         →     handleSendRequest(person)
 
 ### Matriz de Pruebas Funcionales - Carga de Datos
 
-| ID | Caso de Prueba | Precondición | Pasos | Resultado Esperado | Prioridad | Estado |
-|----|----------------|--------------|-------|-------------------|-----------|--------|
-| DIR-F01 | Cargar directorio exitosamente | BD tiene usuarios activos | 1. Navegar a /directory | Lista de usuarios visible, loading=false | Alta | ⬜ |
-| DIR-F02 | Filtrar usuario actual | Usuario logged: id=123 | 1. Cargar directorio | Usuario 123 NO aparece en lista | Alta | ⬜ |
-| DIR-F03 | Ordenar por nombre ASC | BD tiene usuarios desordenados | 1. Cargar directorio | Usuarios ordenados A-Z por nombre | Media | ⬜ |
-| DIR-F04 | Manejar directorio vacío | BD sin usuarios activos (excepto current) | 1. Cargar directorio | Estado vacío: "No hay personal disponible" | Media | ⬜ |
-| DIR-F05 | Manejar error de conexión | BD no disponible | 1. Cargar directorio | Error visible, botón "Reintentar" | Alta | ⬜ |
-| DIR-F06 | Reintentar carga tras error | Error previo | 1. Tocar "Reintentar" | Nueva consulta a BD, loading visible | Media | ⬜ |
+| ID      | Caso de Prueba                 | Precondición                              | Pasos                   | Resultado Esperado                         | Prioridad | Estado |
+| ------- | ------------------------------ | ----------------------------------------- | ----------------------- | ------------------------------------------ | --------- | ------ |
+| DIR-F01 | Cargar directorio exitosamente | BD tiene usuarios activos                 | 1. Navegar a /directory | Lista de usuarios visible, loading=false   | Alta      | ⬜     |
+| DIR-F02 | Filtrar usuario actual         | Usuario logged: id=123                    | 1. Cargar directorio    | Usuario 123 NO aparece en lista            | Alta      | ⬜     |
+| DIR-F03 | Ordenar por nombre ASC         | BD tiene usuarios desordenados            | 1. Cargar directorio    | Usuarios ordenados A-Z por nombre          | Media     | ⬜     |
+| DIR-F04 | Manejar directorio vacío       | BD sin usuarios activos (excepto current) | 1. Cargar directorio    | Estado vacío: "No hay personal disponible" | Media     | ⬜     |
+| DIR-F05 | Manejar error de conexión      | BD no disponible                          | 1. Cargar directorio    | Error visible, botón "Reintentar"          | Alta      | ⬜     |
+| DIR-F06 | Reintentar carga tras error    | Error previo                              | 1. Tocar "Reintentar"   | Nueva consulta a BD, loading visible       | Media     | ⬜     |
 
 ### Matriz de Pruebas Funcionales - Búsqueda
 
-| ID | Caso de Prueba | Entrada | Resultado Esperado | Prioridad | Estado |
-|----|----------------|---------|-------------------|-----------|--------|
-| DIR-S01 | Buscar por nombre completo | "Carlos Rosales" | Solo usuarios con nombre/apellido matching | Alta | ⬜ |
-| DIR-S02 | Buscar por nombre parcial | "Car" | Usuarios con "Car" en nombre: Carlos, Carla, etc. | Alta | ⬜ |
-| DIR-S03 | Buscar por email completo | "c.rosales@elmec.com.mx" | Usuario con ese email exacto | Alta | ⬜ |
-| DIR-S04 | Buscar por email parcial | "rosales" | Usuarios con "rosales" en email | Media | ⬜ |
-| DIR-S05 | Buscar por empresa | "ELMEC" | Todos usuarios de empresa ELMEC | Media | ⬜ |
-| DIR-S06 | Búsqueda case-insensitive | "CARLOS" o "carlos" | Ambos retornan mismo resultado | Alta | ⬜ |
-| DIR-S07 | Búsqueda sin resultados | "XYZ999" | Estado vacío: "No se encontraron..." | Media | ⬜ |
-| DIR-S08 | Limpiar búsqueda | Escribir y borrar todo | Mostrar lista completa de nuevo | Baja | ⬜ |
+| ID      | Caso de Prueba             | Entrada                  | Resultado Esperado                                | Prioridad | Estado |
+| ------- | -------------------------- | ------------------------ | ------------------------------------------------- | --------- | ------ |
+| DIR-S01 | Buscar por nombre completo | "Carlos Rosales"         | Solo usuarios con nombre/apellido matching        | Alta      | ⬜     |
+| DIR-S02 | Buscar por nombre parcial  | "Car"                    | Usuarios con "Car" en nombre: Carlos, Carla, etc. | Alta      | ⬜     |
+| DIR-S03 | Buscar por email completo  | "c.rosales@elmec.com.mx" | Usuario con ese email exacto                      | Alta      | ⬜     |
+| DIR-S04 | Buscar por email parcial   | "rosales"                | Usuarios con "rosales" en email                   | Media     | ⬜     |
+| DIR-S05 | Buscar por empresa         | "ELMEC"                  | Todos usuarios de empresa ELMEC                   | Media     | ⬜     |
+| DIR-S06 | Búsqueda case-insensitive  | "CARLOS" o "carlos"      | Ambos retornan mismo resultado                    | Alta      | ⬜     |
+| DIR-S07 | Búsqueda sin resultados    | "XYZ999"                 | Estado vacío: "No se encontraron..."              | Media     | ⬜     |
+| DIR-S08 | Limpiar búsqueda           | Escribir y borrar todo   | Mostrar lista completa de nuevo                   | Baja      | ⬜     |
 
 ### Matriz de Pruebas Funcionales - Filtros
 
-| ID | Caso de Prueba | Acción | Resultado Esperado | Prioridad | Estado |
-|----|----------------|--------|-------------------|-----------|--------|
-| DIR-FIL01 | Abrir panel de filtros | Tocar botón [Filter] | Chips de categoría y zona visibles | Media | ⬜ |
-| DIR-FIL02 | Filtrar por categoría: Agentes | Seleccionar "Agentes de venta" | Solo agentes visibles, chip activo azul | Alta | ⬜ |
-| DIR-FIL03 | Filtrar por categoría: Soporte | Seleccionar "Soporte Técnico" | Solo soporte visibles | Alta | ⬜ |
-| DIR-FIL04 | Filtrar por zona: Norte | Seleccionar "Norte" | Solo usuarios zona Norte | Alta | ⬜ |
-| DIR-FIL05 | Combinar filtros | Categoría: Agentes + Zona: Norte | Solo agentes del Norte | Alta | ⬜ |
-| DIR-FIL06 | Resetear categoría | Seleccionar "Todos" | Todos usuarios visibles (respetando zona) | Media | ⬜ |
-| DIR-FIL07 | Resetear zona | Seleccionar "Todas" | Todos usuarios visibles (respetando categoría) | Media | ⬜ |
-| DIR-FIL08 | Búsqueda + filtros | Buscar "Carlos" + Cat: Agentes | Solo Carlos que son agentes | Alta | ⬜ |
+| ID        | Caso de Prueba                 | Acción                           | Resultado Esperado                             | Prioridad | Estado |
+| --------- | ------------------------------ | -------------------------------- | ---------------------------------------------- | --------- | ------ |
+| DIR-FIL01 | Abrir panel de filtros         | Tocar botón [Filter]             | Chips de categoría y zona visibles             | Media     | ⬜     |
+| DIR-FIL02 | Filtrar por categoría: Agentes | Seleccionar "Agentes de venta"   | Solo agentes visibles, chip activo azul        | Alta      | ⬜     |
+| DIR-FIL03 | Filtrar por categoría: Soporte | Seleccionar "Soporte Técnico"    | Solo soporte visibles                          | Alta      | ⬜     |
+| DIR-FIL04 | Filtrar por zona: Norte        | Seleccionar "Norte"              | Solo usuarios zona Norte                       | Alta      | ⬜     |
+| DIR-FIL05 | Combinar filtros               | Categoría: Agentes + Zona: Norte | Solo agentes del Norte                         | Alta      | ⬜     |
+| DIR-FIL06 | Resetear categoría             | Seleccionar "Todos"              | Todos usuarios visibles (respetando zona)      | Media     | ⬜     |
+| DIR-FIL07 | Resetear zona                  | Seleccionar "Todas"              | Todos usuarios visibles (respetando categoría) | Media     | ⬜     |
+| DIR-FIL08 | Búsqueda + filtros             | Buscar "Carlos" + Cat: Agentes   | Solo Carlos que son agentes                    | Alta      | ⬜     |
 
 ### Matriz de Pruebas Funcionales - Acciones de Contacto
 
-| ID | Caso de Prueba | Acción | Resultado Esperado | Plataforma | Estado |
-|----|----------------|--------|-------------------|------------|--------|
-| DIR-C01 | Llamada exitosa | Tocar [Llamar] | Dialer abierto con número | iOS/Android | ⬜ |
-| DIR-C02 | Llamada no soportada | Tocar [Llamar] en Web | Alert "No se puede realizar la llamada" | Web | ⬜ |
-| DIR-C03 | Email exitoso | Tocar [Email] | Cliente email abierto con destinatario | All | ⬜ |
-| DIR-C04 | WhatsApp con app instalada | Tocar [WhatsApp] | WhatsApp abierto con contacto | iOS/Android | ⬜ |
-| DIR-C05 | WhatsApp sin app | Tocar [WhatsApp] sin WhatsApp | Alert "WhatsApp no está instalado" | iOS/Android | ⬜ |
-| DIR-C06 | Chat - crear sala nueva | Tocar [Chat], sin sala previa | Sala creada, navegación a /chat/{roomId} | All | ⬜ |
-| DIR-C07 | Chat - reutilizar sala | Tocar [Chat], sala existe | Navegación a sala existente | All | ⬜ |
-| DIR-C08 | Solicitud con agente | Tocar [Solicitud] | Navegación a /requests con agente pre-seleccionado | All | ⬜ |
+| ID      | Caso de Prueba             | Acción                        | Resultado Esperado                                 | Plataforma  | Estado |
+| ------- | -------------------------- | ----------------------------- | -------------------------------------------------- | ----------- | ------ |
+| DIR-C01 | Llamada exitosa            | Tocar [Llamar]                | Dialer abierto con número                          | iOS/Android | ⬜     |
+| DIR-C02 | Llamada no soportada       | Tocar [Llamar] en Web         | Alert "No se puede realizar la llamada"            | Web         | ⬜     |
+| DIR-C03 | Email exitoso              | Tocar [Email]                 | Cliente email abierto con destinatario             | All         | ⬜     |
+| DIR-C04 | WhatsApp con app instalada | Tocar [WhatsApp]              | WhatsApp abierto con contacto                      | iOS/Android | ⬜     |
+| DIR-C05 | WhatsApp sin app           | Tocar [WhatsApp] sin WhatsApp | Alert "WhatsApp no está instalado"                 | iOS/Android | ⬜     |
+| DIR-C06 | Chat - crear sala nueva    | Tocar [Chat], sin sala previa | Sala creada, navegación a /chat/{roomId}           | All         | ⬜     |
+| DIR-C07 | Chat - reutilizar sala     | Tocar [Chat], sala existe     | Navegación a sala existente                        | All         | ⬜     |
+| DIR-C08 | Solicitud con agente       | Tocar [Solicitud]             | Navegación a /requests con agente pre-seleccionado | All         | ⬜     |
 
 ### Matriz de Pruebas de Integración
 
-| ID | Componente A | Componente B | Caso | Resultado Esperado | Estado |
-|----|--------------|--------------|------|-------------------|--------|
-| DIR-I01 | Directory | Supabase users | Consulta inicial | Datos cargados correctamente | ⬜ |
-| DIR-I02 | Directory | AuthContext | Obtener currentUser | Usuario actual excluido de lista | ⬜ |
-| DIR-I03 | Directory | useChat hook | Crear sala | Registro en chat_rooms, roomId retornado | ⬜ |
-| DIR-I04 | Directory | expo-router | Navegación | Transición correcta a pantallas | ⬜ |
-| DIR-I05 | Directory | Linking API | Llamada telefónica | Dialer abierto (plataforma soportada) | ⬜ |
-| DIR-I06 | Directory | useNotifications | Demo toast | Notificación mostrada tras acción | ⬜ |
+| ID      | Componente A | Componente B     | Caso                | Resultado Esperado                       | Estado |
+| ------- | ------------ | ---------------- | ------------------- | ---------------------------------------- | ------ |
+| DIR-I01 | Directory    | Supabase users   | Consulta inicial    | Datos cargados correctamente             | ⬜     |
+| DIR-I02 | Directory    | AuthContext      | Obtener currentUser | Usuario actual excluido de lista         | ⬜     |
+| DIR-I03 | Directory    | useChat hook     | Crear sala          | Registro en chat_rooms, roomId retornado | ⬜     |
+| DIR-I04 | Directory    | expo-router      | Navegación          | Transición correcta a pantallas          | ⬜     |
+| DIR-I05 | Directory    | Linking API      | Llamada telefónica  | Dialer abierto (plataforma soportada)    | ⬜     |
+| DIR-I06 | Directory    | useNotifications | Demo toast          | Notificación mostrada tras acción        | ⬜     |
 
 ### Matriz de Pruebas de UI/UX
 
-| ID | Elemento | Criterio | Verificación | Estado |
-|----|----------|----------|--------------|--------|
-| DIR-U01 | PersonCard | Legibilidad | Nombre visible en Inter-SemiBold 18px | ⬜ |
-| DIR-U02 | Search input | Accesibilidad | Altura mínima 48px, área táctil adecuada | ⬜ |
-| DIR-U03 | Badges categoría | Contraste | Texto legible en fondo de color | ⬜ |
-| DIR-U04 | Online indicator | Visibilidad | Círculo verde 8x8px visible | ⬜ |
-| DIR-U05 | Action buttons | Touch target | Mínimo 44x44px táctil | ⬜ |
-| DIR-U06 | FlatList | Performance | Scroll fluido sin lag con 100+ items | ⬜ |
-| DIR-U07 | Filter chips | Feedback | Cambio visual inmediato al seleccionar | ⬜ |
-| DIR-U08 | Loading state | UX | Spinner centrado con mensaje | ⬜ |
-| DIR-U09 | Empty state | Guidance | Mensaje claro y accionable | ⬜ |
-| DIR-U10 | Error state | Recovery | Botón "Reintentar" visible y funcional | ⬜ |
+| ID      | Elemento         | Criterio      | Verificación                             | Estado |
+| ------- | ---------------- | ------------- | ---------------------------------------- | ------ |
+| DIR-U01 | PersonCard       | Legibilidad   | Nombre visible en Inter-SemiBold 18px    | ⬜     |
+| DIR-U02 | Search input     | Accesibilidad | Altura mínima 48px, área táctil adecuada | ⬜     |
+| DIR-U03 | Badges categoría | Contraste     | Texto legible en fondo de color          | ⬜     |
+| DIR-U04 | Online indicator | Visibilidad   | Círculo verde 8x8px visible              | ⬜     |
+| DIR-U05 | Action buttons   | Touch target  | Mínimo 44x44px táctil                    | ⬜     |
+| DIR-U06 | FlatList         | Performance   | Scroll fluido sin lag con 100+ items     | ⬜     |
+| DIR-U07 | Filter chips     | Feedback      | Cambio visual inmediato al seleccionar   | ⬜     |
+| DIR-U08 | Loading state    | UX            | Spinner centrado con mensaje             | ⬜     |
+| DIR-U09 | Empty state      | Guidance      | Mensaje claro y accionable               | ⬜     |
+| DIR-U10 | Error state      | Recovery      | Botón "Reintentar" visible y funcional   | ⬜     |
 
 ### Matriz de Pruebas de Performance
 
-| ID | Escenario | Métrica | Valor Esperado | Herramienta | Estado |
-|----|-----------|---------|----------------|-------------|--------|
-| DIR-P01 | Carga inicial | Tiempo hasta interactive | < 500ms | React DevTools | ⬜ |
-| DIR-P02 | Búsqueda en tiempo real | Latencia por keystroke | < 16ms (60fps) | Performance API | ⬜ |
-| DIR-P03 | Aplicar filtros | Tiempo de re-render | < 100ms | React DevTools | ⬜ |
-| DIR-P04 | Scroll en lista larga | FPS | > 50fps constante | Flipper/DevTools | ⬜ |
-| DIR-P05 | Virtualización FlatList | Items renderizados | <= windowSize (10) | Console.log | ⬜ |
-| DIR-P06 | Memory usage | Heap size | < 50MB incremento | Memory Profiler | ⬜ |
+| ID      | Escenario               | Métrica                  | Valor Esperado     | Herramienta      | Estado |
+| ------- | ----------------------- | ------------------------ | ------------------ | ---------------- | ------ |
+| DIR-P01 | Carga inicial           | Tiempo hasta interactive | < 500ms            | React DevTools   | ⬜     |
+| DIR-P02 | Búsqueda en tiempo real | Latencia por keystroke   | < 16ms (60fps)     | Performance API  | ⬜     |
+| DIR-P03 | Aplicar filtros         | Tiempo de re-render      | < 100ms            | React DevTools   | ⬜     |
+| DIR-P04 | Scroll en lista larga   | FPS                      | > 50fps constante  | Flipper/DevTools | ⬜     |
+| DIR-P05 | Virtualización FlatList | Items renderizados       | <= windowSize (10) | Console.log      | ⬜     |
+| DIR-P06 | Memory usage            | Heap size                | < 50MB incremento  | Memory Profiler  | ⬜     |
 
 ---
 
@@ -861,6 +907,7 @@ Toca [Solicitud]         →     handleSendRequest(person)
 #### 🔴 Prioridad Alta
 
 **1. Implementar Paginación y Lazy Loading**
+
 ```typescript
 // Cargar 20 usuarios a la vez
 const PAGE_SIZE = 20;
@@ -885,6 +932,7 @@ const loadMore = async () => {
 ```
 
 **2. Implementar Búsqueda Server-Side**
+
 ```typescript
 // Usar Supabase full-text search
 const searchUsers = async (query: string) => {
@@ -897,18 +945,23 @@ const searchUsers = async (query: string) => {
 ```
 
 **3. Suscripción Realtime a Presencia**
+
 ```typescript
 useEffect(() => {
   const subscription = supabase
     .channel('online-users')
-    .on('postgres_changes', {
-      event: 'UPDATE',
-      schema: 'public',
-      table: 'users',
-      filter: `is_online=eq.true`
-    }, (payload) => {
-      // Actualizar is_online en personnel
-    })
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'users',
+        filter: `is_online=eq.true`,
+      },
+      payload => {
+        // Actualizar is_online en personnel
+      }
+    )
     .subscribe();
 
   return () => subscription.unsubscribe();
@@ -918,6 +971,7 @@ useEffect(() => {
 #### 🟡 Prioridad Media
 
 **4. Memoizar Callbacks**
+
 ```typescript
 const handleCall = useCallback((phoneNumber: string) => {
   // ... lógica
@@ -931,6 +985,7 @@ const handleWhatsApp = useCallback((phoneNumber: string) => {
 ```
 
 **5. Agregar Caché con React Query**
+
 ```typescript
 import { useQuery } from '@tanstack/react-query';
 
@@ -942,6 +997,7 @@ const { data: personnel } = useQuery({
 ```
 
 **6. Fallback para Web en Linking**
+
 ```typescript
 const handleCall = (phone: string) => {
   if (Platform.OS === 'web') {
@@ -965,15 +1021,15 @@ const handleCall = (phone: string) => {
 
 ## 📊 Métricas de Calidad
 
-| Métrica | Valor Actual | Objetivo | Estado |
-|---------|--------------|----------|--------|
-| Cobertura de Pruebas | 0% | 80% | 🔴 |
-| Consultas BD Optimizadas | 1/1 (100%) | 100% | 🟢 |
-| Tiempo de Carga (50 users) | ~200ms | < 500ms | 🟢 |
-| Tiempo de Carga (500 users) | ~1s | < 1s | 🟡 |
-| FPS en Scroll | ~55fps | > 50fps | 🟢 |
-| Errores en Producción | No medido | < 0.1% | ⚠️ |
-| Accesibilidad Score | No medido | WCAG AA | 🟡 |
+| Métrica                     | Valor Actual | Objetivo | Estado |
+| --------------------------- | ------------ | -------- | ------ |
+| Cobertura de Pruebas        | 0%           | 80%      | 🔴     |
+| Consultas BD Optimizadas    | 1/1 (100%)   | 100%     | 🟢     |
+| Tiempo de Carga (50 users)  | ~200ms       | < 500ms  | 🟢     |
+| Tiempo de Carga (500 users) | ~1s          | < 1s     | 🟡     |
+| FPS en Scroll               | ~55fps       | > 50fps  | 🟢     |
+| Errores en Producción       | No medido    | < 0.1%   | ⚠️     |
+| Accesibilidad Score         | No medido    | WCAG AA  | 🟡     |
 
 ---
 
@@ -982,6 +1038,7 @@ const handleCall = (phone: string) => {
 ### Checklist Completo de Pruebas Manuales
 
 #### Carga Inicial
+
 - [ ] Spinner visible al cargar
 - [ ] Contador de personas actualizado
 - [ ] Lista ordenada alfabéticamente
@@ -989,6 +1046,7 @@ const handleCall = (phone: string) => {
 - [ ] Todos los campos de PersonCard visibles
 
 #### Búsqueda
+
 - [ ] Búsqueda por nombre funciona
 - [ ] Búsqueda por apellido funciona
 - [ ] Búsqueda por email funciona
@@ -998,6 +1056,7 @@ const handleCall = (phone: string) => {
 - [ ] Sin resultados muestra estado vacío
 
 #### Filtros
+
 - [ ] Botón filtro abre/cierra panel
 - [ ] Chips de categoría visibles
 - [ ] Chips de zona visibles
@@ -1007,6 +1066,7 @@ const handleCall = (phone: string) => {
 - [ ] Reset a "Todos"/"Todas" funciona
 
 #### Acciones de Contacto
+
 - [ ] [Llamar] abre dialer (móvil)
 - [ ] [Llamar] muestra error (web)
 - [ ] [WhatsApp] abre WhatsApp (móvil)
@@ -1019,6 +1079,7 @@ const handleCall = (phone: string) => {
 - [ ] [Solicitud] pre-selecciona agente
 
 #### UI/UX
+
 - [ ] PersonCards tienen sombra sutil
 - [ ] Badges de categoría tienen colores correctos
 - [ ] Indicador online (verde) visible
@@ -1028,6 +1089,7 @@ const handleCall = (phone: string) => {
 - [ ] Scroll fluido sin lag
 
 #### Estados Especiales
+
 - [ ] Error de conexión muestra mensaje + "Reintentar"
 - [ ] "Reintentar" recarga datos
 - [ ] Sin usuarios muestra estado vacío
@@ -1036,6 +1098,7 @@ const handleCall = (phone: string) => {
 ### Datos de Prueba Recomendados
 
 **Usuarios para Crear en BD**:
+
 ```json
 [
   {
@@ -1071,6 +1134,7 @@ const handleCall = (phone: string) => {
 ### Escenarios de Prueba Específicos
 
 #### Escenario 1: Búsqueda + Filtros Combinados
+
 1. Cargar directorio completo (50+ usuarios)
 2. Buscar "Carlos" → Verificar resultados
 3. Aplicar filtro Categoría: "Agentes de venta"
@@ -1079,6 +1143,7 @@ const handleCall = (phone: string) => {
 6. Verificar intersección correcta
 
 #### Escenario 2: Flujo Completo de Contacto
+
 1. Buscar usuario "Ana García"
 2. Tocar [Chat] → Verificar navegación
 3. Volver a Directory
@@ -1087,6 +1152,7 @@ const handleCall = (phone: string) => {
 6. Tocar [Solicitud] → Verificar pre-selección
 
 #### Escenario 3: Performance con Datos Masivos
+
 1. Insertar 500 usuarios en BD
 2. Cargar Directory
 3. Medir tiempo de carga inicial

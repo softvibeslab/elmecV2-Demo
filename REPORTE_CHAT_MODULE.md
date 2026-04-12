@@ -8,13 +8,13 @@
 
 ## 📋 Resumen Ejecutivo
 
-| Aspecto | Estado | Detalles |
-|---------|--------|----------|
-| **Código de la App** | ✅ **EXCELENTE** | Implementación completa y profesional |
-| **Base de Datos** | ❌ **INCOMPLETA** | Faltan 6 columnas en tabla `messages` |
-| **Supabase Realtime** | ✅ **IMPLEMENTADO** | Correctamente configurado |
-| **Storage** | ✅ **FUNCIONAL** | Bucket `request-files` disponible |
-| **Funcionalidades** | ⚠️ **70% OPERATIVO** | Limitado por esquema de BD |
+| Aspecto               | Estado               | Detalles                              |
+| --------------------- | -------------------- | ------------------------------------- |
+| **Código de la App**  | ✅ **EXCELENTE**     | Implementación completa y profesional |
+| **Base de Datos**     | ❌ **INCOMPLETA**    | Faltan 6 columnas en tabla `messages` |
+| **Supabase Realtime** | ✅ **IMPLEMENTADO**  | Correctamente configurado             |
+| **Storage**           | ✅ **FUNCIONAL**     | Bucket `request-files` disponible     |
+| **Funcionalidades**   | ⚠️ **70% OPERATIVO** | Limitado por esquema de BD            |
 
 ---
 
@@ -31,6 +31,7 @@
 ## ✅ Funcionalidades FUNCIONANDO
 
 ### 1. Gestión de Salas de Chat
+
 - ✅ **Crear chat rooms** (1-a-1)
 - ✅ **Participants array** correcto
 - ✅ **Metadata** con nombres de participantes
@@ -39,23 +40,27 @@
 - ✅ **JOIN con tabla requests** (para chats vinculados)
 
 ### 2. Mensajes Básicos
+
 - ✅ **Enviar mensajes de texto** simple
 - ✅ **Enviar emojis** ilimitados 😀🎉👍❤️
 - ✅ **Mensajes largos** (> 500 caracteres)
 - ✅ **Listar mensajes** con orden cronológico
 
 ### 3. Storage y Archivos
+
 - ✅ **Verificar buckets** de Supabase Storage
 - ✅ **Upload de archivos** a Storage
 - ✅ **Obtener URLs públicas**
 - ✅ **Bucket `request-files`** disponible
 
 ### 4. Chat Rooms
+
 - ✅ **Actualizar last_message** en chat_room
 - ✅ **Metadata** persistente
 - ✅ **updated_at** timestamp
 
 ### 5. Código de la Aplicación
+
 - ✅ **ChatContext** completamente implementado
 - ✅ **Subscripciones Realtime** configuradas
 - ✅ **Presence tracking** para typing indicators
@@ -69,74 +74,92 @@
 ### 🔴 Crítico - Columnas Faltantes en BD
 
 #### 1. Reply to Messages (Responder)
+
 **Error:** `Could not find the 'reply_to' column`
 
 **Impacto:** 🔴 **CRÍTICO**
+
 - No se puede responder a mensajes específicos
 - Funcionalidad tipo WhatsApp no disponible
 - UX degradada
 
 **Código afectado:**
+
 - `ChatContext.tsx:380` - `reply_to` parameter
 - `[roomId].tsx:410-412` - Reply message logic
 
 #### 2. File Attachments (Archivos)
+
 **Error:** `Could not find the 'file_name' column`
 
 **Impacto:** 🔴 **CRÍTICO**
+
 - No se puede enviar archivos con metadata
 - Usuario no ve nombre del archivo
 - No se muestra tamaño del archivo
 
 **Código afectado:**
+
 - `[roomId].tsx:439-440` - `fileName` y `fileSize`
 - `ChatContext.tsx:444-445` - File metadata
 
 #### 3. Audio Messages (Notas de Voz)
+
 **Error:** `Could not find the 'audio_duration' column`
 
 **Impacto:** 🔴 **CRÍTICO**
+
 - Notas de voz sin duración
 - UX incompleta
 - No se puede mostrar progress bar
 
 **Código afectado:**
+
 - `[roomId].tsx:530-531` - `audioDuration`
 - `ChatContext.tsx:446` - Audio duration field
 
 #### 4. Edit Messages (Editar)
+
 **Error:** `Could not find the 'edited_at' column`
 
 **Impacto:** 🟡 **ALTO**
+
 - No se puede rastrear ediciones
 - Sin indicador de "editado"
 - Falta transparencia
 
 **Código afectado:**
+
 - `ChatContext.tsx:803` - `edited_at` timestamp
 - `[roomId].tsx:947` - "(editado)" indicator
 
 #### 5. Read Receipts (Lectura)
+
 **Error:** Columna `read_by` no existe (detectado en código)
 
 **Impacto:** 🟡 **ALTO**
+
 - Sin doble check azul
 - No se sabe si el mensaje fue leído
 - Experiencia incompleta vs WhatsApp
 
 **Código afectado:**
+
 - `ChatContext.tsx:709` - `read_by` field
 - UI no muestra estado de lectura
 
 #### 6. User Photos
+
 **Error:** `column users_1.foto does not exist`
 
 **Impacto:** 🟢 **MEDIO**
+
 - Avatares sin foto real
 - Se usan solo iniciales
 - UX menos personal
 
 **Código afectado:**
+
 - `ChatContext.tsx:169-170` - JOIN con users.foto
 
 ---
@@ -148,52 +171,67 @@
 **Archivo:** `contexts/ChatContext.tsx`
 
 #### Subscripción a Mensajes (líneas 191-284)
+
 ```javascript
 const channel = supabase
   .channel(`chat_room_${roomId}`)
-  .on('postgres_changes', {
-    event: 'INSERT',
-    schema: 'public',
-    table: 'messages',
-    filter: `chat_room_id=eq.${roomId}`
-  }, async payload => {
-    // Actualiza messages state
-    // Envía notificación
-    // Actualiza chat room
-  })
-  .on('postgres_changes', {
-    event: 'UPDATE',
-    schema: 'public',
-    table: 'messages'
-  }, payload => {
-    // Actualiza mensaje editado
-  })
+  .on(
+    'postgres_changes',
+    {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'messages',
+      filter: `chat_room_id=eq.${roomId}`,
+    },
+    async payload => {
+      // Actualiza messages state
+      // Envía notificación
+      // Actualiza chat room
+    }
+  )
+  .on(
+    'postgres_changes',
+    {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'messages',
+    },
+    payload => {
+      // Actualiza mensaje editado
+    }
+  )
   .subscribe();
 ```
 
 #### Subscripción a Chat Rooms (líneas 286-353)
+
 ```javascript
 const chatRoomsChannel = supabase
   .channel('chat_rooms_changes')
-  .on('postgres_changes', {
-    event: 'INSERT',
-    schema: 'public',
-    table: 'chat_rooms'
-  }, async payload => {
-    // Agrega nueva sala
-    // Notifica usuario
-  })
+  .on(
+    'postgres_changes',
+    {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'chat_rooms',
+    },
+    async payload => {
+      // Agrega nueva sala
+      // Notifica usuario
+    }
+  )
   .subscribe();
 ```
 
 #### Presence Tracking (líneas 534-552)
+
 ```javascript
 const sendTypingIndicator = (roomId, isTyping) => {
   channel.track({
     user_id: user.id,
     user_name: `${user.nombre} ${user.apellido_paterno}`,
     typing: true,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   });
 };
 ```
@@ -203,6 +241,7 @@ const sendTypingIndicator = (roomId, isTyping) => {
 **Error:** `Realtime TIMED_OUT`
 
 **Posibles causas:**
+
 1. **Node.js version** - Tests corren en Node 18 (deprecated)
 2. **WebSocket issues** - Realtime requiere WS connection
 3. **Connection timeout** - Puede necesitar más tiempo
@@ -216,23 +255,23 @@ const sendTypingIndicator = (roomId, isTyping) => {
 
 ### ✅ Características Implementadas (Código)
 
-| Funcionalidad | WhatsApp | ELMEC App | Estado |
-|---------------|----------|-----------|--------|
-| **Mensajes de texto** | ✅ | ✅ | FUNCIONAL |
-| **Emojis** | ✅ | ✅ | FUNCIONAL (6 categorías) |
-| **Responder mensajes** | ✅ | ✅ | BLOQUEADO (falta BD) |
-| **Enviar imágenes** | ✅ | ✅ | PARCIAL (falta metadata) |
-| **Captura con cámara** | ✅ | ✅ | PARCIAL (falta metadata) |
-| **Enviar archivos** | ✅ | ✅ | BLOQUEADO (falta BD) |
-| **Notas de voz** | ✅ | ✅ | BLOQUEADO (falta BD) |
-| **Editar mensajes** | ✅ | ✅ | BLOQUEADO (falta BD) |
-| **Eliminar mensajes** | ✅ | ✅ | FUNCIONAL (soft delete) |
-| **Indicador "escribiendo..."** | ✅ | ✅ | FUNCIONAL (Presence) |
-| **Doble check (leído)** | ✅ | ✅ | BLOQUEADO (falta BD) |
-| **Timestamps** | ✅ | ✅ | FUNCIONAL |
-| **Estados de mensaje** | ✅ | ✅ | PARCIAL |
-| **Búsqueda** | ✅ | ✅ | FUNCIONAL |
-| **Notificaciones** | ✅ | ✅ | FUNCIONAL (integrado) |
+| Funcionalidad                  | WhatsApp | ELMEC App | Estado                   |
+| ------------------------------ | -------- | --------- | ------------------------ |
+| **Mensajes de texto**          | ✅       | ✅        | FUNCIONAL                |
+| **Emojis**                     | ✅       | ✅        | FUNCIONAL (6 categorías) |
+| **Responder mensajes**         | ✅       | ✅        | BLOQUEADO (falta BD)     |
+| **Enviar imágenes**            | ✅       | ✅        | PARCIAL (falta metadata) |
+| **Captura con cámara**         | ✅       | ✅        | PARCIAL (falta metadata) |
+| **Enviar archivos**            | ✅       | ✅        | BLOQUEADO (falta BD)     |
+| **Notas de voz**               | ✅       | ✅        | BLOQUEADO (falta BD)     |
+| **Editar mensajes**            | ✅       | ✅        | BLOQUEADO (falta BD)     |
+| **Eliminar mensajes**          | ✅       | ✅        | FUNCIONAL (soft delete)  |
+| **Indicador "escribiendo..."** | ✅       | ✅        | FUNCIONAL (Presence)     |
+| **Doble check (leído)**        | ✅       | ✅        | BLOQUEADO (falta BD)     |
+| **Timestamps**                 | ✅       | ✅        | FUNCIONAL                |
+| **Estados de mensaje**         | ✅       | ✅        | PARCIAL                  |
+| **Búsqueda**                   | ✅       | ✅        | FUNCIONAL                |
+| **Notificaciones**             | ✅       | ✅        | FUNCIONAL (integrado)    |
 
 ### Resumen de Compatibilidad
 
@@ -278,6 +317,7 @@ CREATE INDEX idx_messages_edited_at ON messages(edited_at) WHERE edited_at IS NO
 ```
 
 **Adicional (tabla users):**
+
 ```sql
 ALTER TABLE users
   ADD COLUMN IF NOT EXISTS foto TEXT;
@@ -288,6 +328,7 @@ ALTER TABLE users
 **Documento:** `INSTRUCCIONES_CHAT_SQL.md` ✅ Creado
 
 Pasos:
+
 1. Abrir Supabase Dashboard
 2. Ir a SQL Editor
 3. Copiar y pegar script SQL
@@ -319,15 +360,15 @@ docs/WIKI/
 
 ### Calidad del Código
 
-| Aspecto | Calificación | Observaciones |
-|---------|--------------|---------------|
-| **Arquitectura** | ⭐⭐⭐⭐⭐ | Context pattern bien implementado |
-| **Realtime** | ⭐⭐⭐⭐⭐ | Supabase subscriptions correctas |
-| **Optimistic UI** | ⭐⭐⭐⭐⭐ | Updates inmediatos + sync |
-| **Error Handling** | ⭐⭐⭐⭐☆ | Buenos try-catch, falta algunos casos |
-| **Performance** | ⭐⭐⭐⭐☆ | FlatList optimizado, buenos índices |
-| **UX** | ⭐⭐⭐⭐⭐ | Experiencia WhatsApp-like |
-| **Documentación** | ⭐⭐⭐⭐⭐ | Documentación exhaustiva |
+| Aspecto            | Calificación | Observaciones                         |
+| ------------------ | ------------ | ------------------------------------- |
+| **Arquitectura**   | ⭐⭐⭐⭐⭐   | Context pattern bien implementado     |
+| **Realtime**       | ⭐⭐⭐⭐⭐   | Supabase subscriptions correctas      |
+| **Optimistic UI**  | ⭐⭐⭐⭐⭐   | Updates inmediatos + sync             |
+| **Error Handling** | ⭐⭐⭐⭐☆    | Buenos try-catch, falta algunos casos |
+| **Performance**    | ⭐⭐⭐⭐☆    | FlatList optimizado, buenos índices   |
+| **UX**             | ⭐⭐⭐⭐⭐   | Experiencia WhatsApp-like             |
+| **Documentación**  | ⭐⭐⭐⭐⭐   | Documentación exhaustiva              |
 
 **Calificación General:** ⭐⭐⭐⭐½ (4.5/5)
 
@@ -338,6 +379,7 @@ docs/WIKI/
 ### 1. ChatContext.tsx (Context Provider)
 
 **✅ Fortalezas:**
+
 - Gestión completa de estado de chats
 - Realtime subscriptions bien implementadas
 - Optimistic updates con localId
@@ -348,6 +390,7 @@ docs/WIKI/
 - Notificaciones integradas
 
 **⚠️ Áreas de Mejora:**
+
 - Algunos comentarios de console.log en producción
 - Timeout hardcodeado (2s) para realtime setup
 - No hay retry logic si falla subscription
@@ -355,6 +398,7 @@ docs/WIKI/
 ### 2. chat/[roomId].tsx (Sala de Chat)
 
 **✅ Fortalezas:**
+
 - UI completa tipo WhatsApp
 - Emoji picker con 6 categorías
 - Reply, edit, delete implementados
@@ -364,6 +408,7 @@ docs/WIKI/
 - Animaciones suaves
 
 **⚠️ Áreas de Mejora:**
+
 - Grabación de audio NO sube a Storage (URI local)
 - Vista de imagen no implementada (placeholder alert)
 - Descarga de archivos no implementada
@@ -372,6 +417,7 @@ docs/WIKI/
 ### 3. chat/index.tsx (Lista de Chats)
 
 **✅ Fortalezas:**
+
 - UI limpia y clara
 - Búsqueda client-side
 - Badges de no leídos
@@ -380,6 +426,7 @@ docs/WIKI/
 - Pull-to-refresh UI
 
 **⚠️ Áreas de Mejora:**
+
 - Pull-to-refresh NO recarga datos
 - Indicador online es random
 - Búsqueda solo por nombre
@@ -390,25 +437,25 @@ docs/WIKI/
 
 ### Schema de BD - Tabla `messages`
 
-| Columna | Esperado por Código | Real en BD | Estado |
-|---------|---------------------|------------|--------|
-| `id` | ✅ UUID PK | ✅ Existe | OK |
-| `chat_room_id` | ✅ UUID FK | ✅ Existe | OK |
-| `sender_id` | ✅ UUID FK | ✅ Existe | OK |
-| `sender_name` | ✅ TEXT | ✅ Existe | OK |
-| `message` | ✅ TEXT | ✅ Existe | OK |
-| `type` | ✅ TEXT (enum) | ✅ Existe | OK |
-| `file_url` | ✅ TEXT | ✅ Existe | OK |
-| `is_deleted` | ✅ BOOLEAN | ✅ Existe | OK |
-| `created_at` | ✅ TIMESTAMP | ✅ Existe | OK |
-| `updated_at` | ✅ TIMESTAMP | ✅ Existe | OK |
-| `metadata` | ✅ JSONB | ✅ Existe | OK |
-| **`reply_to`** | ✅ UUID FK | ❌ **FALTA** | **BLOQUEANTE** |
-| **`file_name`** | ✅ TEXT | ❌ **FALTA** | **BLOQUEANTE** |
-| **`file_size`** | ✅ INTEGER | ❌ **FALTA** | **BLOQUEANTE** |
-| **`audio_duration`** | ✅ INTEGER | ❌ **FALTA** | **BLOQUEANTE** |
-| **`edited_at`** | ✅ TIMESTAMP | ❌ **FALTA** | **BLOQUEANTE** |
-| **`read_by`** | ✅ JSONB | ❌ **FALTA** | **BLOQUEANTE** |
+| Columna              | Esperado por Código | Real en BD   | Estado         |
+| -------------------- | ------------------- | ------------ | -------------- |
+| `id`                 | ✅ UUID PK          | ✅ Existe    | OK             |
+| `chat_room_id`       | ✅ UUID FK          | ✅ Existe    | OK             |
+| `sender_id`          | ✅ UUID FK          | ✅ Existe    | OK             |
+| `sender_name`        | ✅ TEXT             | ✅ Existe    | OK             |
+| `message`            | ✅ TEXT             | ✅ Existe    | OK             |
+| `type`               | ✅ TEXT (enum)      | ✅ Existe    | OK             |
+| `file_url`           | ✅ TEXT             | ✅ Existe    | OK             |
+| `is_deleted`         | ✅ BOOLEAN          | ✅ Existe    | OK             |
+| `created_at`         | ✅ TIMESTAMP        | ✅ Existe    | OK             |
+| `updated_at`         | ✅ TIMESTAMP        | ✅ Existe    | OK             |
+| `metadata`           | ✅ JSONB            | ✅ Existe    | OK             |
+| **`reply_to`**       | ✅ UUID FK          | ❌ **FALTA** | **BLOQUEANTE** |
+| **`file_name`**      | ✅ TEXT             | ❌ **FALTA** | **BLOQUEANTE** |
+| **`file_size`**      | ✅ INTEGER          | ❌ **FALTA** | **BLOQUEANTE** |
+| **`audio_duration`** | ✅ INTEGER          | ❌ **FALTA** | **BLOQUEANTE** |
+| **`edited_at`**      | ✅ TIMESTAMP        | ❌ **FALTA** | **BLOQUEANTE** |
+| **`read_by`**        | ✅ JSONB            | ❌ **FALTA** | **BLOQUEANTE** |
 
 **Columnas presentes:** 11/17 (64.7%)
 **Columnas faltantes:** 6/17 (35.3%)
@@ -418,6 +465,7 @@ docs/WIKI/
 ## 📈 Impacto de la Solución
 
 ### Antes de la Migración SQL
+
 ```
 ┌──────────────────────────────────────────────┐
 │  MÓDULO DE CHAT                              │
@@ -439,6 +487,7 @@ docs/WIKI/
 ```
 
 ### Después de la Migración SQL
+
 ```
 ┌──────────────────────────────────────────────┐
 │  MÓDULO DE CHAT                              │
@@ -513,13 +562,13 @@ docs/WIKI/
 
 ## 📝 Archivos Creados para Usuario
 
-| Archivo | Propósito | Estado |
-|---------|-----------|--------|
-| `scripts/test-chat-module.js` | Suite completa de 30+ tests | ✅ Creado |
-| `scripts/check-messages-schema.js` | Verificar esquema de messages | ✅ Creado |
-| `scripts/add-missing-chat-columns.sql` | Migración SQL | ✅ Creado |
-| `INSTRUCCIONES_CHAT_SQL.md` | Guía paso a paso con screenshots | ✅ Creado |
-| `REPORTE_CHAT_MODULE.md` | Este reporte completo | ✅ Creado |
+| Archivo                                | Propósito                        | Estado    |
+| -------------------------------------- | -------------------------------- | --------- |
+| `scripts/test-chat-module.js`          | Suite completa de 30+ tests      | ✅ Creado |
+| `scripts/check-messages-schema.js`     | Verificar esquema de messages    | ✅ Creado |
+| `scripts/add-missing-chat-columns.sql` | Migración SQL                    | ✅ Creado |
+| `INSTRUCCIONES_CHAT_SQL.md`            | Guía paso a paso con screenshots | ✅ Creado |
+| `REPORTE_CHAT_MODULE.md`               | Este reporte completo            | ✅ Creado |
 
 ---
 

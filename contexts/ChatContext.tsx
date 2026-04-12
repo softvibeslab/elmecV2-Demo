@@ -963,12 +963,22 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
 
       // Build participant names properly (filter out null/undefined values)
       const currentUserName =
-        [user.nombre, user.apellido_paterno, user.apellido_materno].filter(Boolean).join(' ').trim() ||
+        [user.nombre, user.apellido_paterno, user.apellido_materno]
+          .filter(Boolean)
+          .join(' ')
+          .trim() ||
         user.email ||
         'Usuario';
       const otherUserName =
         participantName ||
-        [participantData.nombre, participantData.apellido_paterno, participantData.apellido_materno].filter(Boolean).join(' ').trim() ||
+        [
+          participantData.nombre,
+          participantData.apellido_paterno,
+          participantData.apellido_materno,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .trim() ||
         'Usuario';
 
       // Create new chat room
@@ -1326,7 +1336,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
     // =========================================================================
     if (!user) {
       console.error('createGroupChat: user es null');
-      throw new Error('Usuario no autenticado. Por favor inicia sesión nuevamente.');
+      throw new Error(
+        'Usuario no autenticado. Por favor inicia sesión nuevamente.'
+      );
     }
 
     if (!session) {
@@ -1337,14 +1349,18 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
     // Para chats de área internos, permitir 1 solo participante
     const isInternalChat = metadata?.isInternal === true;
     if (!isInternalChat && participantIds.length < 2) {
-      throw new Error('Un grupo necesita al menos 2 participantes además de ti');
+      throw new Error(
+        'Un grupo necesita al menos 2 participantes además de ti'
+      );
     }
 
     // =========================================================================
     // PREPARAR DATOS - El creador DEBE estar PRIMERO en participants (RLS)
     // =========================================================================
     // Filtrar duplicados y asegurar que el creador está primero
-    const uniqueParticipants = [...new Set(participantIds)].filter(id => id !== user.id);
+    const uniqueParticipants = [...new Set(participantIds)].filter(
+      id => id !== user.id
+    );
     const allParticipants = [user.id, ...uniqueParticipants];
 
     console.log('========================================');
@@ -1361,16 +1377,21 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
       // =========================================================================
       // VERIFICAR SESIÓN ACTIVA
       // =========================================================================
-      const { data: currentSession, error: sessionError } = await supabase.auth.getSession();
+      const { data: currentSession, error: sessionError } =
+        await supabase.auth.getSession();
 
       if (sessionError) {
         console.error('Error verificando sesión:', sessionError);
-        throw new Error('Error de autenticación. Por favor inicia sesión nuevamente.');
+        throw new Error(
+          'Error de autenticación. Por favor inicia sesión nuevamente.'
+        );
       }
 
       if (!currentSession?.session) {
         console.error('No hay sesión activa');
-        throw new Error('Tu sesión ha expirado. Por favor inicia sesión nuevamente.');
+        throw new Error(
+          'Tu sesión ha expirado. Por favor inicia sesión nuevamente.'
+        );
       }
 
       const authUserId = currentSession.session.user.id;
@@ -1379,7 +1400,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
       // Verificar que el auth UID coincida con user.id
       if (authUserId !== user.id) {
         console.error('Mismatch de IDs:', { authUserId, userId: user.id });
-        throw new Error('Error de sincronización de sesión. Por favor cierra sesión e inicia de nuevo.');
+        throw new Error(
+          'Error de sincronización de sesión. Por favor cierra sesión e inicia de nuevo.'
+        );
       }
 
       // =========================================================================
@@ -1396,7 +1419,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
           zona: metadata?.zona || (user as any).zona || null,
           area: metadata?.area || null,
           isInternal: isInternalChat,
-          created_by_name: `${user.nombre || ''} ${user.apellido_paterno || ''}`.trim(),
+          created_by_name:
+            `${user.nombre || ''} ${user.apellido_paterno || ''}`.trim(),
         },
       };
 
@@ -1408,7 +1432,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
       chatRoomData.admin_ids = [user.id];
       chatRoomData.created_by = user.id;
 
-      console.log('📦 Datos para INSERT:', JSON.stringify(chatRoomData, null, 2));
+      console.log(
+        '📦 Datos para INSERT:',
+        JSON.stringify(chatRoomData, null, 2)
+      );
 
       // =========================================================================
       // EJECUTAR INSERT
@@ -1430,13 +1457,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         if (error.code === '42501') {
           throw new Error(
             'No tienes permisos para crear grupos. ' +
-            'Verifica que tu sesión esté activa y que las políticas de seguridad estén configuradas correctamente.'
+              'Verifica que tu sesión esté activa y que las políticas de seguridad estén configuradas correctamente.'
           );
         }
         if (error.code === '23503') {
           throw new Error(
             'Error de referencia en la base de datos. ' +
-            'Uno de los participantes no existe o hay un problema con tu usuario.'
+              'Uno de los participantes no existe o hay un problema con tu usuario.'
           );
         }
         if (error.code === '23502') {
@@ -1449,7 +1476,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
           // Column does not exist - la migración no se ha ejecutado
           throw new Error(
             'La base de datos necesita una actualización. ' +
-            'Contacta al administrador para ejecutar la migración de chat grupal.'
+              'Contacta al administrador para ejecutar la migración de chat grupal.'
           );
         }
 
@@ -1458,7 +1485,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (!data) {
         console.error('❌ INSERT exitoso pero no se recibieron datos');
-        throw new Error('El grupo se creó pero no se pudo verificar. Intenta refrescar.');
+        throw new Error(
+          'El grupo se creó pero no se pudo verificar. Intenta refrescar.'
+        );
       }
 
       console.log('✅ Chat room creado exitosamente');
@@ -1482,7 +1511,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
 
         if (membersError) {
           // No es crítico - el grupo ya fue creado
-          console.warn('⚠️ Error agregando a chat_room_members:', membersError.message);
+          console.warn(
+            '⚠️ Error agregando a chat_room_members:',
+            membersError.message
+          );
         } else {
           console.log('✅ Miembros agregados a chat_room_members');
         }
@@ -1510,7 +1542,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         await sendMessage(data.id, `🎉 Grupo "${name}" creado`, 'system');
         console.log('✅ Mensaje de bienvenida enviado');
       } catch (msgError) {
-        console.warn('⚠️ Error enviando mensaje de bienvenida (no crítico):', msgError);
+        console.warn(
+          '⚠️ Error enviando mensaje de bienvenida (no crítico):',
+          msgError
+        );
       }
 
       console.log('========================================');
@@ -1518,7 +1553,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
       console.log('========================================');
 
       return data.id;
-
     } catch (error: any) {
       console.error('========================================');
       console.error('❌ ERROR CREANDO GRUPO');
@@ -1535,7 +1569,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
       // Error genérico
       throw new Error(
         'No se pudo crear el grupo. ' +
-        'Verifica tu conexión a internet e intenta nuevamente.'
+          'Verifica tu conexión a internet e intenta nuevamente.'
       );
     }
   };
@@ -1565,7 +1599,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         .select('id, zona')
         .in('id', participantIds);
 
-      const invalidZoneUsers = usersData?.filter(u => u.zona !== groupZona) || [];
+      const invalidZoneUsers =
+        usersData?.filter(u => u.zona !== groupZona) || [];
       if (invalidZoneUsers.length > 0) {
         throw new Error(
           `Solo puedes agregar usuarios de la zona ${groupZona}. ${invalidZoneUsers.length} usuario(s) son de otra zona.`

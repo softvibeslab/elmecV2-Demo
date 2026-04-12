@@ -30,12 +30,14 @@ assignees: ''
 ## 🔧 Información del Entorno
 
 **Dispositivo:**
+
 - Dispositivo: [ej. iPhone 12, Samsung Galaxy S21]
 - OS: [ej. iOS 15.0, Android 12]
 - Versión de la App: [ej. 1.0.0]
 - Expo SDK: [ej. 49.0.0]
 
 **Desarrollo (si aplica):**
+
 - Node.js: [ej. 18.17.0]
 - npm: [ej. 9.6.7]
 - Sistema Operativo: [ej. macOS 13.0, Windows 11]

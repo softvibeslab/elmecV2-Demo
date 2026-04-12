@@ -73,6 +73,7 @@
 ### Patrones de Arquitectura Utilizados
 
 #### 1. **Context Provider Pattern**
+
 ```typescript
 // Estructura de contexto
 <AuthProvider>
@@ -85,11 +86,13 @@
 ```
 
 **Ventajas:**
+
 - Estado global sin prop drilling
 - Fácil acceso desde cualquier componente
 - Re-renders optimizados
 
 **Uso:**
+
 ```typescript
 // En cualquier componente
 const { user, signIn, signOut } = useAuth();
@@ -110,10 +113,7 @@ class RequestRepository {
   }
 
   async create(request: CreateRequestDTO): Promise<Request> {
-    const { data } = await supabase
-      .from('requests')
-      .insert(request)
-      .single();
+    const { data } = await supabase.from('requests').insert(request).single();
     return data;
   }
 }
@@ -127,21 +127,22 @@ const sendMessage = async (message: string) => {
   const tempId = `temp_${Date.now()}`;
 
   // 1. Agregar mensaje inmediatamente a UI
-  setMessages(prev => [...prev, {
-    id: tempId,
-    message,
-    isDelivered: false,
-  }]);
+  setMessages(prev => [
+    ...prev,
+    {
+      id: tempId,
+      message,
+      isDelivered: false,
+    },
+  ]);
 
   // 2. Enviar a servidor
-  const { data } = await supabase
-    .from('messages')
-    .insert({ message });
+  const { data } = await supabase.from('messages').insert({ message });
 
   // 3. Reemplazar mensaje temporal con real
-  setMessages(prev => prev.map(msg =>
-    msg.id === tempId ? { ...data, isDelivered: true } : msg
-  ));
+  setMessages(prev =>
+    prev.map(msg => (msg.id === tempId ? { ...data, isDelivered: true } : msg))
+  );
 };
 ```
 
@@ -152,6 +153,7 @@ const sendMessage = async (message: string) => {
 ### Frontend
 
 #### React Native 0.76.5
+
 - **Navegación:** Expo Router v4 (File-based routing)
 - **Gestión de Estado:** React Context API + useState/useReducer
 - **Estilos:** StyleSheet API nativa
@@ -159,6 +161,7 @@ const sendMessage = async (message: string) => {
 - **Safe Areas:** react-native-safe-area-context
 
 #### TypeScript 5.3
+
 ```typescript
 // types/supabase.ts - Definición de tipos
 export interface User {
@@ -184,6 +187,7 @@ export interface Database {
 ### Backend
 
 #### Supabase
+
 - **Base de Datos:** PostgreSQL 15
 - **ORM:** PostgREST (Auto-generado)
 - **Autenticación:** GoTrue (JWT)
@@ -201,28 +205,21 @@ const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
 
 // Cliente tipado
-export const supabase = createClient<Database>(
-  supabaseUrl,
-  supabaseAnonKey,
-  {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: false,
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false,
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10,
     },
-    realtime: {
-      params: {
-        eventsPerSecond: 10,
-      },
-    },
-  }
-);
+  },
+});
 
 // Cliente sin tipos (para operaciones flexibles)
-export const supabaseClient = createClient(
-  supabaseUrl,
-  supabaseAnonKey
-);
+export const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
 ```
 
 ---
@@ -296,26 +293,26 @@ src/
 export default function RequestCard() {}
 
 // ✅ Archivos de componentes: PascalCase.tsx
-RequestCard.tsx
-ChatMessage.tsx
+RequestCard.tsx;
+ChatMessage.tsx;
 
 // ✅ Hooks: camelCase con prefijo 'use'
-const useAuth = () => {}
-const useRequests = () => {}
+const useAuth = () => {};
+const useRequests = () => {};
 
 // ✅ Contexts: PascalCase con sufijo 'Context'
-const AuthContext = createContext()
+const AuthContext = createContext();
 
 // ✅ Tipos/Interfaces: PascalCase
 interface User {}
-type RequestStatus = 'nuevo' | 'asignado'
+type RequestStatus = 'nuevo' | 'asignado';
 
 // ✅ Constantes: UPPER_SNAKE_CASE
-const API_BASE_URL = 'https://...'
-const MAX_FILE_SIZE = 5 * 1024 * 1024
+const API_BASE_URL = 'https://...';
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 // ✅ Variables y funciones: camelCase
-const userName = 'John'
+const userName = 'John';
 function fetchRequests() {}
 ```
 
@@ -412,6 +409,7 @@ const styles = StyleSheet.create({
 #### Ubicación: `supabase/migrations/`
 
 **Convención de nombres:**
+
 ```
 YYYYMMDDHHMMSS_descripcion.sql
 20250909105521_create_users_table.sql
@@ -576,11 +574,13 @@ SELECT * FROM get_user_stats('uuid-del-usuario');
 // GET - Obtener datos
 const { data, error } = await supabase
   .from('requests')
-  .select(`
+  .select(
+    `
     *,
     usuario:users!requests_usuario_id_fkey(nombre, email),
     agente:users!requests_agente_id_fkey(nombre, email)
-  `)
+  `
+  )
   .eq('usuario_id', userId)
   .order('created_at', { ascending: false })
   .limit(10);
@@ -607,10 +607,7 @@ const { data, error } = await supabase
   .single();
 
 // DELETE - Eliminar dato
-const { error } = await supabase
-  .from('requests')
-  .delete()
-  .eq('id', requestId);
+const { error } = await supabase.from('requests').delete().eq('id', requestId);
 ```
 
 #### Filtros Avanzados
@@ -622,7 +619,7 @@ const { data } = await supabase
   .select('*')
   .textSearch('titulo', 'soporte tecnico', {
     type: 'websearch',
-    config: 'spanish'
+    config: 'spanish',
   });
 
 // Filtros múltiples
@@ -637,7 +634,8 @@ const { data } = await supabase
 // Joins complejos
 const { data } = await supabase
   .from('requests')
-  .select(`
+  .select(
+    `
     *,
     usuario:users!requests_usuario_id_fkey(*),
     agente:users!requests_agente_id_fkey(*),
@@ -645,7 +643,8 @@ const { data } = await supabase
       id,
       messages(count)
     )
-  `)
+  `
+  )
   .eq('id', requestId)
   .single();
 ```
@@ -666,7 +665,7 @@ const channel = supabase
       table: 'requests',
       filter: `usuario_id=eq.${userId}`,
     },
-    (payload) => {
+    payload => {
       console.log('Nueva solicitud:', payload.new);
       // Actualizar UI
     }
@@ -679,7 +678,7 @@ const channel = supabase
       table: 'requests',
       filter: `id=eq.${requestId}`,
     },
-    (payload) => {
+    payload => {
       console.log('Solicitud actualizada:', payload.new);
       // Actualizar UI
     }
@@ -698,24 +697,25 @@ return () => {
 const channel = supabase.channel('room_1');
 
 // Track presence
-channel.on('presence', { event: 'sync' }, () => {
-  const state = channel.presenceState();
-  console.log('Usuarios online:', state);
-})
-.on('presence', { event: 'join' }, ({ key, newPresences }) => {
-  console.log('Usuario conectado:', newPresences);
-})
-.on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-  console.log('Usuario desconectado:', leftPresences);
-})
-.subscribe(async (status) => {
-  if (status === 'SUBSCRIBED') {
-    await channel.track({
-      user_id: userId,
-      online_at: new Date().toISOString(),
-    });
-  }
-});
+channel
+  .on('presence', { event: 'sync' }, () => {
+    const state = channel.presenceState();
+    console.log('Usuarios online:', state);
+  })
+  .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+    console.log('Usuario conectado:', newPresences);
+  })
+  .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+    console.log('Usuario desconectado:', leftPresences);
+  })
+  .subscribe(async status => {
+    if (status === 'SUBSCRIBED') {
+      await channel.track({
+        user_id: userId,
+        online_at: new Date().toISOString(),
+      });
+    }
+  });
 ```
 
 #### Broadcast (Typing Indicators)
@@ -736,7 +736,7 @@ const sendTypingIndicator = (isTyping: boolean) => {
 
 // Recibir indicadores
 channel
-  .on('broadcast', { event: 'typing' }, (payload) => {
+  .on('broadcast', { event: 'typing' }, payload => {
     console.log('Usuario escribiendo:', payload);
     setTypingUsers(prev => ({
       ...prev,
@@ -764,9 +764,9 @@ const uploadFile = async (file: File) => {
   if (error) throw error;
 
   // Obtener URL pública
-  const { data: { publicUrl } } = supabase.storage
-    .from('request-files')
-    .getPublicUrl(filePath);
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from('request-files').getPublicUrl(filePath);
 
   return { path: filePath, url: publicUrl };
 };
@@ -896,7 +896,9 @@ export const validateEmail = (email: string): boolean => {
   return emailRegex.test(email);
 };
 
-export const validatePassword = (password: string): {
+export const validatePassword = (
+  password: string
+): {
   valid: boolean;
   errors: string[];
 } => {
@@ -1036,9 +1038,8 @@ export const measureTime = async <T>(
 };
 
 // Uso
-const requests = await measureTime(
-  'Load Requests',
-  () => supabase.from('requests').select('*')
+const requests = await measureTime('Load Requests', () =>
+  supabase.from('requests').select('*')
 );
 ```
 

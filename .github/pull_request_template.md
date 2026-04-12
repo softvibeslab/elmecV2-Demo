@@ -31,8 +31,8 @@
 
 <!-- Si aplica, añade screenshots o videos de los cambios UI -->
 
-| Antes | Después |
-|-------|----------|
+| Antes                     | Después                     |
+| ------------------------- | --------------------------- |
 | <!-- Screenshot antes --> | <!-- Screenshot después --> |
 
 ## ✅ Checklist
@@ -72,6 +72,7 @@ Resolves #(issue_number)
 ---
 
 **Reviewer Guidelines:**
+
 - Verificar que el código sigue las convenciones del proyecto
 - Comprobar que los tests pasan
 - Validar que la funcionalidad funciona como se espera

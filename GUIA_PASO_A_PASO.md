@@ -7,13 +7,15 @@ Esta guía detalla los pasos exactos y clics necesarios para operar los flujos p
 ## 👤 FLUJO DEL CLIENTE (CUSTOMER)
 
 ### 1. Acceso al Sistema
+
 1. **Abrir la aplicación**.
-2. **Pantalla de Login**: 
+2. **Pantalla de Login**:
    - Ingresar **Correo electrónico** (ej: `c.rosales@elmec.com.mx`).
    - Ingresar **Contraseña** (`abc321`).
    - Clic en el botón azul **"Iniciar Sesión"**.
 
 ### 2. Crear una Solicitud (CRM)
+
 1. Clic en el icono de **"Solicitudes"** (tercer icono en la barra inferior).
 2. Clic en el botón flotante circular azul con el signo **"+"** (esquina inferior derecha).
 3. **Formulario de Nueva Solicitud**:
@@ -21,11 +23,12 @@ Esta guía detalla los pasos exactos y clics necesarios para operar los flujos p
    - Escribir en **"Mensaje"** (Descripción detallada del problema).
    - Seleccionar **"Tipo"** (Clic en una opción: Ventas, Soporte o Cotización).
    - Seleccionar **"Prioridad"** (Clic en: Baja, Media, Alta o Urgente).
-   - *Opcional*: Clic en **"Seleccionar Agente"** para elegir a un técnico específico.
-   - *Opcional*: Clic en el icono de **"Clip"** para adjuntar fotos o archivos.
+   - _Opcional_: Clic en **"Seleccionar Agente"** para elegir a un técnico específico.
+   - _Opcional_: Clic en el icono de **"Clip"** para adjuntar fotos o archivos.
 4. Clic en el botón inferior azul **"Enviar Solicitud"**.
 
 ### 3. Comunicación por Chat
+
 1. Clic en el icono de **"Chat"** (primer icono en la barra inferior).
 2. Clic sobre el **nombre del Agente** o el título de la solicitud en la lista.
 3. **Dentro del Chat**:
@@ -38,6 +41,7 @@ Esta guía detalla los pasos exactos y clics necesarios para operar los flujos p
 ## 👷 FLUJO DEL AGENTE (AGENT)
 
 ### 1. Gestión de Tickets
+
 1. **Login** con cuenta de agente (ej: `alex.diaz@elmec.com.mx`).
 2. Clic en el icono de **"Solicitudes"**.
 3. **Actualizar Estatus**:
@@ -47,6 +51,7 @@ Esta guía detalla los pasos exactos y clics necesarios para operar los flujos p
    - El cambio se sincroniza instantáneamente con el cliente.
 
 ### 2. Colaboración Interna
+
 1. Clic en el icono de **"Chat"**.
 2. Clic en el botón superior **"Chats Internos"** (icono de edificio/empresa).
 3. Seleccionar un canal de equipo (ej: "Soporte Técnico").
@@ -57,6 +62,7 @@ Esta guía detalla los pasos exactos y clics necesarios para operar los flujos p
 ## 🔢 FLUJO DE HERRAMIENTAS TÉCNICAS (AMBOS)
 
 ### Uso de Calculadoras Industriales
+
 1. Clic en el icono de **"Calculadora"** (icono central en la barra inferior).
 2. Seleccionar la herramienta deseada: Clic en **"Barrenado"** o **"Fresado"**.
 3. **Ingresar Datos**:
@@ -67,6 +73,7 @@ Esta guía detalla los pasos exactos y clics necesarios para operar los flujos p
 ---
 
 ## ⚙️ CONFIGURACIÓN Y PERFIL
+
 1. Clic en el icono de **"Perfil"** (último icono a la derecha en la barra inferior).
 2. **Acciones disponibles**:
    - Clic en **"Editar Perfil"** para cambiar foto o datos de contacto.

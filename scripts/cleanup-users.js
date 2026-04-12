@@ -26,11 +26,15 @@ if (fs.existsSync(envPath)) {
 }
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseServiceKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseServiceKey) {
   console.error('Error: Falta configuración de Supabase en .env');
-  console.error('Se requiere: EXPO_PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY');
+  console.error(
+    'Se requiere: EXPO_PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY'
+  );
   process.exit(1);
 }
 
@@ -45,7 +49,7 @@ async function cleanupUsers() {
     const usersToDeactivate = [
       'Ana García Morales',
       'Carlos Mendoza Silva',
-      'Luis Ramírez Torres'
+      'Luis Ramírez Torres',
     ];
 
     for (const fullName of usersToDeactivate) {
@@ -73,7 +77,10 @@ async function cleanupUsers() {
             .eq('id', user.id);
 
           if (updateError) {
-            console.error(`❌ Error desactivando ${fullName}:`, updateError.message);
+            console.error(
+              `❌ Error desactivando ${fullName}:`,
+              updateError.message
+            );
           } else {
             console.log(`✅ Desactivado: ${fullName} (ID: ${user.id})`);
           }
@@ -89,31 +96,47 @@ async function cleanupUsers() {
     const { data: usersWithNulo, error: searchNuloError } = await supabase
       .from('users')
       .select('id, nombre, apellido_paterno, apellido_materno')
-      .or('nombre.ilike.%nulo%,apellido_paterno.ilike.%nulo%,apellido_materno.ilike.%nulo%');
+      .or(
+        'nombre.ilike.%nulo%,apellido_paterno.ilike.%nulo%,apellido_materno.ilike.%nulo%'
+      );
 
     if (searchNuloError) {
-      console.error('❌ Error buscando usuarios con "nulo":', searchNuloError.message);
+      console.error(
+        '❌ Error buscando usuarios con "nulo":',
+        searchNuloError.message
+      );
     } else if (usersWithNulo && usersWithNulo.length > 0) {
-      console.log(`Encontrados ${usersWithNulo.length} usuarios con "nulo" en el nombre`);
+      console.log(
+        `Encontrados ${usersWithNulo.length} usuarios con "nulo" en el nombre`
+      );
 
       for (const user of usersWithNulo) {
         const cleanedNombre = user.nombre.replace(/\s*nulo\s*/gi, '').trim();
-        const cleanedApellidoPaterno = user.apellido_paterno.replace(/\s*nulo\s*/gi, '').trim();
-        const cleanedApellidoMaterno = user.apellido_materno ? user.apellido_materno.replace(/\s*nulo\s*/gi, '').trim() : '';
+        const cleanedApellidoPaterno = user.apellido_paterno
+          .replace(/\s*nulo\s*/gi, '')
+          .trim();
+        const cleanedApellidoMaterno = user.apellido_materno
+          ? user.apellido_materno.replace(/\s*nulo\s*/gi, '').trim()
+          : '';
 
         const { error: updateError } = await supabase
           .from('users')
           .update({
             nombre: cleanedNombre || user.nombre,
             apellido_paterno: cleanedApellidoPaterno || user.apellido_paterno,
-            apellido_materno: cleanedApellidoMaterno || user.apellido_materno
+            apellido_materno: cleanedApellidoMaterno || user.apellido_materno,
           })
           .eq('id', user.id);
 
         if (updateError) {
-          console.error(`❌ Error limpiando usuario ID ${user.id}:`, updateError.message);
+          console.error(
+            `❌ Error limpiando usuario ID ${user.id}:`,
+            updateError.message
+          );
         } else {
-          console.log(`✅ Limpiado: ${user.nombre} ${user.apellido_paterno} → ${cleanedNombre} ${cleanedApellidoPaterno}`);
+          console.log(
+            `✅ Limpiado: ${user.nombre} ${user.apellido_paterno} → ${cleanedNombre} ${cleanedApellidoPaterno}`
+          );
         }
       }
     } else {
@@ -132,7 +155,9 @@ async function cleanupUsers() {
     } else {
       console.log(`✅ Total de usuarios activos: ${count}`);
       if (count > 15) {
-        console.log(`⚠️  Hay ${count} usuarios activos, se esperaban máximo 15`);
+        console.log(
+          `⚠️  Hay ${count} usuarios activos, se esperaban máximo 15`
+        );
       }
     }
 
@@ -144,10 +169,12 @@ async function cleanupUsers() {
 }
 
 // Ejecutar el script
-cleanupUsers().then(() => {
-  console.log('\n🎉 Script finalizado');
-  process.exit(0);
-}).catch((error) => {
-  console.error('\n💥 Error fatal:', error);
-  process.exit(1);
-});
+cleanupUsers()
+  .then(() => {
+    console.log('\n🎉 Script finalizado');
+    process.exit(0);
+  })
+  .catch(error => {
+    console.error('\n💥 Error fatal:', error);
+    process.exit(1);
+  });

@@ -120,7 +120,10 @@ export default function AddZoneMembers({
   };
 
   const getFullName = (user: User) => {
-    return [user.nombre, user.apellido_paterno, user.apellido_materno].filter(Boolean).join(' ').trim();
+    return [user.nombre, user.apellido_paterno, user.apellido_materno]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
   };
 
   const getRoleLabel = (rol: string) => {
@@ -271,7 +274,8 @@ export default function AddZoneMembers({
             <Text style={styles.zoneText}>
               {zona ? (
                 <>
-                  Solo usuarios de zona: <Text style={styles.zoneName}>{zona}</Text>
+                  Solo usuarios de zona:{' '}
+                  <Text style={styles.zoneName}>{zona}</Text>
                 </>
               ) : (
                 <Text style={styles.zoneWarning}>⚠️ Sin zona definida</Text>

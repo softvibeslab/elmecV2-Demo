@@ -1,6 +1,7 @@
 # WIKI PRINCIPAL - ELMEC MOBILE APP
 
 ## TABLA DE CONTENIDOS
+
 1. [Visión General del Sistema](#visión-general-del-sistema)
 2. [Arquitectura Global](#arquitectura-global)
 3. [Casos de Uso Transversales](#casos-de-uso-transversales)
@@ -17,6 +18,7 @@
 ## VISIÓN GENERAL DEL SISTEMA
 
 ### Propósito
+
 ELMEC Mobile App es una aplicación empresarial integral para gestión de personal, comunicación interna y seguimiento de solicitudes de servicio. Permite a los empleados:
 
 - 📊 **Monitorear** actividad y métricas de la empresa
@@ -64,13 +66,13 @@ ELMEC Mobile App es una aplicación empresarial integral para gestión de person
 
 ### Módulos del Sistema
 
-| Módulo | Ruta | Descripción | Usuarios |
-|--------|------|-------------|----------|
-| **Inicio** | `/(tabs)/index.tsx` | Dashboard con estadísticas y acciones rápidas | Todos |
-| **Directorio** | `/(tabs)/directory.tsx` | Listado de personal con búsqueda y filtros | Todos |
-| **Solicitudes** | `/(tabs)/requests/index.tsx` | Sistema de tickets/requests | Todos |
-| **Chat** | `/(tabs)/chat/index.tsx` | Lista de conversaciones | Todos |
-| **Perfil** | `/(tabs)/profile.tsx` | Perfil de usuario o AdminDashboard | Todos |
+| Módulo          | Ruta                         | Descripción                                   | Usuarios |
+| --------------- | ---------------------------- | --------------------------------------------- | -------- |
+| **Inicio**      | `/(tabs)/index.tsx`          | Dashboard con estadísticas y acciones rápidas | Todos    |
+| **Directorio**  | `/(tabs)/directory.tsx`      | Listado de personal con búsqueda y filtros    | Todos    |
+| **Solicitudes** | `/(tabs)/requests/index.tsx` | Sistema de tickets/requests                   | Todos    |
+| **Chat**        | `/(tabs)/chat/index.tsx`     | Lista de conversaciones                       | Todos    |
+| **Perfil**      | `/(tabs)/profile.tsx`        | Perfil de usuario o AdminDashboard            | Todos    |
 
 ---
 
@@ -216,6 +218,7 @@ App Root (_layout.tsx)
 **Actores**: Todos los usuarios (usuario, agente, admin)
 
 **Flujo Principal**:
+
 ```
 1. Usuario abre la app
    └─> App verifica sesión existente
@@ -265,6 +268,7 @@ App Root (_layout.tsx)
 ```
 
 **Postcondiciones**:
+
 - Usuario autenticado
 - Token JWT válido en storage
 - AuthContext.user poblado
@@ -272,6 +276,7 @@ App Root (_layout.tsx)
 - Dashboard visible
 
 **Módulos Involucrados**:
+
 - `app/auth/login.tsx`
 - `contexts/AuthContext.tsx`
 - `contexts/NotificationContext.tsx`
@@ -286,6 +291,7 @@ App Root (_layout.tsx)
 **Actores**: Usuario, Agente
 
 **Flujo Principal**:
+
 ```
 1. Usuario está en Dashboard (Inicio)
    └─> Ve sección "Acciones Rápidas"
@@ -336,16 +342,19 @@ App Root (_layout.tsx)
 ```
 
 **Postcondiciones**:
+
 - Nueva solicitud en BD con estatus 'nuevo'
 - Usuario en pantalla de detalle de la solicitud
 - Puede ver timeline y acciones disponibles
 
 **Módulos Involucrados**:
+
 - `app/(tabs)/index.tsx` (QuickAction)
 - `app/(tabs)/requests/create.tsx`
 - `app/(tabs)/requests/[id].tsx`
 
 **Datos Fluyen A Través De**:
+
 ```
 Dashboard → Navigation → Create Form → Supabase → Detail Screen
    ↓                          ↓             ↓           ↓
@@ -361,6 +370,7 @@ Botón                    Validación     INSERT     Query SELECT
 **Actores**: Todos los usuarios
 
 **Flujo Principal**:
+
 ```
 1. Usuario está en Directorio
    └─> Ve lista de todo el personal
@@ -430,16 +440,19 @@ Botón                    Validación     INSERT     Query SELECT
 ```
 
 **Postcondiciones**:
+
 - Chat room existe (creado o encontrado)
 - Usuario en pantalla de conversación
 - Puede enviar y recibir mensajes
 
 **Módulos Involucrados**:
+
 - `app/(tabs)/directory.tsx`
 - `app/(tabs)/chat/[roomId].tsx`
 - `contexts/ChatContext.tsx`
 
 **Flujo de Datos**:
+
 ```
 Directorio → handleStartChat → Supabase → Navigation → Chat Screen
     ↓              ↓               ↓            ↓           ↓
@@ -456,6 +469,7 @@ PersonCard    Check/Create    chat_rooms   router.push  Load msgs
 **Actores**: Usuario (creador), Agente (asignado), Admin
 
 **Flujo Completo**:
+
 ```
 FASE 1: CREACIÓN (Usuario)
 ────────────────────────────
@@ -549,6 +563,7 @@ FASE 6: CIERRE AUTOMÁTICO (Sistema)
 ```
 
 **Estados de la Solicitud**:
+
 ```
 nuevo → asignado → en_proceso ⇄ pausado → resuelto → cerrado
   ↓                                            ↓
@@ -556,11 +571,13 @@ nuevo → asignado → en_proceso ⇄ pausado → resuelto → cerrado
 ```
 
 **Postcondiciones**:
+
 - Solicitud cerrada con calificación
 - Métricas actualizadas en AdminDashboard
 - Usuario satisfecho
 
 **Módulos Involucrados**:
+
 - `app/(tabs)/requests/create.tsx`
 - `app/(tabs)/requests/index.tsx`
 - `app/(tabs)/requests/[id].tsx`
@@ -575,6 +592,7 @@ nuevo → asignado → en_proceso ⇄ pausado → resuelto → cerrado
 **Actores**: Todos los usuarios
 
 **Flujo Principal**:
+
 ```
 1. Usuario está en cualquier parte de la app
    └─> Navega a tab "Perfil"
@@ -636,6 +654,7 @@ nuevo → asignado → en_proceso ⇄ pausado → resuelto → cerrado
 ```
 
 **Postcondiciones**:
+
 - Sesión completamente limpia
 - Token JWT invalidado
 - Storage y cookies limpios
@@ -644,11 +663,13 @@ nuevo → asignado → en_proceso ⇄ pausado → resuelto → cerrado
 - No puede volver atrás
 
 **Módulos Involucrados**:
+
 - `app/(tabs)/profile.tsx`
 - `contexts/AuthContext.tsx`
 - `app/auth/login.tsx`
 
 **Verificaciones de Seguridad**:
+
 - ✅ Token JWT invalidado en Supabase
 - ✅ Storage local limpio
 - ✅ Cookies removidas
@@ -892,19 +913,19 @@ al instante                         al instante
 
 ### Tabla: Interacciones Entre Módulos
 
-| Desde | Hacia | Acción | Datos Transferidos | Método |
-|-------|-------|--------|-------------------|--------|
-| **Inicio** → Directorio | Nav | QuickAction "Ver Personal" | Ninguno | `router.push('/(tabs)/directory')` |
-| **Inicio** → Solicitudes | Nav | QuickAction "Nueva Solicitud" | Ninguno | `router.push('/(tabs)/requests/create')` |
-| **Inicio** → Chat | Nav | QuickAction "Mensajes" | Ninguno | `router.push('/(tabs)/chat')` |
-| **Directorio** → Chat | Nav + Data | Botón "Iniciar Chat" | `targetUserId` | `handleStartChat(person)` → crea room → navega |
-| **Directorio** → External | Linking | Botón "Call" | `phoneNumber` | `Linking.openURL('tel:${phone}')` |
-| **Directorio** → External | Linking | Botón "WhatsApp" | `phoneNumber` | `Linking.openURL('whatsapp://send?phone=')` |
-| **Solicitudes List** → Detail | Nav | Tap en RequestCard | `requestId` | `router.push('/(tabs)/requests/${id}')` |
-| **Solicitudes Detail** → Chat | Nav + Data | Botón "Contactar Agente" | `agentId` | Crea room con agente → navega |
-| **Chat List** → Conversation | Nav | Tap en RoomCard | `roomId` | `router.push('/(tabs)/chat/${roomId}')` |
-| **Perfil** → Auth | Context | Botón "Logout" | Ninguno | `logout()` → `router.replace('/auth')` |
-| **Auth Login** → Inicio | Context + Nav | Login exitoso | `user` object | `AuthContext.setUser()` → `router.replace('/(tabs)')` |
+| Desde                         | Hacia         | Acción                        | Datos Transferidos | Método                                                |
+| ----------------------------- | ------------- | ----------------------------- | ------------------ | ----------------------------------------------------- |
+| **Inicio** → Directorio       | Nav           | QuickAction "Ver Personal"    | Ninguno            | `router.push('/(tabs)/directory')`                    |
+| **Inicio** → Solicitudes      | Nav           | QuickAction "Nueva Solicitud" | Ninguno            | `router.push('/(tabs)/requests/create')`              |
+| **Inicio** → Chat             | Nav           | QuickAction "Mensajes"        | Ninguno            | `router.push('/(tabs)/chat')`                         |
+| **Directorio** → Chat         | Nav + Data    | Botón "Iniciar Chat"          | `targetUserId`     | `handleStartChat(person)` → crea room → navega        |
+| **Directorio** → External     | Linking       | Botón "Call"                  | `phoneNumber`      | `Linking.openURL('tel:${phone}')`                     |
+| **Directorio** → External     | Linking       | Botón "WhatsApp"              | `phoneNumber`      | `Linking.openURL('whatsapp://send?phone=')`           |
+| **Solicitudes List** → Detail | Nav           | Tap en RequestCard            | `requestId`        | `router.push('/(tabs)/requests/${id}')`               |
+| **Solicitudes Detail** → Chat | Nav + Data    | Botón "Contactar Agente"      | `agentId`          | Crea room con agente → navega                         |
+| **Chat List** → Conversation  | Nav           | Tap en RoomCard               | `roomId`           | `router.push('/(tabs)/chat/${roomId}')`               |
+| **Perfil** → Auth             | Context       | Botón "Logout"                | Ninguno            | `logout()` → `router.replace('/auth')`                |
+| **Auth Login** → Inicio       | Context + Nav | Login exitoso                 | `user` object      | `AuthContext.setUser()` → `router.replace('/(tabs)')` |
 
 ---
 
@@ -1099,14 +1120,14 @@ USING (
 
 ### Cardinalidades y Relaciones
 
-| Relación | Tipo | Descripción |
-|----------|------|-------------|
-| `auth.users` ↔ `users` | 1:1 | Un usuario de auth tiene un perfil |
-| `users` → `requests` (como usuario) | 1:N | Un usuario crea muchas solicitudes |
-| `users` → `requests` (como agente) | 1:N | Un agente atiende muchas solicitudes |
-| `users` ↔ `chat_rooms` | N:N | Usuarios participan en múltiples rooms |
-| `chat_rooms` → `messages` | 1:N | Un room tiene muchos mensajes |
-| `users` → `messages` | 1:N | Un usuario envía muchos mensajes |
+| Relación                            | Tipo | Descripción                            |
+| ----------------------------------- | ---- | -------------------------------------- |
+| `auth.users` ↔ `users`             | 1:1  | Un usuario de auth tiene un perfil     |
+| `users` → `requests` (como usuario) | 1:N  | Un usuario crea muchas solicitudes     |
+| `users` → `requests` (como agente)  | 1:N  | Un agente atiende muchas solicitudes   |
+| `users` ↔ `chat_rooms`             | N:N  | Usuarios participan en múltiples rooms |
+| `chat_rooms` → `messages`           | 1:N  | Un room tiene muchos mensajes          |
+| `users` → `messages`                | 1:N  | Un usuario envía muchos mensajes       |
 
 ---
 
@@ -1117,10 +1138,11 @@ USING (
 **Archivo**: `contexts/AuthContext.tsx`
 
 **Estado Gestionado**:
+
 ```typescript
 interface AuthContextType {
-  user: User | null;              // Usuario actual
-  loading: boolean;               // Cargando sesión
+  user: User | null; // Usuario actual
+  loading: boolean; // Cargando sesión
   login: (email, password) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -1128,6 +1150,7 @@ interface AuthContextType {
 ```
 
 **Responsabilidades**:
+
 - ✅ Autenticar usuario con Supabase Auth
 - ✅ Mantener sesión activa (token JWT)
 - ✅ Cargar perfil completo desde `users` table
@@ -1135,6 +1158,7 @@ interface AuthContextType {
 - ✅ Refrescar datos del usuario
 
 **Consumido Por**:
+
 - Todos los módulos (acceso a `user`)
 - `app/auth/login.tsx` (login)
 - `app/(tabs)/profile.tsx` (logout)
@@ -1146,6 +1170,7 @@ interface AuthContextType {
 **Archivo**: `contexts/NotificationContext.tsx`
 
 **Estado Gestionado**:
+
 ```typescript
 interface NotificationContextType {
   expoPushToken: string | null;
@@ -1162,6 +1187,7 @@ interface NotificationContextType {
 ```
 
 **Responsabilidades**:
+
 - ✅ Gestionar notificaciones in-app (estado en memoria)
 - ✅ Solicitar permisos de notificaciones
 - ✅ Registrar push token (Expo)
@@ -1169,6 +1195,7 @@ interface NotificationContextType {
 - ⚠️ NO persiste notificaciones en BD
 
 **Consumido Por**:
+
 - `app/(tabs)/profile.tsx` (demo + gestión)
 - `app/(tabs)/index.tsx` (potencial para alertas)
 
@@ -1179,6 +1206,7 @@ interface NotificationContextType {
 **Archivo**: `contexts/ChatContext.tsx`
 
 **Estado Gestionado**:
+
 ```typescript
 interface ChatContextType {
   rooms: ChatRoom[];
@@ -1191,12 +1219,14 @@ interface ChatContextType {
 ```
 
 **Responsabilidades**:
+
 - ✅ Cargar lista de chat rooms del usuario
 - ✅ Crear nuevo room si no existe
 - ✅ Calcular contador de mensajes no leídos
 - ⚠️ NO suscribe a realtime updates (limitación)
 
 **Consumido Por**:
+
 - `app/(tabs)/chat/index.tsx` (lista de rooms)
 - `app/(tabs)/directory.tsx` (crear room)
 - `app/(tabs)/requests/[id].tsx` (contactar agente)
@@ -1275,17 +1305,17 @@ app/
 
 ### Rutas y Protección
 
-| Ruta | Protección | Renderiza | Rol Requerido |
-|------|------------|-----------|---------------|
-| `/auth` | Público | Login screen | Ninguno |
-| `/(tabs)/index` | Protegido | Dashboard | Autenticado |
-| `/(tabs)/directory` | Protegido | Directorio | Autenticado |
-| `/(tabs)/requests` | Protegido | Lista solicitudes | Autenticado |
-| `/(tabs)/requests/create` | Protegido | Crear solicitud | usuario, agente |
-| `/(tabs)/requests/[id]` | Protegido | Detalle solicitud | Autenticado |
-| `/(tabs)/chat` | Protegido | Lista chats | Autenticado |
-| `/(tabs)/chat/[roomId]` | Protegido | Conversación | Autenticado |
-| `/(tabs)/profile` | Protegido | Perfil o AdminDashboard | Autenticado (admin para dashboard) |
+| Ruta                      | Protección | Renderiza               | Rol Requerido                      |
+| ------------------------- | ---------- | ----------------------- | ---------------------------------- |
+| `/auth`                   | Público    | Login screen            | Ninguno                            |
+| `/(tabs)/index`           | Protegido  | Dashboard               | Autenticado                        |
+| `/(tabs)/directory`       | Protegido  | Directorio              | Autenticado                        |
+| `/(tabs)/requests`        | Protegido  | Lista solicitudes       | Autenticado                        |
+| `/(tabs)/requests/create` | Protegido  | Crear solicitud         | usuario, agente                    |
+| `/(tabs)/requests/[id]`   | Protegido  | Detalle solicitud       | Autenticado                        |
+| `/(tabs)/chat`            | Protegido  | Lista chats             | Autenticado                        |
+| `/(tabs)/chat/[roomId]`   | Protegido  | Conversación            | Autenticado                        |
+| `/(tabs)/profile`         | Protegido  | Perfil o AdminDashboard | Autenticado (admin para dashboard) |
 
 ### Middleware de Protección
 
@@ -1294,7 +1324,9 @@ app/
 ```typescript
 useEffect(() => {
   const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
     if (!session) {
       // No autenticado
@@ -1380,6 +1412,7 @@ useEffect(() => {
 ### Autorización por Rol
 
 **Frontend**:
+
 ```typescript
 // Condicional rendering
 if (user?.rol === 'admin') {
@@ -1393,6 +1426,7 @@ if (user?.rol === 'admin') {
 ```
 
 **Backend (RLS Policies)**:
+
 ```sql
 -- Ejemplo: Solo admin puede ver todos los requests
 CREATE POLICY "Admins can view all requests"
@@ -1418,11 +1452,11 @@ USING (
 
 ### Subscripciones Activas
 
-| Canal | Tabla | Evento | Componente | Propósito |
-|-------|-------|--------|------------|-----------|
-| `messages` | messages | INSERT | `chat/[roomId].tsx` | Nuevos mensajes en conversación |
-| `presence` | N/A | sync | `directory.tsx` | Indicadores online (futuro) |
-| `rooms` | chat_rooms | UPDATE | `chat/index.tsx` | Actualizar last_message (futuro) |
+| Canal      | Tabla      | Evento | Componente          | Propósito                        |
+| ---------- | ---------- | ------ | ------------------- | -------------------------------- |
+| `messages` | messages   | INSERT | `chat/[roomId].tsx` | Nuevos mensajes en conversación  |
+| `presence` | N/A        | sync   | `directory.tsx`     | Indicadores online (futuro)      |
+| `rooms`    | chat_rooms | UPDATE | `chat/index.tsx`    | Actualizar last_message (futuro) |
 
 ### Ejemplo de Subscription
 
@@ -1439,7 +1473,7 @@ useEffect(() => {
         table: 'messages',
         filter: `room_id=eq.${roomId}`,
       },
-      (payload) => {
+      payload => {
         const newMessage = payload.new as Message;
         setMessages(prev => [...prev, newMessage]);
       }
@@ -1459,6 +1493,7 @@ useEffect(() => {
 ### Agregar Nuevo Módulo
 
 1. **Crear estructura de archivos**:
+
 ```bash
 mkdir app/(tabs)/nuevo-modulo
 touch app/(tabs)/nuevo-modulo/_layout.tsx
@@ -1466,6 +1501,7 @@ touch app/(tabs)/nuevo-modulo/index.tsx
 ```
 
 2. **Agregar tab en `(tabs)/_layout.tsx`**:
+
 ```typescript
 <Tabs.Screen
   name="nuevo-modulo"
@@ -1477,6 +1513,7 @@ touch app/(tabs)/nuevo-modulo/index.tsx
 ```
 
 3. **Crear componente principal**:
+
 ```typescript
 // app/(tabs)/nuevo-modulo/index.tsx
 export default function NuevoModulo() {
@@ -1497,6 +1534,7 @@ export default function NuevoModulo() {
 ### Agregar Nueva Query a Supabase
 
 1. **Definir interfaz TypeScript**:
+
 ```typescript
 interface MiNuevoDato {
   id: string;
@@ -1506,6 +1544,7 @@ interface MiNuevoDato {
 ```
 
 2. **Crear función de query**:
+
 ```typescript
 const loadMisDatos = async () => {
   const { data, error } = await supabase
@@ -1524,6 +1563,7 @@ const loadMisDatos = async () => {
 ```
 
 3. **Agregar RLS Policy**:
+
 ```sql
 CREATE POLICY "Users can view own data"
 ON mi_tabla FOR SELECT

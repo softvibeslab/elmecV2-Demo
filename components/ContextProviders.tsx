@@ -2,6 +2,7 @@ import React, { ReactNode } from 'react';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ChatProvider } from '@/contexts/ChatContext';
 import { NotificationProvider } from '@/contexts/NotificationContext';
+import { ComplianceProvider } from '@/contexts/ComplianceContext';
 import { NotificationManager } from '@/components/NotificationToast';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
@@ -17,8 +18,10 @@ export const ContextProviders: React.FC<ContextProvidersProps> = ({
       <AuthProvider>
         <NotificationProvider>
           <ChatProvider>
-            {children}
-            <NotificationManager />
+            <ComplianceProvider>
+              {children}
+              <NotificationManager />
+            </ComplianceProvider>
           </ChatProvider>
         </NotificationProvider>
       </AuthProvider>

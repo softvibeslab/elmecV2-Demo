@@ -23,6 +23,7 @@ Resultado: Exit code 0 (éxito)
 ```
 
 **Detalles:**
+
 - ✅ 2553 módulos compilados correctamente
 - ✅ Bundle generado: 3.41 MB
 - ✅ 29 assets procesados (logos, fuentes, iconos)
@@ -30,6 +31,7 @@ Resultado: Exit code 0 (éxito)
 - ⚠️ Algunas advertencias de TypeScript (no bloquean la funcionalidad)
 
 **Archivos generados:**
+
 - `dist/index.html`
 - `dist/_expo/static/js/web/entry-*.js`
 - `dist/assets/images/branding/logo.png` ✅ (incluido correctamente)
@@ -43,12 +45,14 @@ Estado: ✅ PASÓ
 ```
 
 **Tablas verificadas:**
+
 - ✅ `requests` - Accesible
 - ✅ `chat_rooms` - Accesible
 - ✅ `messages` - Accesible
 - ✅ `users` - Accesible (implícito en las relaciones)
 
 **Storage:**
+
 - ⚠️ Bucket `request-files` - NO EXISTE (requiere creación manual)
   - **Impacto:** La subida de archivos fallará hasta que se cree el bucket
   - **Solución:** Ver sección "Configuración Pendiente" más abajo
@@ -62,11 +66,13 @@ Estado: ⚠️ ADVERTENCIAS MENORES
 ```
 
 **Archivos modificados:**
+
 - ✅ `app/(tabs)/requests.tsx` - Correcciones aplicadas
 - ✅ `contexts/ChatContext.tsx` - Correcciones aplicadas
 - ✅ `utils/fileUpload.ts` - Nuevo archivo creado
 
 **Advertencias encontradas:**
+
 - Tipos implícitos `any` en algunos callbacks (no bloquean funcionalidad)
 - Tipos de Supabase inferidos como `never` en algunas consultas
   - **Solución implementada:** Uso de `supabaseClient` (sin tipos estrictos)
@@ -78,6 +84,7 @@ Estado: ⚠️ ADVERTENCIAS MENORES
 ### **1. Módulo de Solicitudes (requests.tsx)**
 
 #### ✅ Validación Mejorada
+
 ```typescript
 // ANTES
 if (!newRequest.titulo || !newRequest.mensaje) { ... }
@@ -90,6 +97,7 @@ if (!newRequest.titulo || !newRequest.mensaje) { ... }
 ```
 
 #### ✅ Tipado Estricto
+
 ```typescript
 // ANTES
 const requestData = { ... } as any;
@@ -105,6 +113,7 @@ const requestData: {
 ```
 
 #### ✅ Manejo de Errores
+
 ```typescript
 // ANTES
 console.error('Error creating request:', error);
@@ -125,6 +134,7 @@ Alert.alert(
 ```
 
 #### ✅ Subida de Archivos
+
 ```typescript
 // ANTES
 archivos: selectedFiles.map(file => file.uri), // ❌ URIs locales
@@ -143,12 +153,14 @@ archivos: uploadedFiles.map(file => file.url), // ✅ URLs públicas
 #### ✅ Nueva Utilidad Creada
 
 **Funciones principales:**
+
 1. `uploadFileToStorage(file, bucket, folder)` - Subir un archivo
 2. `uploadMultipleFiles(files, bucket, folder)` - Subir múltiples archivos
 3. `deleteFileFromStorage(path, bucket)` - Eliminar archivo
 4. `formatFileSize(bytes)` - Formatear tamaño
 
 **Validaciones implementadas:**
+
 - ✅ Validación de tamaño máximo (5MB)
 - ✅ Validación de existencia del archivo
 - ✅ Generación de nombres únicos (timestamp + random)
@@ -157,6 +169,7 @@ archivos: uploadedFiles.map(file => file.url), // ✅ URLs públicas
 - ✅ Manejo de errores específicos (bucket no existe, archivo muy grande, etc.)
 
 **Logging implementado:**
+
 ```typescript
 console.log('Starting file upload:', { name, size, type });
 console.log('Uploading to path:', filePath);
@@ -190,7 +203,7 @@ const existingRoom = existingRooms?.find(room => {
   return (
     participants.includes(user.id) &&
     participants.includes(participantId) &&
-    participants.length === 2  // ✅ Exactamente 2 participantes
+    participants.length === 2 // ✅ Exactamente 2 participantes
   );
 });
 ```
@@ -285,6 +298,7 @@ console.log('Sending message:', {
 ### **1. Crear Bucket de Storage en Supabase**
 
 **Pasos:**
+
 1. Ir a [Supabase Dashboard](https://pdpqkgrqlubyzkcivifk.supabase.co)
 2. Navegar a **Storage** en el menú lateral
 3. Hacer clic en **"Create a new bucket"**
@@ -294,6 +308,7 @@ console.log('Sending message:', {
    - **File size limit:** 5 MB (5242880 bytes)
    - **Allowed MIME types:** Dejar vacío (permitir todos)
 5. Configurar políticas RLS (Row Level Security):
+
    ```sql
    -- Política para subida (INSERT)
    CREATE POLICY "Users can upload files"
@@ -321,6 +336,7 @@ console.log('Sending message:', {
 Una vez creado el bucket de storage, realizar las siguientes pruebas manuales:
 
 ### **Test 1: Crear Solicitud Sin Archivos**
+
 1. Login como usuario customer
 2. Ir a pestaña "Solicitudes"
 3. Hacer clic en botón "+"
@@ -333,49 +349,58 @@ Una vez creado el bucket de storage, realizar las siguientes pruebas manuales:
 6. Hacer clic en "Enviar Solicitud"
 
 **Resultado esperado:**
+
 - ✅ Solicitud creada exitosamente
 - ✅ Mensaje de confirmación mostrado
 - ✅ Solicitud aparece en la lista
 - ✅ Logs en consola muestran detalles de creación
 
 ### **Test 2: Crear Solicitud Con Archivos**
+
 1. Repetir pasos de Test 1
 2. Agregar 1-2 archivos pequeños (< 5MB)
 3. Enviar solicitud
 
 **Resultado esperado:**
+
 - ✅ Archivos se suben a Supabase Storage
 - ✅ Solicitud creada con URLs públicas de archivos
 - ✅ Archivos mostrados en detalles de solicitud
 - ✅ Logs muestran progreso de subida
 
 ### **Test 3: Crear Chat desde Solicitud**
+
 1. Abrir una solicitud que tenga agente asignado
 2. Hacer clic en botón "Charlar"
 3. Verificar que se abre el chat
 
 **Resultado esperado:**
+
 - ✅ Chat creado exitosamente (o redirige a existente)
 - ✅ Mensaje de bienvenida del sistema
 - ✅ Interfaz de chat lista para enviar mensajes
 
 ### **Test 4: Enviar Mensajes en Chat**
+
 1. En el chat del Test 3
 2. Escribir mensaje: "Hola, necesito ayuda"
 3. Enviar mensaje
 
 **Resultado esperado:**
+
 - ✅ Mensaje aparece inmediatamente (optimistic update)
 - ✅ Mensaje se confirma en base de datos
 - ✅ Mensaje visible para ambos participantes
 - ✅ Logs muestran detalles del mensaje
 
 ### **Test 5: Validación de Errores**
+
 1. Intentar crear solicitud con título de 3 caracteres
 2. Intentar crear solicitud con mensaje vacío
 3. Intentar subir archivo > 5MB
 
 **Resultado esperado:**
+
 - ✅ Mensajes de error claros y descriptivos
 - ✅ No se crea solicitud inválida
 - ✅ Usuario informado correctamente
@@ -385,11 +410,13 @@ Una vez creado el bucket de storage, realizar las siguientes pruebas manuales:
 ## 📈 Métricas de Código
 
 ### **Archivos Modificados:** 3
+
 - `app/(tabs)/requests.tsx` - 1,341 líneas (+100 aprox.)
 - `contexts/ChatContext.tsx` - 746 líneas (+50 aprox.)
 - `utils/fileUpload.ts` - 200 líneas (NUEVO)
 
 ### **Funcionalidades Agregadas:** 8
+
 1. Validación de agente antes de asignar
 2. Validación de longitud de mensajes
 3. Subida de archivos a Supabase Storage
@@ -400,6 +427,7 @@ Una vez creado el bucket de storage, realizar las siguientes pruebas manuales:
 8. Manejo de errores robusto con mensajes descriptivos
 
 ### **Bugs Corregidos:** 6
+
 1. ❌ Tipos `any` en creación de solicitudes → ✅ Tipado estricto
 2. ❌ URIs locales en archivos → ✅ URLs públicas de Supabase
 3. ❌ Búsqueda incorrecta de chats → ✅ Filtrado correcto en JS
@@ -416,6 +444,7 @@ Una vez creado el bucket de storage, realizar las siguientes pruebas manuales:
 **Archivo modificado:** `app/auth/login.tsx`
 
 **Cambios:**
+
 - ✅ Logo de ELMEC agregado al header
 - ✅ Gradiente actualizado a colores corporativos:
   - Azul oscuro: `#335686`
@@ -427,6 +456,7 @@ Una vez creado el bucket de storage, realizar las siguientes pruebas manuales:
 ## 🔍 Análisis de Logs
 
 ### **Logs de Creación de Solicitud:**
+
 ```javascript
 console.log('Creating request with data:', {
   titulo: 'Ejemplo',
@@ -439,15 +469,24 @@ console.log('Creating request with data:', {
 ```
 
 ### **Logs de Subida de Archivos:**
+
 ```javascript
 console.log('Uploading 2 file(s) to storage...');
-console.log('Starting file upload:', { name: 'foto.jpg', size: 102400, type: 'image/jpeg' });
+console.log('Starting file upload:', {
+  name: 'foto.jpg',
+  size: 102400,
+  type: 'image/jpeg',
+});
 console.log('Uploading to path:', 'requests/user-id/1234567890_abc123.jpg');
-console.log('File uploaded successfully:', 'requests/user-id/1234567890_abc123.jpg');
+console.log(
+  'File uploaded successfully:',
+  'requests/user-id/1234567890_abc123.jpg'
+);
 console.log('Successfully uploaded 2 file(s)');
 ```
 
 ### **Logs de Creación de Chat:**
+
 ```javascript
 console.log('Creating/finding chat room:', {
   currentUserId: 'uuid-current',
@@ -461,6 +500,7 @@ console.log('Chat room created successfully:', 'uuid-room');
 ```
 
 ### **Logs de Envío de Mensajes:**
+
 ```javascript
 console.log('Sending message:', {
   roomId: 'uuid-room',
@@ -478,6 +518,7 @@ console.log('Message sent successfully:', 'uuid-message');
 ### **Estado General:** ✅ EXITOSO
 
 **Logros:**
+
 1. ✅ Build de producción completo sin errores críticos
 2. ✅ Todas las correcciones implementadas correctamente
 3. ✅ Validaciones robustas en lugar de tipos `any`
@@ -488,11 +529,13 @@ console.log('Message sent successfully:', 'uuid-message');
 8. ✅ Logo y colores corporativos actualizados
 
 **Pendientes:**
+
 1. ⚠️ Crear bucket `request-files` en Supabase Dashboard
 2. ⚠️ Configurar políticas RLS para el bucket
 3. ⚠️ Pruebas manuales end-to-end (requieren bucket)
 
 **Impacto:**
+
 - **Sin bucket de storage:** Las solicitudes con archivos fallarán con mensaje claro
 - **Sin bucket de storage:** Las solicitudes SIN archivos funcionarán perfectamente
 - **Con bucket configurado:** Todas las funcionalidades estarán operativas

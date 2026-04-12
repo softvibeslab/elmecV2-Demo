@@ -8,18 +8,20 @@
 
 export const BRAND_COLORS = {
   // Colores principales
-  primary: '#202B52',        // Azul oscuro - Pantone 533 C
-  primaryMedium: '#335686',  // Azul medio - Pantone 653 C
-  primaryLight: '#95C3ED',   // Azul claro - Pantone 283 C
+  primary: '#202B52', // Azul oscuro - Pantone 533 C
+  primaryMedium: '#335686', // Azul medio - Pantone 653 C
+  primaryLight: '#95C3ED', // Azul claro - Pantone 283 C
 
   // Neutrales
   white: '#FFFFFF',
   black: '#000000',
-  gray: '#A8B5BD',          // Cool Gray 5 C
+  gray: '#A8B5BD', // Cool Gray 5 C
 
   // Aliases para uso en la app
   background: '#FFFFFF',
+  surface: '#F9FAFB', // Superficie para cards y modals
   text: '#202B52',
+  textPrimary: '#111827', // Texto principal
   textSecondary: '#A8B5BD',
   border: '#A8B5BD',
 

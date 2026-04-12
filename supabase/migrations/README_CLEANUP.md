@@ -1,11 +1,14 @@
 # Migración: Limpieza de Agentes Inválidos
 
 ## Descripción
+
 Esta migración limpia datos inválidos de la tabla `users`:
+
 1. Desactiva agentes inválidos: Ana García, Carlos Mendoza, Luis Ramírez
 2. Limpia la palabra 'nulo' de todos los nombres de usuarios
 
 ## Archivo
+
 - `20251021204653_cleanup_invalid_agents.sql`
 
 ## Cómo Ejecutar
@@ -40,11 +43,13 @@ npm run cleanup-agents
 ### 1. Desactivar Agentes Inválidos
 
 Los siguientes agentes serán marcados como `activo = false`:
+
 - Ana García
 - Carlos Mendoza
 - Luis Ramírez
 
 **Importante:**
+
 - Los agentes NO se eliminan permanentemente para mantener el historial
 - Las solicitudes asignadas a estos agentes se desasignan (agente_id = NULL)
 - Puedes reactivarlos más tarde si es necesario
@@ -52,11 +57,13 @@ Los siguientes agentes serán marcados como `activo = false`:
 ### 2. Limpiar Nombres con 'nulo'
 
 La migración limpia todas las variantes de 'nulo' de:
+
 - `nombre`
 - `apellido_paterno`
 - `apellido_materno`
 
 Variantes que se limpian:
+
 - nulo
 - Nulo
 - NULO
@@ -100,6 +107,7 @@ WHERE (
 **Nota:** No es posible revertir la limpieza de 'nulo' automáticamente.
 
 ## Estado
+
 - ✅ Migración creada: 2025-10-21
 - ⏳ Pendiente de ejecución en producción
 - 📋 Parte del Sprint 2 - Tarea #13 y #14

@@ -24,11 +24,11 @@ const colors = {
 };
 
 const log = {
-  info: (msg) => console.log(`${colors.blue}ℹ${colors.reset} ${msg}`),
-  success: (msg) => console.log(`${colors.green}✓${colors.reset} ${msg}`),
-  error: (msg) => console.log(`${colors.red}✗${colors.reset} ${msg}`),
-  warning: (msg) => console.log(`${colors.yellow}⚠${colors.reset} ${msg}`),
-  step: (msg) => console.log(`${colors.cyan}▶${colors.reset} ${msg}`),
+  info: msg => console.log(`${colors.blue}ℹ${colors.reset} ${msg}`),
+  success: msg => console.log(`${colors.green}✓${colors.reset} ${msg}`),
+  error: msg => console.log(`${colors.red}✗${colors.reset} ${msg}`),
+  warning: msg => console.log(`${colors.yellow}⚠${colors.reset} ${msg}`),
+  step: msg => console.log(`${colors.cyan}▶${colors.reset} ${msg}`),
 };
 
 async function applyMigration() {
@@ -127,7 +127,10 @@ async function applyMigration() {
       errorCount++;
 
       // Si es un error crítico, detener
-      if (err.message.includes('does not exist') || err.message.includes('syntax error')) {
+      if (
+        err.message.includes('does not exist') ||
+        err.message.includes('syntax error')
+      ) {
         log.error('\n   Error crítico detectado. Deteniendo migración.');
         break;
       }
@@ -136,7 +139,9 @@ async function applyMigration() {
 
   console.log('');
   console.log('='.repeat(70));
-  console.log(`Exitosos: ${colors.green}${successCount}${colors.reset} | Errores: ${colors.red}${errorCount}${colors.reset}`);
+  console.log(
+    `Exitosos: ${colors.green}${successCount}${colors.reset} | Errores: ${colors.red}${errorCount}${colors.reset}`
+  );
   console.log('='.repeat(70) + '\n');
 
   // 6. Verificar que RLS está habilitado
@@ -166,14 +171,18 @@ async function applyMigration() {
     .order('policyname');
 
   if (policiesError) {
-    log.warning('No se pudieron listar policies (puede ser restricción de permisos)');
+    log.warning(
+      'No se pudieron listar policies (puede ser restricción de permisos)'
+    );
   } else if (policies && policies.length > 0) {
     log.success(`${policies.length} policies encontradas:`);
     policies.forEach(p => {
       console.log(`    - ${p.policyname} (${p.cmd})`);
     });
   } else {
-    log.warning('No se encontraron policies (puede ser restricción de permisos)');
+    log.warning(
+      'No se encontraron policies (puede ser restricción de permisos)'
+    );
   }
 
   console.log('\n' + '='.repeat(70));
@@ -185,7 +194,9 @@ async function applyMigration() {
     console.log('  3. Probar desde la app con diferentes roles\n');
   } else {
     log.warning('MIGRACIÓN COMPLETADA CON ERRORES');
-    console.log('\n  Revisar errores arriba y verificar manualmente en Supabase.\n');
+    console.log(
+      '\n  Revisar errores arriba y verificar manualmente en Supabase.\n'
+    );
   }
   console.log('='.repeat(70) + '\n');
 }

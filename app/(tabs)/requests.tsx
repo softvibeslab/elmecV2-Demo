@@ -63,13 +63,28 @@ export default function Requests() {
   const [error, setError] = useState<string | null>(null);
   const [agents, setAgents] = useState<User[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<
-    Array<{ uri: string; name: string; type: string; size: number }>
+    Array<{
+      uri: string;
+      name: string;
+      type: string;
+      size: number;
+      uploadStatus?: 'pending' | 'uploading' | 'success' | 'error';
+      uploadProgress?: number;
+      url?: string;
+      path?: string;
+      error?: string;
+    }>
   >([]);
   // Filter state for agent/admin view
   const [activeStatusFilters, setActiveStatusFilters] = useState<string[]>([]);
-  const [activeAgentFilter, setActiveAgentFilter] = useState<string | null>(null);
-  const [activeClientFilter, setActiveClientFilter] = useState<string | null>(null);
-  const [statusChangeRequest, setStatusChangeRequest] = useState<RequestWithRelations | null>(null);
+  const [activeAgentFilter, setActiveAgentFilter] = useState<string | null>(
+    null
+  );
+  const [activeClientFilter, setActiveClientFilter] = useState<string | null>(
+    null
+  );
+  const [statusChangeRequest, setStatusChangeRequest] =
+    useState<RequestWithRelations | null>(null);
   const [newRequest, setNewRequest] = useState({
     titulo: '',
     mensaje: '',
@@ -162,7 +177,9 @@ export default function Requests() {
         // Combinar y eliminar duplicados (usando Set para IDs únicos)
         const allRequests = [...assignedRequests, ...unassignedRequests];
         const uniqueRequests = Array.from(
-          new Map(allRequests.map((req: RequestWithRelations) => [req.id, req])).values()
+          new Map(
+            allRequests.map((req: RequestWithRelations) => [req.id, req])
+          ).values()
         );
 
         // Ordenar por fecha
@@ -378,12 +395,20 @@ export default function Requests() {
 
   const getFullName = (usuario: any) => {
     if (!usuario) return 'Usuario desconocido';
-    const parts = [usuario.nombre, usuario.apellido_paterno, usuario.apellido_materno].filter(Boolean);
+    const parts = [
+      usuario.nombre,
+      usuario.apellido_paterno,
+      usuario.apellido_materno,
+    ].filter(Boolean);
     return parts.join(' ').trim() || 'Usuario desconocido';
   };
 
   const getAgentFullName = (agent: User) => {
-    const parts = [agent.nombre, agent.apellido_paterno, agent.apellido_materno].filter(Boolean);
+    const parts = [
+      agent.nombre,
+      agent.apellido_paterno,
+      agent.apellido_materno,
+    ].filter(Boolean);
     return parts.join(' ').trim() || 'Agente';
   };
 
@@ -517,74 +542,42 @@ export default function Requests() {
         }
       }
 
-      // Upload files to Supabase Storage if any
+      // Verify uploaded files (files are uploaded immediately upon selection now)
       let uploadedFiles: UploadResult[] = [];
       if (selectedFiles.length > 0) {
-        try {
-          console.log(
-            `Uploading ${selectedFiles.length} file(s) to storage...`
-          );
-          uploadedFiles = await uploadMultipleFiles(
-            selectedFiles,
-            'request-files',
-            `requests/${user.id}`
-          );
-          console.log(`Successfully uploaded ${uploadedFiles.length} file(s)`);
-        } catch (uploadError: any) {
-          console.error('Error uploading files:', uploadError);
+        // Check if all files were successfully uploaded
+        const failedFiles = selectedFiles.filter(
+          f => f.uploadStatus !== 'success' || !f.url
+        );
+        const successfulFiles = selectedFiles.filter(
+          f => f.uploadStatus === 'success' && f.url
+        );
 
-          // Determinar el mensaje de error específico
-          let errorMessage = 'No se pudieron subir los archivos adjuntos.';
-          if (uploadError?.message) {
-            if (uploadError.message.includes('size')) {
-              errorMessage =
-                'Uno o más archivos exceden el tamaño máximo permitido.';
-            } else if (
-              uploadError.message.includes('type') ||
-              uploadError.message.includes('format')
-            ) {
-              errorMessage =
-                'Uno o más archivos tienen un formato no permitido.';
-            } else if (
-              uploadError.message.includes('network') ||
-              uploadError.message.includes('connection')
-            ) {
-              errorMessage =
-                'Error de conexión al subir los archivos. Verifica tu conexión a internet.';
-            } else if (
-              uploadError.message.includes('permission') ||
-              uploadError.message.includes('denied')
-            ) {
-              errorMessage =
-                'No tienes permisos para subir archivos. Contacta al administrador.';
-            } else {
-              errorMessage = `Error al subir archivos: ${uploadError.message}`;
-            }
-          }
+        if (failedFiles.length > 0) {
+          console.warn(
+            `Found ${failedFiles.length} file(s) that failed to upload`
+          );
 
           Alert.alert(
-            'Error al subir archivos',
-            `${errorMessage}\n\n¿Deseas continuar sin archivos adjuntos?`,
-            [
-              {
-                text: 'Cancelar',
-                style: 'cancel',
-                onPress: () => {
-                  setSubmitting(false);
-                },
-              },
-              {
-                text: 'Continuar sin archivos',
-                onPress: () => {
-                  // Los archivos se limpiarán, continuar sin ellos
-                  uploadedFiles = [];
-                },
-              },
-            ]
+            'Archivos no subidos',
+            `${failedFiles.length} de ${selectedFiles.length} archivo(s) no se pudieron subir correctamente. Por favor remueve los archivos fallidos e intenta nuevamente.`,
+            [{ text: 'Entendido' }]
           );
           setSubmitting(false);
           return;
         }
+
+        // All files successfully uploaded
+        uploadedFiles = successfulFiles.map(f => ({
+          url: f.url!,
+          path: f.path!,
+          name: f.name,
+          size: f.size,
+          type: f.type,
+        }));
+        console.log(
+          `Using ${uploadedFiles.length} previously uploaded file(s)`
+        );
       }
 
       // Properly typed request data
@@ -888,8 +881,15 @@ export default function Requests() {
       if (!currentRequest) return;
 
       // Validación de transición (ejemplo simple)
-      if (currentRequest.estatus === 'resuelto' && newStatus !== 'en_proceso' && newStatus !== 'cerrado') {
-        Alert.alert('Transición inválida', 'No se puede cambiar el estado de una solicitud ya resuelta a menos que se reabra (En proceso).');
+      if (
+        currentRequest.estatus === 'resuelto' &&
+        newStatus !== 'en_proceso' &&
+        newStatus !== 'cerrado'
+      ) {
+        Alert.alert(
+          'Transición inválida',
+          'No se puede cambiar el estado de una solicitud ya resuelta a menos que se reabra (En proceso).'
+        );
         return;
       }
 
@@ -919,7 +919,10 @@ export default function Requests() {
 
       if (error) {
         console.error('Error updating request status:', error);
-        Alert.alert('Error', 'No se pudo actualizar el estado de la solicitud.');
+        Alert.alert(
+          'Error',
+          'No se pudo actualizar el estado de la solicitud.'
+        );
         return;
       }
 
@@ -928,11 +931,11 @@ export default function Requests() {
         prev.map(req =>
           req.id === requestId
             ? {
-              ...req,
-              estatus: newStatus as any,
-              updated_at: now,
-              metadata: updatedMetadata,
-            }
+                ...req,
+                estatus: newStatus as any,
+                updated_at: now,
+                metadata: updatedMetadata,
+              }
             : req
         )
       );
@@ -1041,7 +1044,9 @@ export default function Requests() {
     let filtered = requests;
 
     if (activeStatusFilters.length > 0) {
-      filtered = filtered.filter(req => activeStatusFilters.includes(req.estatus));
+      filtered = filtered.filter(req =>
+        activeStatusFilters.includes(req.estatus)
+      );
     }
 
     if (activeAgentFilter) {
@@ -1059,7 +1064,12 @@ export default function Requests() {
     if (user?.rol === 'agent' || user?.rol === 'admin') {
       applyInlineFilters();
     }
-  }, [activeStatusFilters, activeAgentFilter, activeClientFilter, applyInlineFilters]);
+  }, [
+    activeStatusFilters,
+    activeAgentFilter,
+    activeClientFilter,
+    applyInlineFilters,
+  ]);
 
   const toggleStatusFilter = (status: string) => {
     setActiveStatusFilters(prev =>
@@ -1092,12 +1102,45 @@ export default function Requests() {
     name: string;
     type: string;
     size: number;
+    uploadStatus?: 'pending' | 'uploading' | 'success' | 'error';
+    uploadProgress?: number;
+    url?: string;
+    path?: string;
+    error?: string;
   }) => {
-    setSelectedFiles(prev => [...prev, file]);
+    setSelectedFiles(prev => {
+      const existingIndex = prev.findIndex(
+        existingFile =>
+          existingFile.uri === file.uri && existingFile.name === file.name
+      );
+
+      if (existingIndex >= 0) {
+        const updated = [...prev];
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          ...file,
+        };
+        return updated;
+      }
+
+      return [...prev, file];
+    });
   };
 
   const handleFileRemoved = (index: number) => {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleFileUploaded = (uploadedFile: {
+    url: string;
+    path: string;
+    name: string;
+    size: number;
+    type: string;
+  }) => {
+    console.log('File uploaded successfully:', uploadedFile.name);
+    // You can add additional logic here if needed
+    // For example, showing a toast notification
   };
 
   const handleStartChat = async (request: RequestWithRelations) => {
@@ -1248,7 +1291,11 @@ export default function Requests() {
           {/* Filtro por estatus (semáforo) */}
           <View style={styles.filterRow}>
             <Text style={styles.filterLabel}>Estatus:</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.filterScroll}
+            >
               {[
                 { key: 'sin_atender', label: 'Sin atender', color: '#ef4444' },
                 { key: 'nuevo', label: 'Nueva', color: '#f59e0b' },
@@ -1261,12 +1308,29 @@ export default function Requests() {
                   key={s.key}
                   style={[
                     styles.filterChip,
-                    activeStatusFilters.includes(s.key) && { backgroundColor: s.color, borderColor: s.color },
+                    activeStatusFilters.includes(s.key) && {
+                      backgroundColor: s.color,
+                      borderColor: s.color,
+                    },
                   ]}
                   onPress={() => toggleStatusFilter(s.key)}
                 >
-                  <Circle size={10} color={activeStatusFilters.includes(s.key) ? '#fff' : s.color} fill={activeStatusFilters.includes(s.key) ? '#fff' : s.color} />
-                  <Text style={[styles.filterChipText, activeStatusFilters.includes(s.key) && styles.filterChipTextActive]}>
+                  <Circle
+                    size={10}
+                    color={
+                      activeStatusFilters.includes(s.key) ? '#fff' : s.color
+                    }
+                    fill={
+                      activeStatusFilters.includes(s.key) ? '#fff' : s.color
+                    }
+                  />
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      activeStatusFilters.includes(s.key) &&
+                        styles.filterChipTextActive,
+                    ]}
+                  >
                     {s.label}
                   </Text>
                 </TouchableOpacity>
@@ -1278,7 +1342,11 @@ export default function Requests() {
           {agents.length > 0 && (
             <View style={styles.filterRow}>
               <Text style={styles.filterLabel}>Agente:</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.filterScroll}
+              >
                 {agents.map(agent => (
                   <TouchableOpacity
                     key={agent.id}
@@ -1286,10 +1354,25 @@ export default function Requests() {
                       styles.filterChip,
                       activeAgentFilter === agent.id && styles.filterChipActive,
                     ]}
-                    onPress={() => setActiveAgentFilter(prev => prev === agent.id ? null : agent.id)}
+                    onPress={() =>
+                      setActiveAgentFilter(prev =>
+                        prev === agent.id ? null : agent.id
+                      )
+                    }
                   >
-                    <UserIcon size={10} color={activeAgentFilter === agent.id ? '#fff' : '#6b7280'} />
-                    <Text style={[styles.filterChipText, activeAgentFilter === agent.id && styles.filterChipTextActive]}>
+                    <UserIcon
+                      size={10}
+                      color={
+                        activeAgentFilter === agent.id ? '#fff' : '#6b7280'
+                      }
+                    />
+                    <Text
+                      style={[
+                        styles.filterChipText,
+                        activeAgentFilter === agent.id &&
+                          styles.filterChipTextActive,
+                      ]}
+                    >
                       {getAgentFullName(agent)}
                     </Text>
                   </TouchableOpacity>
@@ -1302,17 +1385,32 @@ export default function Requests() {
           {uniqueClients.length > 0 && (
             <View style={styles.filterRow}>
               <Text style={styles.filterLabel}>Cliente:</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.filterScroll}
+              >
                 {uniqueClients.map(client => (
                   <TouchableOpacity
                     key={client.id}
                     style={[
                       styles.filterChip,
-                      activeClientFilter === client.id && styles.filterChipActive,
+                      activeClientFilter === client.id &&
+                        styles.filterChipActive,
                     ]}
-                    onPress={() => setActiveClientFilter(prev => prev === client.id ? null : client.id)}
+                    onPress={() =>
+                      setActiveClientFilter(prev =>
+                        prev === client.id ? null : client.id
+                      )
+                    }
                   >
-                    <Text style={[styles.filterChipText, activeClientFilter === client.id && styles.filterChipTextActive]}>
+                    <Text
+                      style={[
+                        styles.filterChipText,
+                        activeClientFilter === client.id &&
+                          styles.filterChipTextActive,
+                      ]}
+                    >
                       {client.name}
                     </Text>
                   </TouchableOpacity>
@@ -1322,8 +1420,13 @@ export default function Requests() {
           )}
 
           {/* Botón limpiar filtros */}
-          {(activeStatusFilters.length > 0 || activeAgentFilter || activeClientFilter) && (
-            <TouchableOpacity style={styles.clearFiltersButton} onPress={clearAllFilters}>
+          {(activeStatusFilters.length > 0 ||
+            activeAgentFilter ||
+            activeClientFilter) && (
+            <TouchableOpacity
+              style={styles.clearFiltersButton}
+              onPress={clearAllFilters}
+            >
               <X size={14} color="#6b7280" />
               <Text style={styles.clearFiltersText}>Limpiar filtros</Text>
             </TouchableOpacity>
@@ -1350,7 +1453,9 @@ export default function Requests() {
                   <Text
                     style={[
                       styles.statusText,
-                      { color: getStatusColor(checkRequestExpiration(request)) },
+                      {
+                        color: getStatusColor(checkRequestExpiration(request)),
+                      },
                     ]}
                   >
                     {getStatusText(checkRequestExpiration(request))}
@@ -1465,17 +1570,17 @@ export default function Requests() {
               {/* Botón Eliminar (solo para solicitudes terminadas) */}
               {(request.estatus === 'resuelto' ||
                 request.estatus === 'cerrado') && (
-                  <TouchableOpacity
-                    style={styles.deleteButton}
-                    onPress={e => {
-                      e.stopPropagation();
-                      handleDeleteRequest(request.id, request.titulo);
-                    }}
-                  >
-                    <Trash2 size={18} color="#ffffff" />
-                    <Text style={styles.deleteButtonText}>Eliminar</Text>
-                  </TouchableOpacity>
-                )}
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={e => {
+                    e.stopPropagation();
+                    handleDeleteRequest(request.id, request.titulo);
+                  }}
+                >
+                  <Trash2 size={18} color="#ffffff" />
+                  <Text style={styles.deleteButtonText}>Eliminar</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </TouchableOpacity>
         ))}
@@ -1564,7 +1669,7 @@ export default function Requests() {
                       style={[
                         styles.agentChip,
                         newRequest.agente_id === agent.id &&
-                        styles.agentChipSelected,
+                          styles.agentChipSelected,
                       ]}
                       onPress={() =>
                         setNewRequest(prev => ({
@@ -1577,7 +1682,7 @@ export default function Requests() {
                         style={[
                           styles.agentChipText,
                           newRequest.agente_id === agent.id &&
-                          styles.agentChipTextSelected,
+                            styles.agentChipTextSelected,
                         ]}
                       >
                         {getAgentFullName(agent)}
@@ -1586,7 +1691,7 @@ export default function Requests() {
                         style={[
                           styles.agentChipCategory,
                           newRequest.agente_id === agent.id &&
-                          styles.agentChipCategorySelected,
+                            styles.agentChipCategorySelected,
                         ]}
                       >
                         {agent.categoria}
@@ -1604,8 +1709,8 @@ export default function Requests() {
                   style={[
                     styles.charCounter,
                     newRequest.mensaje.length > 0 &&
-                    newRequest.mensaje.length < 10 &&
-                    styles.charCounterWarning,
+                      newRequest.mensaje.length < 10 &&
+                      styles.charCounterWarning,
                   ]}
                 >
                   {newRequest.mensaje.length} caracteres
@@ -1614,9 +1719,12 @@ export default function Requests() {
               <FileUploadComponent
                 onFileSelected={handleFileSelected}
                 onFileRemoved={handleFileRemoved}
+                onFileUploaded={handleFileUploaded}
                 files={selectedFiles}
                 maxFiles={3}
                 maxSizeInMB={5}
+                bucket="request-files"
+                folder={`requests/${user?.id || 'unknown'}`}
               />
               <TextInput
                 style={[styles.formInput, styles.formTextArea]}
@@ -1688,20 +1796,33 @@ export default function Requests() {
 
             <View style={styles.statusModalButtons}>
               <TouchableOpacity
-                style={[styles.statusModalBtn, { backgroundColor: '#fef2f2', borderColor: '#ef4444' }]}
+                style={[
+                  styles.statusModalBtn,
+                  { backgroundColor: '#fef2f2', borderColor: '#ef4444' },
+                ]}
                 onPress={() => {
                   if (statusChangeRequest) {
-                    handleUpdateRequestStatus(statusChangeRequest.id, 'sin_atender');
+                    handleUpdateRequestStatus(
+                      statusChangeRequest.id,
+                      'sin_atender'
+                    );
                     setStatusChangeRequest(null);
                   }
                 }}
               >
-                <View style={[styles.statusDot, { backgroundColor: '#ef4444' }]} />
-                <Text style={[styles.statusModalBtnText, { color: '#ef4444' }]}>Sin atender</Text>
+                <View
+                  style={[styles.statusDot, { backgroundColor: '#ef4444' }]}
+                />
+                <Text style={[styles.statusModalBtnText, { color: '#ef4444' }]}>
+                  Sin atender
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.statusModalBtn, { backgroundColor: '#fffbeb', borderColor: '#f59e0b' }]}
+                style={[
+                  styles.statusModalBtn,
+                  { backgroundColor: '#fffbeb', borderColor: '#f59e0b' },
+                ]}
                 onPress={() => {
                   if (statusChangeRequest) {
                     handleUpdateRequestStatus(statusChangeRequest.id, 'nuevo');
@@ -1709,34 +1830,58 @@ export default function Requests() {
                   }
                 }}
               >
-                <View style={[styles.statusDot, { backgroundColor: '#f59e0b' }]} />
-                <Text style={[styles.statusModalBtnText, { color: '#f59e0b' }]}>Nueva</Text>
+                <View
+                  style={[styles.statusDot, { backgroundColor: '#f59e0b' }]}
+                />
+                <Text style={[styles.statusModalBtnText, { color: '#f59e0b' }]}>
+                  Nueva
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.statusModalBtn, { backgroundColor: '#f0fdf4', borderColor: '#22c55e' }]}
+                style={[
+                  styles.statusModalBtn,
+                  { backgroundColor: '#f0fdf4', borderColor: '#22c55e' },
+                ]}
                 onPress={() => {
                   if (statusChangeRequest) {
-                    handleUpdateRequestStatus(statusChangeRequest.id, 'en_proceso');
+                    handleUpdateRequestStatus(
+                      statusChangeRequest.id,
+                      'en_proceso'
+                    );
                     setStatusChangeRequest(null);
                   }
                 }}
               >
-                <View style={[styles.statusDot, { backgroundColor: '#22c55e' }]} />
-                <Text style={[styles.statusModalBtnText, { color: '#22c55e' }]}>En proceso</Text>
+                <View
+                  style={[styles.statusDot, { backgroundColor: '#22c55e' }]}
+                />
+                <Text style={[styles.statusModalBtnText, { color: '#22c55e' }]}>
+                  En proceso
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.statusModalBtn, { backgroundColor: '#eff6ff', borderColor: '#3b82f6' }]}
+                style={[
+                  styles.statusModalBtn,
+                  { backgroundColor: '#eff6ff', borderColor: '#3b82f6' },
+                ]}
                 onPress={() => {
                   if (statusChangeRequest) {
-                    handleUpdateRequestStatus(statusChangeRequest.id, 'resuelto');
+                    handleUpdateRequestStatus(
+                      statusChangeRequest.id,
+                      'resuelto'
+                    );
                     setStatusChangeRequest(null);
                   }
                 }}
               >
-                <View style={[styles.statusDot, { backgroundColor: '#3b82f6' }]} />
-                <Text style={[styles.statusModalBtnText, { color: '#3b82f6' }]}>Marcar como Resuelto</Text>
+                <View
+                  style={[styles.statusDot, { backgroundColor: '#3b82f6' }]}
+                />
+                <Text style={[styles.statusModalBtnText, { color: '#3b82f6' }]}>
+                  Marcar como Resuelto
+                </Text>
               </TouchableOpacity>
             </View>
 

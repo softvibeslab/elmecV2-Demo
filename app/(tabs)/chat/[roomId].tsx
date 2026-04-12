@@ -475,7 +475,7 @@ export default function ChatRoom() {
           {
             uri: asset.uri,
             name: asset.fileName || `imagen_${Date.now()}.jpg`,
-            type: asset.type || 'image/jpeg',
+            type: asset.mimeType || 'image/jpeg',
             size: asset.fileSize || 0,
           },
           'request-files',
@@ -536,7 +536,7 @@ export default function ChatRoom() {
           {
             uri: asset.uri,
             name: asset.fileName || `foto_${Date.now()}.jpg`,
-            type: asset.type || 'image/jpeg',
+            type: asset.mimeType || 'image/jpeg',
             size: asset.fileSize || 0,
           },
           'request-files',
@@ -935,8 +935,8 @@ export default function ChatRoom() {
       index === roomMessages.length - 1 ||
       roomMessages[index + 1]?.sender_id !== message.sender_id ||
       new Date(roomMessages[index + 1]?.created_at).getTime() -
-      new Date(message.created_at).getTime() >
-      300000; // 5 minutes
+        new Date(message.created_at).getTime() >
+        300000; // 5 minutes
 
     const replyMessage = message.reply_to
       ? roomMessages.find(m => m.id === message.reply_to)
@@ -1235,6 +1235,7 @@ export default function ChatRoom() {
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         {/* Header */}
         <LinearGradient colors={['#1e40af', '#3b82f6']} style={styles.header}>
@@ -1261,7 +1262,7 @@ export default function ChatRoom() {
             <View style={styles.headerText}>
               <Text style={styles.headerName} numberOfLines={1}>
                 {chatRoom?.is_group
-                  ? (chatRoom.name || 'Grupo sin nombre')
+                  ? chatRoom.name || 'Grupo sin nombre'
                   : getOtherParticipantName()}
               </Text>
               <Text style={styles.headerStatus}>
@@ -1333,9 +1334,15 @@ export default function ChatRoom() {
                 let namesList: string[] = [];
 
                 // Try to get names from metadata first
-                if (chatRoom?.metadata?.participant_names && chatRoom.metadata.participant_names.length > 0) {
+                if (
+                  chatRoom?.metadata?.participant_names &&
+                  chatRoom.metadata.participant_names.length > 0
+                ) {
                   namesList = chatRoom.metadata.participant_names;
-                } else if (chatRoom?.participants && chatRoom.participants.length > 0) {
+                } else if (
+                  chatRoom?.participants &&
+                  chatRoom.participants.length > 0
+                ) {
                   // Fetch names from DB
                   try {
                     const { data } = await supabase
@@ -1344,7 +1351,9 @@ export default function ChatRoom() {
                       .in('id', chatRoom.participants);
                     if (data) {
                       namesList = data.map((u: any) =>
-                        [u.nombre, u.apellido_paterno, u.apellido_materno].filter(Boolean).join(' ')
+                        [u.nombre, u.apellido_paterno, u.apellido_materno]
+                          .filter(Boolean)
+                          .join(' ')
                       );
                     }
                   } catch (e) {
@@ -1352,11 +1361,16 @@ export default function ChatRoom() {
                   }
                 }
 
-                const header = chatRoom?.is_group ? `Grupo: ${chatRoom.name || 'Sin nombre'}\n\n` : '';
-                const zona = chatRoom?.metadata?.zona ? `\nZona: ${chatRoom.metadata.zona}` : '';
-                const namesText = namesList.length > 0
-                  ? namesList.map(n => `• ${n}`).join('\n')
-                  : 'No hay participantes';
+                const header = chatRoom?.is_group
+                  ? `Grupo: ${chatRoom.name || 'Sin nombre'}\n\n`
+                  : '';
+                const zona = chatRoom?.metadata?.zona
+                  ? `\nZona: ${chatRoom.metadata.zona}`
+                  : '';
+                const namesText =
+                  namesList.length > 0
+                    ? namesList.map(n => `• ${n}`).join('\n')
+                    : 'No hay participantes';
 
                 Alert.alert(
                   chatRoom?.is_group ? 'Info del Grupo' : 'Info del Chat',
@@ -1445,7 +1459,7 @@ export default function ChatRoom() {
                   style={[
                     styles.emojiCategory,
                     selectedEmojiCategory === category &&
-                    styles.emojiCategoryActive,
+                      styles.emojiCategoryActive,
                   ]}
                   onPress={() => setSelectedEmojiCategory(category)}
                 >
@@ -1453,7 +1467,7 @@ export default function ChatRoom() {
                     style={[
                       styles.emojiCategoryText,
                       selectedEmojiCategory === category &&
-                      styles.emojiCategoryTextActive,
+                        styles.emojiCategoryTextActive,
                     ]}
                   >
                     {category}

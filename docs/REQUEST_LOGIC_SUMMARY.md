@@ -242,12 +242,12 @@
 
 ## 📊 **MATRIZ DE VISIBILIDAD**
 
-| Rol          | Ve Sus Solicitudes | Ve Asignadas | Ve Sin Asignar | Ve Otras Zonas | Ve Todo |
-|--------------|-------------------|--------------|----------------|----------------|---------|
-| **Cliente**  | ✅ Solo propias   | ❌           | ❌             | ❌             | ❌      |
-| **Agente c/ Zona** | ❌        | ✅ Sí        | ✅ Solo su zona | ❌             | ❌      |
-| **Agente s/ Zona** | ❌        | ✅ Sí        | ❌             | ❌             | ❌      |
-| **Admin**    | ✅               | ✅           | ✅             | ✅             | ✅      |
+| Rol                | Ve Sus Solicitudes | Ve Asignadas | Ve Sin Asignar  | Ve Otras Zonas | Ve Todo |
+| ------------------ | ------------------ | ------------ | --------------- | -------------- | ------- |
+| **Cliente**        | ✅ Solo propias    | ❌           | ❌              | ❌             | ❌      |
+| **Agente c/ Zona** | ❌                 | ✅ Sí        | ✅ Solo su zona | ❌             | ❌      |
+| **Agente s/ Zona** | ❌                 | ✅ Sí        | ❌              | ❌             | ❌      |
+| **Admin**          | ✅                 | ✅           | ✅              | ✅             | ✅      |
 
 ---
 

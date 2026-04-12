@@ -16,23 +16,25 @@ const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+const serviceRoleKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, serviceRoleKey);
 
 // Estado global de pruebas
-let testResults = {
+const testResults = {
   total: 0,
   passed: 0,
   failed: 0,
-  tests: []
+  tests: [],
 };
 
-let testData = {
+const testData = {
   user1: null,
   user2: null,
   chatRoom: null,
   messages: [],
-  uploadedFiles: []
+  uploadedFiles: [],
 };
 
 // Helper: Log test result
@@ -50,7 +52,7 @@ function logTest(name, passed, details = '') {
 }
 
 // Helper: Sleep
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 console.log('🚀 Iniciando pruebas del módulo de chat...\n');
 console.log('═'.repeat(70));
@@ -117,12 +119,12 @@ async function testCreateChatRoom() {
       metadata: {
         participant_names: [
           `${testData.user1.nombre} ${testData.user1.apellido_paterno}`,
-          `${testData.user2.nombre} ${testData.user2.apellido_paterno}`
+          `${testData.user2.nombre} ${testData.user2.apellido_paterno}`,
         ],
         participant_ids: [testData.user1.id, testData.user2.id],
         created_by: testData.user1.id,
-        created_at: new Date().toISOString()
-      }
+        created_at: new Date().toISOString(),
+      },
     };
 
     const { data, error } = await supabase
@@ -137,10 +139,15 @@ async function testCreateChatRoom() {
     }
 
     testData.chatRoom = data;
-    logTest('CREATE - Crear chat room', true, `ID: ${data.id.substring(0, 8)}...`);
+    logTest(
+      'CREATE - Crear chat room',
+      true,
+      `ID: ${data.id.substring(0, 8)}...`
+    );
 
     // Verificar estructura
-    const hasParticipants = Array.isArray(data.participants) && data.participants.length === 2;
+    const hasParticipants =
+      Array.isArray(data.participants) && data.participants.length === 2;
     logTest('CREATE - Verificar participants array', hasParticipants);
 
     const hasMetadata = data.metadata && data.metadata.participant_names;
@@ -171,7 +178,7 @@ async function testSendTextMessages() {
       sender_name: `${testData.user1.nombre} ${testData.user1.apellido_paterno}`,
       message: '¡Hola! Este es un mensaje de prueba 👋',
       type: 'text',
-      is_deleted: false
+      is_deleted: false,
     };
 
     const { data: msg1, error: error1 } = await supabase
@@ -186,7 +193,11 @@ async function testSendTextMessages() {
     }
 
     testData.messages.push(msg1);
-    logTest('CREATE - Mensaje de texto simple', true, msg1.message.substring(0, 30) + '...');
+    logTest(
+      'CREATE - Mensaje de texto simple',
+      true,
+      msg1.message.substring(0, 30) + '...'
+    );
 
     await sleep(500);
 
@@ -197,7 +208,7 @@ async function testSendTextMessages() {
       sender_name: `${testData.user2.nombre} ${testData.user2.apellido_paterno}`,
       message: '¡Hola! 😀 ¿Cómo estás? 🎉 Probando emojis: 👍 ❤️ 🔥 💯 ✨',
       type: 'text',
-      is_deleted: false
+      is_deleted: false,
     };
 
     const { data: msg2, error: error2 } = await supabase
@@ -212,7 +223,11 @@ async function testSendTextMessages() {
     }
 
     testData.messages.push(msg2);
-    logTest('CREATE - Mensaje con emojis', true, 'Emojis guardados correctamente');
+    logTest(
+      'CREATE - Mensaje con emojis',
+      true,
+      'Emojis guardados correctamente'
+    );
 
     await sleep(500);
 
@@ -224,7 +239,7 @@ async function testSendTextMessages() {
       sender_name: `${testData.user1.nombre} ${testData.user1.apellido_paterno}`,
       message: longText,
       type: 'text',
-      is_deleted: false
+      is_deleted: false,
     };
 
     const { data: msg3, error: error3 } = await supabase
@@ -237,7 +252,11 @@ async function testSendTextMessages() {
       logTest('CREATE - Mensaje largo (> 500 chars)', false, error3.message);
     } else {
       testData.messages.push(msg3);
-      logTest('CREATE - Mensaje largo (> 500 chars)', true, `${msg3.message.length} caracteres`);
+      logTest(
+        'CREATE - Mensaje largo (> 500 chars)',
+        true,
+        `${msg3.message.length} caracteres`
+      );
     }
 
     return true;
@@ -256,7 +275,11 @@ async function testReplyToMessage() {
 
   try {
     if (testData.messages.length === 0) {
-      logTest('CREATE - Reply to message', false, 'No hay mensajes para responder');
+      logTest(
+        'CREATE - Reply to message',
+        false,
+        'No hay mensajes para responder'
+      );
       return false;
     }
 
@@ -269,7 +292,7 @@ async function testReplyToMessage() {
       message: 'Esta es una respuesta al primer mensaje 💬',
       type: 'text',
       reply_to: originalMessage.id,
-      is_deleted: false
+      is_deleted: false,
     };
 
     const { data, error } = await supabase
@@ -284,7 +307,11 @@ async function testReplyToMessage() {
     }
 
     testData.messages.push(data);
-    logTest('CREATE - Reply to message', true, `Respondiendo a: ${originalMessage.id.substring(0, 8)}...`);
+    logTest(
+      'CREATE - Reply to message',
+      true,
+      `Respondiendo a: ${originalMessage.id.substring(0, 8)}...`
+    );
 
     // Verificar que el reply_to está presente
     const hasReplyTo = data.reply_to === originalMessage.id;
@@ -306,23 +333,38 @@ async function testSendImageMessage() {
 
   try {
     // Verificar que existe el bucket
-    const { data: buckets, error: bucketsError } = await supabase
-      .storage
-      .listBuckets();
+    const { data: buckets, error: bucketsError } =
+      await supabase.storage.listBuckets();
 
     if (bucketsError) {
-      logTest('CREATE - Verificar Storage buckets', false, bucketsError.message);
+      logTest(
+        'CREATE - Verificar Storage buckets',
+        false,
+        bucketsError.message
+      );
       return false;
     }
 
-    logTest('CREATE - Verificar Storage buckets', true, `${buckets.length} buckets encontrados`);
+    logTest(
+      'CREATE - Verificar Storage buckets',
+      true,
+      `${buckets.length} buckets encontrados`
+    );
 
     // Buscar bucket para chat
-    const chatBucket = buckets.find(b => b.name === 'chat-files' || b.name === 'request-files');
+    const chatBucket = buckets.find(
+      b => b.name === 'chat-files' || b.name === 'request-files'
+    );
 
     if (!chatBucket) {
-      logTest('CREATE - Bucket para chat existe', false, 'No existe bucket chat-files o request-files');
-      console.log('   💡 Consejo: Crea el bucket "chat-files" en Supabase Storage');
+      logTest(
+        'CREATE - Bucket para chat existe',
+        false,
+        'No existe bucket chat-files o request-files'
+      );
+      console.log(
+        '   💡 Consejo: Crea el bucket "chat-files" en Supabase Storage'
+      );
 
       // Simulamos mensaje con imagen usando URL pública de ejemplo
       const imageMessage = {
@@ -334,7 +376,7 @@ async function testSendImageMessage() {
         file_url: 'https://via.placeholder.com/400x300.png?text=Test+Image',
         file_name: 'test_image.png',
         file_size: 150000,
-        is_deleted: false
+        is_deleted: false,
       };
 
       const { data, error } = await supabase
@@ -349,7 +391,11 @@ async function testSendImageMessage() {
       }
 
       testData.messages.push(data);
-      logTest('CREATE - Mensaje con imagen (simulada)', true, 'URL de prueba guardada');
+      logTest(
+        'CREATE - Mensaje con imagen (simulada)',
+        true,
+        'URL de prueba guardada'
+      );
       return true;
     }
 
@@ -361,12 +407,11 @@ async function testSendImageMessage() {
     const fileName = `test-image-${Date.now()}.txt`;
     const filePath = `chat-tests/${fileName}`;
 
-    const { data: uploadData, error: uploadError } = await supabase
-      .storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
       .from(chatBucket.name)
       .upload(filePath, testContent, {
         contentType: 'text/plain',
-        upsert: false
+        upsert: false,
       });
 
     if (uploadError) {
@@ -377,8 +422,7 @@ async function testSendImageMessage() {
     logTest('CREATE - Upload archivo a Storage', true, filePath);
 
     // Obtener URL pública
-    const { data: publicUrlData } = supabase
-      .storage
+    const { data: publicUrlData } = supabase.storage
       .from(chatBucket.name)
       .getPublicUrl(filePath);
 
@@ -397,7 +441,7 @@ async function testSendImageMessage() {
       file_url: publicUrl,
       file_name: fileName,
       file_size: testContent.length,
-      is_deleted: false
+      is_deleted: false,
     };
 
     const { data: msgData, error: msgError } = await supabase
@@ -439,7 +483,7 @@ async function testSendFileMessage() {
       file_url: 'https://www.example.com/document.pdf',
       file_name: 'documento_prueba.pdf',
       file_size: 250000,
-      is_deleted: false
+      is_deleted: false,
     };
 
     const { data, error } = await supabase
@@ -491,7 +535,7 @@ async function testSendAudioMessage() {
       file_name: 'audio_prueba.m4a',
       file_size: 50000,
       audio_duration: 15,
-      is_deleted: false
+      is_deleted: false,
     };
 
     const { data, error } = await supabase
@@ -506,7 +550,11 @@ async function testSendAudioMessage() {
     }
 
     testData.messages.push(data);
-    logTest('CREATE - Mensaje de audio', true, `${data.audio_duration}s de duración`);
+    logTest(
+      'CREATE - Mensaje de audio',
+      true,
+      `${data.audio_duration}s de duración`
+    );
 
     // Verificar campo audio_duration
     const hasDuration = typeof data.audio_duration === 'number';
@@ -529,10 +577,12 @@ async function testReadMessages() {
   try {
     const { data, error } = await supabase
       .from('messages')
-      .select(`
+      .select(
+        `
         *,
         user:users(nombre, apellido_paterno, foto)
-      `)
+      `
+      )
       .eq('chat_room_id', testData.chatRoom.id)
       .eq('is_deleted', false)
       .order('created_at', { ascending: true });
@@ -542,12 +592,20 @@ async function testReadMessages() {
       return false;
     }
 
-    logTest('READ - Listar mensajes', true, `${data.length} mensajes encontrados`);
+    logTest(
+      'READ - Listar mensajes',
+      true,
+      `${data.length} mensajes encontrados`
+    );
 
     // Verificar que obtuvimos los mensajes creados
     const expectedCount = testData.messages.length;
     const actualCount = data.length;
-    logTest('READ - Verificar cantidad de mensajes', actualCount >= expectedCount, `Esperados: ${expectedCount}, Encontrados: ${actualCount}`);
+    logTest(
+      'READ - Verificar cantidad de mensajes',
+      actualCount >= expectedCount,
+      `Esperados: ${expectedCount}, Encontrados: ${actualCount}`
+    );
 
     // Verificar orden cronológico
     const isOrdered = data.every((msg, i) => {
@@ -590,10 +648,12 @@ async function testReadChatRoom() {
   try {
     const { data, error } = await supabase
       .from('chat_rooms')
-      .select(`
+      .select(
+        `
         *,
         requests(titulo, estatus)
-      `)
+      `
+      )
       .eq('id', testData.chatRoom.id)
       .single();
 
@@ -602,7 +662,11 @@ async function testReadChatRoom() {
       return false;
     }
 
-    logTest('READ - Obtener chat room', true, `ID: ${data.id.substring(0, 8)}...`);
+    logTest(
+      'READ - Obtener chat room',
+      true,
+      `ID: ${data.id.substring(0, 8)}...`
+    );
 
     // Verificar metadata
     const hasMetadata = data.metadata && data.metadata.participant_names;
@@ -610,11 +674,16 @@ async function testReadChatRoom() {
 
     if (hasMetadata) {
       const participantNames = data.metadata.participant_names;
-      logTest('READ - Verificar participant_names', participantNames.length === 2, participantNames.join(', '));
+      logTest(
+        'READ - Verificar participant_names',
+        participantNames.length === 2,
+        participantNames.join(', ')
+      );
     }
 
     // Verificar participants array
-    const hasParticipants = Array.isArray(data.participants) && data.participants.length === 2;
+    const hasParticipants =
+      Array.isArray(data.participants) && data.participants.length === 2;
     logTest('READ - Verificar participants array', hasParticipants);
 
     return true;
@@ -639,7 +708,11 @@ async function testEditMessage() {
 
     const messageToEdit = testData.messages.find(m => m.type === 'text');
     if (!messageToEdit) {
-      logTest('UPDATE - Editar mensaje', false, 'No hay mensajes de texto para editar');
+      logTest(
+        'UPDATE - Editar mensaje',
+        false,
+        'No hay mensajes de texto para editar'
+      );
       return false;
     }
 
@@ -649,7 +722,7 @@ async function testEditMessage() {
       .from('messages')
       .update({
         message: newContent,
-        edited_at: new Date().toISOString()
+        edited_at: new Date().toISOString(),
       })
       .eq('id', messageToEdit.id)
       .select()
@@ -686,7 +759,11 @@ async function testSoftDeleteMessage() {
 
   try {
     if (testData.messages.length < 2) {
-      logTest('UPDATE - Soft delete mensaje', false, 'No hay suficientes mensajes');
+      logTest(
+        'UPDATE - Soft delete mensaje',
+        false,
+        'No hay suficientes mensajes'
+      );
       return false;
     }
 
@@ -697,7 +774,7 @@ async function testSoftDeleteMessage() {
       .update({
         is_deleted: true,
         message: 'Este mensaje fue eliminado',
-        edited_at: new Date().toISOString()
+        edited_at: new Date().toISOString(),
       })
       .eq('id', messageToDelete.id)
       .select()
@@ -708,7 +785,11 @@ async function testSoftDeleteMessage() {
       return false;
     }
 
-    logTest('UPDATE - Soft delete mensaje', true, `ID: ${data.id.substring(0, 8)}...`);
+    logTest(
+      'UPDATE - Soft delete mensaje',
+      true,
+      `ID: ${data.id.substring(0, 8)}...`
+    );
 
     // Verificar que is_deleted es true
     const isDeleted = data.is_deleted === true;
@@ -749,9 +830,9 @@ async function testUpdateLastMessage() {
           sender_id: latestMessage.sender_id,
           sender_name: latestMessage.sender_name,
           created_at: latestMessage.created_at,
-          type: latestMessage.type
+          type: latestMessage.type,
         },
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .eq('id', testData.chatRoom.id)
       .select()
@@ -786,7 +867,7 @@ async function testRealtimeSubscription() {
   console.log('\n⚡ REALTIME - Verificar suscripción a mensajes');
   console.log('─'.repeat(70));
 
-  return new Promise(async (resolve) => {
+  return new Promise(async resolve => {
     try {
       let messageReceived = false;
       let timeoutId;
@@ -800,21 +881,28 @@ async function testRealtimeSubscription() {
             event: 'INSERT',
             schema: 'public',
             table: 'messages',
-            filter: `chat_room_id=eq.${testData.chatRoom.id}`
+            filter: `chat_room_id=eq.${testData.chatRoom.id}`,
           },
-          (payload) => {
-            console.log('   📩 Mensaje recibido via Realtime:', payload.new.message.substring(0, 30) + '...');
+          payload => {
+            console.log(
+              '   📩 Mensaje recibido via Realtime:',
+              payload.new.message.substring(0, 30) + '...'
+            );
             messageReceived = true;
             clearTimeout(timeoutId);
 
-            logTest('REALTIME - Recepción de mensaje', true, 'Mensaje recibido correctamente');
+            logTest(
+              'REALTIME - Recepción de mensaje',
+              true,
+              'Mensaje recibido correctamente'
+            );
 
             // Cleanup
             supabase.removeChannel(channel);
             resolve(true);
           }
         )
-        .subscribe((status) => {
+        .subscribe(status => {
           console.log('   🔌 Estado de conexión Realtime:', status);
         });
 
@@ -829,7 +917,7 @@ async function testRealtimeSubscription() {
         sender_name: `${testData.user1.nombre} ${testData.user1.apellido_paterno}`,
         message: '🔔 Mensaje de prueba para Realtime - ' + Date.now(),
         type: 'text',
-        is_deleted: false
+        is_deleted: false,
       };
 
       const { error: insertError } = await supabase
@@ -837,7 +925,11 @@ async function testRealtimeSubscription() {
         .insert(testMessage);
 
       if (insertError) {
-        logTest('REALTIME - Enviar mensaje de prueba', false, insertError.message);
+        logTest(
+          'REALTIME - Enviar mensaje de prueba',
+          false,
+          insertError.message
+        );
         supabase.removeChannel(channel);
         resolve(false);
         return;
@@ -848,12 +940,15 @@ async function testRealtimeSubscription() {
       // Timeout de 10 segundos
       timeoutId = setTimeout(() => {
         if (!messageReceived) {
-          logTest('REALTIME - Recepción de mensaje', false, 'Timeout: no se recibió el mensaje en 10s');
+          logTest(
+            'REALTIME - Recepción de mensaje',
+            false,
+            'Timeout: no se recibió el mensaje en 10s'
+          );
           supabase.removeChannel(channel);
           resolve(false);
         }
       }, 10000);
-
     } catch (error) {
       logTest('REALTIME - Suscripción', false, error.message);
       resolve(false);
@@ -868,22 +963,29 @@ async function testRealtimePresence() {
   console.log('\n⚡ REALTIME - Verificar Presence (Typing Indicator)');
   console.log('─'.repeat(70));
 
-  return new Promise(async (resolve) => {
+  return new Promise(async resolve => {
     try {
       let presenceReceived = false;
 
-      const channel = supabase.channel(`presence_test_${testData.chatRoom.id}`, {
-        config: {
-          presence: {
-            key: testData.user1.id
-          }
+      const channel = supabase.channel(
+        `presence_test_${testData.chatRoom.id}`,
+        {
+          config: {
+            presence: {
+              key: testData.user1.id,
+            },
+          },
         }
-      });
+      );
 
       channel
         .on('presence', { event: 'sync' }, () => {
           const state = channel.presenceState();
-          console.log('   👥 Estado de presencia:', Object.keys(state).length, 'usuarios');
+          console.log(
+            '   👥 Estado de presencia:',
+            Object.keys(state).length,
+            'usuarios'
+          );
           if (Object.keys(state).length > 0) {
             presenceReceived = true;
           }
@@ -895,14 +997,14 @@ async function testRealtimePresence() {
         .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
           console.log('   ❌ Usuario desconectado:', key);
         })
-        .subscribe(async (status) => {
+        .subscribe(async status => {
           if (status === 'SUBSCRIBED') {
             // Trackear presencia
             await channel.track({
               user_id: testData.user1.id,
               user_name: `${testData.user1.nombre} ${testData.user1.apellido_paterno}`,
               online_at: new Date().toISOString(),
-              typing: false
+              typing: false,
             });
           }
         });
@@ -912,13 +1014,16 @@ async function testRealtimePresence() {
         if (presenceReceived) {
           logTest('REALTIME - Presence tracking', true, 'Presencia detectada');
         } else {
-          logTest('REALTIME - Presence tracking', false, 'No se detectó presencia');
+          logTest(
+            'REALTIME - Presence tracking',
+            false,
+            'No se detectó presencia'
+          );
         }
 
         supabase.removeChannel(channel);
         resolve(presenceReceived);
       }, 3000);
-
     } catch (error) {
       logTest('REALTIME - Presence', false, error.message);
       resolve(false);
@@ -944,7 +1049,11 @@ async function cleanup() {
       if (messagesError) {
         logTest('CLEANUP - Eliminar mensajes', false, messagesError.message);
       } else {
-        logTest('CLEANUP - Eliminar mensajes', true, `${testData.messages.length} mensajes eliminados`);
+        logTest(
+          'CLEANUP - Eliminar mensajes',
+          true,
+          `${testData.messages.length} mensajes eliminados`
+        );
       }
 
       // Eliminar chat room
@@ -962,8 +1071,7 @@ async function cleanup() {
 
     // Eliminar archivos subidos
     for (const file of testData.uploadedFiles) {
-      const { error: fileError } = await supabase
-        .storage
+      const { error: fileError } = await supabase.storage
         .from(file.bucket)
         .remove([file.path]);
 
@@ -995,7 +1103,9 @@ function generateReport() {
   console.log(`❌ Pruebas fallidas:     ${testResults.failed}`);
   console.log('');
 
-  const successRate = ((testResults.passed / testResults.total) * 100).toFixed(1);
+  const successRate = ((testResults.passed / testResults.total) * 100).toFixed(
+    1
+  );
   console.log(`Tasa de éxito:         ${successRate}%`);
   console.log('');
 

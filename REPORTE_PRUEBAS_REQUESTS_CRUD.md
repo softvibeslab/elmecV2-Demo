@@ -8,22 +8,24 @@
 
 ## 📈 Resumen Ejecutivo
 
-| Métrica | Valor |
-|---------|-------|
-| **Total de Pruebas** | 14 |
-| **✅ Exitosas** | 10 (71.4%) |
-| **❌ Fallidas** | 4 (28.6%) |
-| **Estado General** | ✅ Funcional - Columnas faltantes identificadas |
+| Métrica              | Valor                                           |
+| -------------------- | ----------------------------------------------- |
+| **Total de Pruebas** | 14                                              |
+| **✅ Exitosas**      | 10 (71.4%)                                      |
+| **❌ Fallidas**      | 4 (28.6%)                                       |
+| **Estado General**   | ✅ Funcional - Columnas faltantes identificadas |
 
 ---
 
 ## ✅ Pruebas Exitosas (10/14)
 
 ### SETUP - Preparación
+
 - ✅ **Usuario customer encontrado** - María López identificada
 - ✅ **Usuario agente encontrado** - Jocelyn González Molina identificado
 
 ### CREATE - Operaciones de Creación
+
 - ✅ **CREATE - Solicitud sin archivos** - Solicitud creada correctamente
   - ID: 7ed182f1-3762-4252-a6ef-796aed2a88f0
   - Título: "Solicitud de prueba CRUD - Sin archivos"
@@ -31,6 +33,7 @@
   - Prioridad: media
 
 ### READ - Operaciones de Lectura
+
 - ✅ **READ - Listar solicitudes** - Lista correctamente (1 solicitud encontrada)
 - ✅ **READ - Obtener solicitud específica** - Recupera datos completos con relaciones
   - Usuario: María López
@@ -39,9 +42,11 @@
 - ✅ **READ - Filtrar por prioridad** - Filtro funcional (0 urgentes)
 
 ### UPDATE - Operaciones de Actualización
+
 - ✅ **UPDATE - Cambiar estado** - Estado cambiado de "nuevo" a "asignado"
 
 ### DELETE - Operaciones de Eliminación
+
 - ✅ **DELETE - Eliminar solicitudes** - 1 solicitud eliminada correctamente
 - ✅ **DELETE - Verificar eliminación** - Confirmado que no existe después del DELETE
 
@@ -50,6 +55,7 @@
 ## ❌ Pruebas Fallidas (4/14)
 
 ### 1. CREATE - Solicitud con archivos ❌
+
 **Error:** `Could not find the 'archivos' column of 'requests' in the schema cache`
 
 **Causa:** La columna `archivos` no existe en la tabla `requests`
@@ -57,6 +63,7 @@
 **Impacto:** 🔴 **ALTO** - No se pueden almacenar archivos adjuntos en la solicitud
 
 **Solución Requerida:**
+
 ```sql
 ALTER TABLE requests
 ADD COLUMN archivos TEXT[] DEFAULT NULL;
@@ -67,6 +74,7 @@ ADD COLUMN archivos TEXT[] DEFAULT NULL;
 ---
 
 ### 2. READ - Verificar solicitudes de prueba ❌
+
 **Error:** Solo 1 encontrada (esperadas: 2)
 
 **Causa:** La solicitud con archivos no se pudo crear (ver error #1)
@@ -78,6 +86,7 @@ ADD COLUMN archivos TEXT[] DEFAULT NULL;
 ---
 
 ### 3. UPDATE - Cambiar prioridad ❌
+
 **Error:** No hay solicitud de prueba
 
 **Causa:** La solicitud #2 no se creó (error #1)
@@ -89,6 +98,7 @@ ADD COLUMN archivos TEXT[] DEFAULT NULL;
 ---
 
 ### 4. UPDATE - Agregar feedback ❌
+
 **Error:** `Could not find the 'feedback' column of 'requests' in the schema cache`
 
 **Causa:** Las columnas `feedback` y `rating` no existen en la tabla
@@ -96,6 +106,7 @@ ADD COLUMN archivos TEXT[] DEFAULT NULL;
 **Impacto:** 🔴 **MEDIO** - No se puede guardar calificación del usuario
 
 **Solución Requerida:**
+
 ```sql
 ALTER TABLE requests
 ADD COLUMN feedback TEXT DEFAULT NULL,
@@ -104,6 +115,7 @@ CHECK (rating >= 1 AND rating <= 5);
 ```
 
 **Descripción:**
+
 - `feedback`: Comentarios del usuario sobre la resolución
 - `rating`: Calificación de 1 a 5 estrellas
 
@@ -201,17 +213,17 @@ ALTER TABLE requests
 
 ## 🎯 Funcionalidades Críticas para la App
 
-| Funcionalidad | Estado | Notas |
-|---------------|--------|-------|
-| **Crear solicitud simple** | ✅ **100%** | Funciona perfectamente |
-| **Crear solicitud con archivos** | ❌ **0%** | Falta columna `archivos` |
-| **Listar solicitudes** | ✅ **100%** | Funciona perfectamente |
-| **Filtrar por estado** | ✅ **100%** | Funciona perfectamente |
-| **Filtrar por prioridad** | ✅ **100%** | Funciona perfectamente |
+| Funcionalidad                    | Estado      | Notas                      |
+| -------------------------------- | ----------- | -------------------------- |
+| **Crear solicitud simple**       | ✅ **100%** | Funciona perfectamente     |
+| **Crear solicitud con archivos** | ❌ **0%**   | Falta columna `archivos`   |
+| **Listar solicitudes**           | ✅ **100%** | Funciona perfectamente     |
+| **Filtrar por estado**           | ✅ **100%** | Funciona perfectamente     |
+| **Filtrar por prioridad**        | ✅ **100%** | Funciona perfectamente     |
 | **Obtener solicitud específica** | ✅ **100%** | Con relaciones funcionando |
-| **Actualizar estado** | ✅ **100%** | Funciona perfectamente |
-| **Guardar feedback/rating** | ❌ **0%** | Faltan columnas |
-| **Eliminar solicitud** | ✅ **100%** | Funciona perfectamente |
+| **Actualizar estado**            | ✅ **100%** | Funciona perfectamente     |
+| **Guardar feedback/rating**      | ❌ **0%**   | Faltan columnas            |
+| **Eliminar solicitud**           | ✅ **100%** | Funciona perfectamente     |
 
 ---
 
@@ -321,6 +333,7 @@ Estas funcionalidades **NO funcionan** sin las columnas faltantes:
 ### URGENTE: Agregar Columnas Faltantes
 
 **Método 1: Dashboard de Supabase**
+
 1. Ve a https://app.supabase.com
 2. Selecciona tu proyecto
 3. Ve a **SQL Editor**
@@ -328,11 +341,13 @@ Estas funcionalidades **NO funcionan** sin las columnas faltantes:
 5. Ejecuta
 
 **Método 2: CLI de Supabase**
+
 ```bash
 supabase db execute --sql "$(cat scripts/add-missing-columns.sql)"
 ```
 
 **Método 3: Desde la app**
+
 ```bash
 # Crear script SQL
 cat > scripts/add-missing-columns.sql << 'EOF'
@@ -366,6 +381,7 @@ node scripts/test-requests-crud.js
 ## 📊 Estado Antes vs Después
 
 ### Antes (Actual)
+
 ```
 ┌────────────────────────────────────┐
 │  MÓDULO DE SOLICITUDES             │
@@ -379,6 +395,7 @@ node scripts/test-requests-crud.js
 ```
 
 ### Después (Con columnas agregadas)
+
 ```
 ┌────────────────────────────────────┐
 │  MÓDULO DE SOLICITUDES             │
@@ -396,9 +413,11 @@ node scripts/test-requests-crud.js
 ## 🎉 Resumen para el Usuario
 
 **¿El módulo de solicitudes funciona?**
+
 ### ⚠️ PARCIALMENTE - Falta configuración de BD
 
 **¿Qué funciona?**
+
 - ✅ Crear solicitudes (sin archivos)
 - ✅ Listar y filtrar solicitudes
 - ✅ Actualizar estado y prioridad
@@ -406,15 +425,18 @@ node scripts/test-requests-crud.js
 - ✅ Relaciones con usuarios y agentes
 
 **¿Qué NO funciona?**
+
 - ❌ Adjuntar archivos a solicitudes
 - ❌ Guardar feedback y rating
 
 **¿Cuál es la solución?**
+
 - 🔧 Agregar 3 columnas a la tabla `requests`
 - ⏱️ Tiempo: 5 minutos
 - 📝 Ejecutar script SQL en Supabase
 
 **¿Después de la solución?**
+
 - ✅ TODO funcionará al 100%
 - ✅ Tests pasarán completamente
 - ✅ App lista para producción

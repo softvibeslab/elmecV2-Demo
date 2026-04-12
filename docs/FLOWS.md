@@ -8,17 +8,18 @@ Este documento detalla los actores, casos de uso y flujos principales de la apli
 
 ## 👥 Actores y Roles
 
-| Actor | Rol | Descripción |
-| :--- | :--- | :--- |
-| **Cliente** | Usuario | Personal industrial que reporta fallas, solicita cotizaciones o soporte. |
-| **Agente** | Técnico | Experto que recibe solicitudes, diagnostica y resuelve problemas vía chat. |
-| **Admin** | Supervisor | Gestiona usuarios, monitorea KPIs y supervisa tiempos de respuesta. |
+| Actor       | Rol        | Descripción                                                                |
+| :---------- | :--------- | :------------------------------------------------------------------------- |
+| **Cliente** | Usuario    | Personal industrial que reporta fallas, solicita cotizaciones o soporte.   |
+| **Agente**  | Técnico    | Experto que recibe solicitudes, diagnostica y resuelve problemas vía chat. |
+| **Admin**   | Supervisor | Gestiona usuarios, monitorea KPIs y supervisa tiempos de respuesta.        |
 
 ---
 
 ## 🔄 Flujos Principales
 
 ### 1. 🚨 Ciclo de Reparación de Emergencia (Flujo Principal)
+
 **Objetivo:** El cliente reporta una falla crítica y recibe atención inmediata.
 
 1. **Inicio de Sesión:** El cliente accede a la app.
@@ -34,6 +35,7 @@ Este documento detalla los actores, casos de uso y flujos principales de la apli
 4. **Notificación:** El agente recibe alerta "Nueva solicitud asignada".
 
 ### 2. 🛠️ Respuesta y Resolución del Agente
+
 **Objetivo:** El agente diagnostica y resuelve el problema reportado.
 
 1. **Recepción:** Agente abre la notificación o lista de solicitudes.
@@ -49,6 +51,7 @@ Este documento detalla los actores, casos de uso y flujos principales de la apli
    - Agente cambia estado a **"Resuelto"** (Azul).
 
 ### 3. 📊 Supervisión Administrativa
+
 **Objetivo:** Asegurar calidad y tiempos de respuesta.
 
 1. **Monitoreo:** Admin revisa el Dashboard Principal.
@@ -73,5 +76,6 @@ El sistema utiliza colores para indicar la urgencia:
 ---
 
 ## 🧮 Herramientas Industriales
+
 - **Calculadora de Barrenado:** RPM, Avance.
 - **Calculadora de Fresado:** Velocidad de corte, Avance por diente.

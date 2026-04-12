@@ -82,14 +82,17 @@ export default function ForgotPassword() {
               para restablecer tu contraseña.
             </Text>
             <Text style={styles.successNote}>
-              Si no recibes el correo en unos minutos, revisa tu carpeta de spam.
+              Si no recibes el correo en unos minutos, revisa tu carpeta de
+              spam.
             </Text>
 
             <TouchableOpacity
               style={styles.backToLoginButton}
               onPress={() => router.back()}
             >
-              <Text style={styles.backToLoginText}>Volver al inicio de sesión</Text>
+              <Text style={styles.backToLoginText}>
+                Volver al inicio de sesión
+              </Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -132,10 +135,7 @@ export default function ForgotPassword() {
           </View>
 
           <TouchableOpacity
-            style={[
-              styles.resetButton,
-              loading && styles.resetButtonDisabled,
-            ]}
+            style={[styles.resetButton, loading && styles.resetButtonDisabled]}
             onPress={handleResetPassword}
             disabled={loading}
           >

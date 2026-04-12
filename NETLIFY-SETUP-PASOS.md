@@ -18,6 +18,7 @@ netlify login
 ```
 
 **Lo que va a pasar**:
+
 1. Se abrirá tu navegador automáticamente
 2. Te pedirá que autorices Netlify CLI
 3. Haz clic en "Authorize"
@@ -40,6 +41,7 @@ netlify login
 4. Busca y selecciona tu repositorio: **`elmecV2-Demo`**
 
 5. Configura el deploy:
+
    ```
    Branch to deploy: netifly
    Build command: npm ci && npm run build:production
@@ -57,6 +59,7 @@ netlify login
 En **Site settings** > **Environment variables**, agrega las siguientes:
 
 ### Variable 1: EXPO_PUBLIC_SUPABASE_URL
+
 ```
 Key: EXPO_PUBLIC_SUPABASE_URL
 Value: https://pdpqkgrqlubyzkcivifk.supabase.co
@@ -64,6 +67,7 @@ Scopes: ☑️ Production  ☑️ Deploy previews
 ```
 
 ### Variable 2: EXPO_PUBLIC_SUPABASE_ANON_KEY
+
 ```
 Key: EXPO_PUBLIC_SUPABASE_ANON_KEY
 Value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkcHFrZ3JxbHVieXprY2l2aWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkyMDk3MzgsImV4cCI6MjA3NDc4NTczOH0.xcjdhR89okeqaMGeq5oYAjuvRk56H9-Wc8SXjHpPls4
@@ -71,6 +75,7 @@ Scopes: ☑️ Production  ☑️ Deploy previews
 ```
 
 ### Variable 3: EXPO_PUBLIC_ENVIRONMENT
+
 ```
 Key: EXPO_PUBLIC_ENVIRONMENT
 Value: production
@@ -78,6 +83,7 @@ Scopes: ☑️ Production  ☐ Deploy previews
 ```
 
 ### Variable 4: NODE_ENV
+
 ```
 Key: NODE_ENV
 Value: production
@@ -85,6 +91,7 @@ Scopes: ☑️ Production  ☐ Deploy previews
 ```
 
 ### Variable 5: EXPO_PUBLIC_EAS_PROJECT_ID
+
 ```
 Key: EXPO_PUBLIC_EAS_PROJECT_ID
 Value: elmec-mobile-app-demo
@@ -158,18 +165,21 @@ Una vez que el deploy complete exitosamente:
 3. **Prueba el login** con estas credenciales:
 
 ### Admin:
+
 ```
 Email: i.pineda@elmec.com.mx
 Password: Elmec2024!Admin
 ```
 
 ### Agente:
+
 ```
 Email: j.gonzalez@elmec.com.mx
 Password: Elmec2024!Agent
 ```
 
 ### Cliente:
+
 ```
 Email: cliente@gmail.com
 Password: Elmec2024!Client

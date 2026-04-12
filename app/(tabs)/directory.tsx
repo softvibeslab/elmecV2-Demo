@@ -101,7 +101,11 @@ export default function Directory() {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(person => {
-        const fullName = [person.nombre, person.apellido_paterno, person.apellido_materno]
+        const fullName = [
+          person.nombre,
+          person.apellido_paterno,
+          person.apellido_materno,
+        ]
           .filter(Boolean)
           .join(' ')
           .toLowerCase();
@@ -132,7 +136,11 @@ export default function Directory() {
   };
 
   const getFullName = (person: User): string => {
-    const parts = [person.nombre, person.apellido_paterno, person.apellido_materno].filter(Boolean);
+    const parts = [
+      person.nombre,
+      person.apellido_paterno,
+      person.apellido_materno,
+    ].filter(Boolean);
     return parts.join(' ').trim();
   };
 

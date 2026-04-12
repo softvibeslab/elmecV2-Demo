@@ -32,7 +32,7 @@ const colors = {
   yellow: '\x1b[33m',
   blue: '\x1b[34m',
   cyan: '\x1b[36m',
-  magenta: '\x1b[35m'
+  magenta: '\x1b[35m',
 };
 
 function log(color, icon, message) {
@@ -44,7 +44,7 @@ const testResults = {
   total: 0,
   passed: 0,
   failed: 0,
-  tests: []
+  tests: [],
 };
 
 function recordTest(name, passed, message = '') {
@@ -84,7 +84,7 @@ async function runTests() {
       .from(BUCKET_NAME)
       .upload(fileName1, textBlob, {
         contentType: 'text/plain',
-        upsert: false
+        upsert: false,
       });
 
     if (uploadError1) {
@@ -101,11 +101,15 @@ async function runTests() {
     log('blue', '📝', 'TEST 2: CREATE - Subir archivo JSON');
     console.log('─'.repeat(60));
 
-    const jsonContent = JSON.stringify({
-      test: true,
-      timestamp: Date.now(),
-      description: 'Test CRUD file'
-    }, null, 2);
+    const jsonContent = JSON.stringify(
+      {
+        test: true,
+        timestamp: Date.now(),
+        description: 'Test CRUD file',
+      },
+      null,
+      2
+    );
     const jsonBlob = new Blob([jsonContent], { type: 'application/json' });
     const fileName2 = `${TEST_FOLDER}/test-${Date.now()}.json`;
 
@@ -113,7 +117,7 @@ async function runTests() {
       .from(BUCKET_NAME)
       .upload(fileName2, jsonBlob, {
         contentType: 'application/json',
-        upsert: false
+        upsert: false,
       });
 
     if (uploadError2) {
@@ -138,7 +142,7 @@ async function runTests() {
       .from(BUCKET_NAME)
       .upload(fileName3, csvBlob, {
         contentType: 'text/csv',
-        upsert: false
+        upsert: false,
       });
 
     if (uploadError3) {
@@ -160,19 +164,23 @@ async function runTests() {
       .list(TEST_FOLDER, {
         limit: 100,
         offset: 0,
-        sortBy: { column: 'name', order: 'asc' }
+        sortBy: { column: 'name', order: 'asc' },
       });
 
     if (listError) {
       recordTest('READ - Listar archivos', false, listError.message);
     } else {
       const fileCount = files.length;
-      recordTest('READ - Listar archivos', true, `(${fileCount} archivos encontrados)`);
+      recordTest(
+        'READ - Listar archivos',
+        true,
+        `(${fileCount} archivos encontrados)`
+      );
 
       if (fileCount > 0) {
         console.log('   Archivos encontrados:');
         files.slice(0, 5).forEach(f => {
-          console.log(`   - ${f.name} (${(f.metadata?.size || 0)} bytes)`);
+          console.log(`   - ${f.name} (${f.metadata?.size || 0} bytes)`);
         });
         if (fileCount > 5) {
           console.log(`   ... y ${fileCount - 5} más`);
@@ -210,20 +218,26 @@ async function runTests() {
     console.log('─'.repeat(60));
 
     if (testFile1Path) {
-      const { data: downloadData, error: downloadError } = await publicClient.storage
-        .from(BUCKET_NAME)
-        .download(testFile1Path);
+      const { data: downloadData, error: downloadError } =
+        await publicClient.storage.from(BUCKET_NAME).download(testFile1Path);
 
       if (downloadError) {
         recordTest('READ - Descargar archivo', false, downloadError.message);
       } else {
         const text = await downloadData.text();
         const matches = text === textContent;
-        recordTest('READ - Descargar archivo', matches,
-          matches ? '(contenido verificado)' : '(contenido no coincide)');
+        recordTest(
+          'READ - Descargar archivo',
+          matches,
+          matches ? '(contenido verificado)' : '(contenido no coincide)'
+        );
       }
     } else {
-      recordTest('READ - Descargar archivo', false, 'No hay archivo para probar');
+      recordTest(
+        'READ - Descargar archivo',
+        false,
+        'No hay archivo para probar'
+      );
     }
 
     // ============================================
@@ -234,14 +248,15 @@ async function runTests() {
     console.log('─'.repeat(60));
 
     if (testFile1Path) {
-      const updatedContent = 'CONTENIDO ACTUALIZADO - ' + new Date().toISOString();
+      const updatedContent =
+        'CONTENIDO ACTUALIZADO - ' + new Date().toISOString();
       const updatedBlob = new Blob([updatedContent], { type: 'text/plain' });
 
       const { data: updateData, error: updateError } = await adminClient.storage
         .from(BUCKET_NAME)
         .update(testFile1Path, updatedBlob, {
           contentType: 'text/plain',
-          upsert: true
+          upsert: true,
         });
 
       if (updateError) {
@@ -250,19 +265,27 @@ async function runTests() {
         recordTest('UPDATE - Actualizar archivo', true, '');
 
         // Verificar que se actualizó
-        const { data: verifyData, error: verifyError } = await publicClient.storage
-          .from(BUCKET_NAME)
-          .download(testFile1Path);
+        const { data: verifyData, error: verifyError } =
+          await publicClient.storage.from(BUCKET_NAME).download(testFile1Path);
 
         if (!verifyError) {
           const newText = await verifyData.text();
           const updated = newText === updatedContent;
-          recordTest('UPDATE - Verificar actualización', updated,
-            updated ? '(contenido actualizado correctamente)' : '(contenido no cambió)');
+          recordTest(
+            'UPDATE - Verificar actualización',
+            updated,
+            updated
+              ? '(contenido actualizado correctamente)'
+              : '(contenido no cambió)'
+          );
         }
       }
     } else {
-      recordTest('UPDATE - Actualizar archivo', false, 'No hay archivo para probar');
+      recordTest(
+        'UPDATE - Actualizar archivo',
+        false,
+        'No hay archivo para probar'
+      );
     }
 
     // ============================================
@@ -282,7 +305,11 @@ async function runTests() {
       if (moveError) {
         recordTest('UPDATE - Mover archivo', false, moveError.message);
       } else {
-        recordTest('UPDATE - Mover archivo', true, `(${testFile2Path} → ${newPath})`);
+        recordTest(
+          'UPDATE - Mover archivo',
+          true,
+          `(${testFile2Path} → ${newPath})`
+        );
         testFile2Path = newPath; // Actualizar referencia
       }
     } else {
@@ -307,18 +334,24 @@ async function runTests() {
         recordTest('DELETE - Eliminar archivo', true, `(${testFile1Path})`);
 
         // Verificar que se eliminó
-        const { data: checkData, error: checkError } = await publicClient.storage
-          .from(BUCKET_NAME)
-          .download(testFile1Path);
+        const { data: checkData, error: checkError } =
+          await publicClient.storage.from(BUCKET_NAME).download(testFile1Path);
 
         const isDeleted = checkError !== null;
-        recordTest('DELETE - Verificar eliminación', isDeleted,
-          isDeleted ? '(archivo ya no existe)' : '(archivo aún existe)');
+        recordTest(
+          'DELETE - Verificar eliminación',
+          isDeleted,
+          isDeleted ? '(archivo ya no existe)' : '(archivo aún existe)'
+        );
 
         testFile1Path = null; // Marcar como eliminado
       }
     } else {
-      recordTest('DELETE - Eliminar archivo', false, 'No hay archivo para probar');
+      recordTest(
+        'DELETE - Eliminar archivo',
+        false,
+        'No hay archivo para probar'
+      );
     }
 
     // ============================================
@@ -331,17 +364,28 @@ async function runTests() {
     const filesToDelete = [testFile2Path, testFile3Path].filter(Boolean);
 
     if (filesToDelete.length > 0) {
-      const { data: deleteMultiData, error: deleteMultiError } = await adminClient.storage
-        .from(BUCKET_NAME)
-        .remove(filesToDelete);
+      const { data: deleteMultiData, error: deleteMultiError } =
+        await adminClient.storage.from(BUCKET_NAME).remove(filesToDelete);
 
       if (deleteMultiError) {
-        recordTest('DELETE - Eliminar múltiples', false, deleteMultiError.message);
+        recordTest(
+          'DELETE - Eliminar múltiples',
+          false,
+          deleteMultiError.message
+        );
       } else {
-        recordTest('DELETE - Eliminar múltiples', true, `(${filesToDelete.length} archivos)`);
+        recordTest(
+          'DELETE - Eliminar múltiples',
+          true,
+          `(${filesToDelete.length} archivos)`
+        );
       }
     } else {
-      recordTest('DELETE - Eliminar múltiples', false, 'No hay archivos para probar');
+      recordTest(
+        'DELETE - Eliminar múltiples',
+        false,
+        'No hay archivos para probar'
+      );
     }
 
     // ============================================
@@ -351,26 +395,27 @@ async function runTests() {
     log('blue', '🧹', 'TEST 11: Limpieza - Eliminar carpeta de pruebas');
     console.log('─'.repeat(60));
 
-    const { data: remainingFiles, error: listRemainingError } = await adminClient.storage
-      .from(BUCKET_NAME)
-      .list(TEST_FOLDER);
+    const { data: remainingFiles, error: listRemainingError } =
+      await adminClient.storage.from(BUCKET_NAME).list(TEST_FOLDER);
 
     if (!listRemainingError && remainingFiles && remainingFiles.length > 0) {
       const pathsToDelete = remainingFiles.map(f => `${TEST_FOLDER}/${f.name}`);
 
-      const { data: cleanupData, error: cleanupError } = await adminClient.storage
-        .from(BUCKET_NAME)
-        .remove(pathsToDelete);
+      const { data: cleanupData, error: cleanupError } =
+        await adminClient.storage.from(BUCKET_NAME).remove(pathsToDelete);
 
       if (cleanupError) {
         recordTest('CLEANUP - Limpiar carpeta', false, cleanupError.message);
       } else {
-        recordTest('CLEANUP - Limpiar carpeta', true, `(${pathsToDelete.length} archivos eliminados)`);
+        recordTest(
+          'CLEANUP - Limpiar carpeta',
+          true,
+          `(${pathsToDelete.length} archivos eliminados)`
+        );
       }
     } else {
       recordTest('CLEANUP - Limpiar carpeta', true, '(carpeta ya limpia)');
     }
-
   } catch (error) {
     console.error('\n❌ Error inesperado:', error.message);
     recordTest('ERROR GENERAL', false, error.message);
@@ -387,9 +432,10 @@ async function runTests() {
   log('green', '✅', `Pruebas exitosas:     ${testResults.passed}`);
   log('red', '❌', `Pruebas fallidas:     ${testResults.failed}`);
 
-  const successRate = testResults.total > 0
-    ? ((testResults.passed / testResults.total) * 100).toFixed(1)
-    : 0;
+  const successRate =
+    testResults.total > 0
+      ? ((testResults.passed / testResults.total) * 100).toFixed(1)
+      : 0;
 
   console.log(`\nTasa de éxito:         ${successRate}%\n`);
 
@@ -419,10 +465,10 @@ async function runTests() {
 
 // Ejecutar pruebas
 runTests()
-  .then((exitCode) => {
+  .then(exitCode => {
     process.exit(exitCode);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('\n❌ Error fatal:', error);
     process.exit(1);
   });

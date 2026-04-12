@@ -18,8 +18,8 @@ if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: {
     autoRefreshToken: false,
-    persistSession: false
-  }
+    persistSession: false,
+  },
 });
 
 async function fixUserId(email, oldId, newId) {
@@ -59,7 +59,7 @@ async function fixUserId(email, oldId, newId) {
     const newUserData = {
       ...userData,
       id: newId,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     };
 
     const { error: insertError } = await supabase
@@ -82,7 +82,9 @@ async function fixUserId(email, oldId, newId) {
 }
 
 async function main() {
-  console.log('\n╔════════════════════════════════════════════════════════════╗');
+  console.log(
+    '\n╔════════════════════════════════════════════════════════════╗'
+  );
   console.log('║           CORREGIR IDs EN TABLA USERS                     ║');
   console.log('╚════════════════════════════════════════════════════════════╝');
 
@@ -90,13 +92,13 @@ async function main() {
     {
       email: 'i.pineda@elmec.com.mx',
       oldId: '8d4be740-a5ee-45d9-abb6-a5801cc9da6e',
-      newId: '29998833-4e1a-4874-bd92-e1225e0455b4'
+      newId: '29998833-4e1a-4874-bd92-e1225e0455b4',
     },
     {
       email: 'j.gonzalez@elmec.com.mx',
       oldId: 'c7c81f4e-21a8-4dbb-8613-a6b31f8e3e68',
-      newId: '68d30e15-c182-4b59-8d41-9adaa25f842d'
-    }
+      newId: '68d30e15-c182-4b59-8d41-9adaa25f842d',
+    },
   ];
 
   let success = 0;
@@ -111,9 +113,13 @@ async function main() {
     }
   }
 
-  console.log('\n╔════════════════════════════════════════════════════════════╗');
+  console.log(
+    '\n╔════════════════════════════════════════════════════════════╗'
+  );
   console.log('║                        RESUMEN                             ║');
-  console.log('╚════════════════════════════════════════════════════════════╝\n');
+  console.log(
+    '╚════════════════════════════════════════════════════════════╝\n'
+  );
   console.log(`Total procesados: ${fixes.length}`);
   console.log(`✅ Corregidos exitosamente: ${success}`);
   console.log(`❌ Fallidos: ${failed}`);

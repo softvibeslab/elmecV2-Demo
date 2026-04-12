@@ -164,10 +164,12 @@ export default function RequestsByStatus() {
 
   const getFullName = (person: any) => {
     if (!person) return 'N/A';
-    return [person.nombre, person.apellido_paterno, person.apellido_materno]
-      .filter(Boolean)
-      .join(' ')
-      .trim() || 'N/A';
+    return (
+      [person.nombre, person.apellido_paterno, person.apellido_materno]
+        .filter(Boolean)
+        .join(' ')
+        .trim() || 'N/A'
+    );
   };
 
   if (loading) {

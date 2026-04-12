@@ -102,17 +102,6 @@ export default function TabLayout() {
           ),
         }}
       />
-      {/*
-      <Tabs.Screen
-        name="mispedidos"
-        options={{
-          title: 'Pedidos',
-          tabBarIcon: ({ size, color }) => (
-            <Package size={size} color={color} />
-          ),
-        }}
-      />
-      */}
       <Tabs.Screen
         name="profile"
         options={{

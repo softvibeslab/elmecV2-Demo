@@ -166,10 +166,7 @@ export default function ResetPassword() {
           </View>
 
           <TouchableOpacity
-            style={[
-              styles.resetButton,
-              loading && styles.resetButtonDisabled,
-            ]}
+            style={[styles.resetButton, loading && styles.resetButtonDisabled]}
             onPress={handleResetPassword}
             disabled={loading}
           >
@@ -181,9 +178,7 @@ export default function ResetPassword() {
                 </Text>
               </View>
             ) : (
-              <Text style={styles.resetButtonText}>
-                Actualizar Contraseña
-              </Text>
+              <Text style={styles.resetButtonText}>Actualizar Contraseña</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -192,18 +187,14 @@ export default function ResetPassword() {
           <Text style={styles.requirementsTitle}>
             📋 Requisitos de contraseña
           </Text>
-          <Text style={styles.requirementText}>
-            • Al menos 8 caracteres
-          </Text>
+          <Text style={styles.requirementText}>• Al menos 8 caracteres</Text>
           <Text style={styles.requirementText}>
             • Al menos una letra mayúscula
           </Text>
           <Text style={styles.requirementText}>
             • Al menos una letra minúscula
           </Text>
-          <Text style={styles.requirementText}>
-            • Al menos un número
-          </Text>
+          <Text style={styles.requirementText}>• Al menos un número</Text>
         </View>
       </ScrollView>
     </LinearGradient>

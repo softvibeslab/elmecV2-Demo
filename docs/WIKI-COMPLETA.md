@@ -27,6 +27,7 @@
 ### ¿Qué es ELMEC v2?
 
 ELMEC v2 es una aplicación móvil empresarial diseñada para gestionar:
+
 - **Solicitudes de clientes** (soporte, ventas, cotizaciones)
 - **Chat en tiempo real** entre clientes y agentes
 - **Notificaciones push** para actualizaciones
@@ -120,12 +121,14 @@ elmecV2-Demo/
 **Ubicación:** `app/(tabs)/index.tsx`
 
 **Funcionalidades:**
+
 - Vista general de métricas del usuario
 - Solicitudes recientes
 - Notificaciones importantes
 - Acceso rápido a funciones principales
 
 **Datos mostrados:**
+
 - Total de solicitudes
 - Solicitudes pendientes
 - Mensajes sin leer
@@ -154,6 +157,7 @@ Chat disponible entre ambos
 ```
 
 **Estados de Solicitud:**
+
 1. `nuevo` - Recién creada
 2. `asignado` - Asignada a agente
 3. `en_proceso` - En trabajo
@@ -162,12 +166,14 @@ Chat disponible entre ambos
 6. `cerrado` - Cerrada y archivada
 
 **Prioridades:**
+
 - `baja` - Verde
 - `media` - Amarillo
 - `alta` - Naranja
 - `urgente` - Rojo
 
 **Tipos de Solicitud:**
+
 1. Ventas
 2. Soporte
 3. Cotización
@@ -178,6 +184,7 @@ Chat disponible entre ambos
 **Ubicación:** `app/(tabs)/chat/`
 
 **Características:**
+
 - ✅ Mensajes en tiempo real (Supabase Realtime)
 - ✅ Indicador de "escribiendo..."
 - ✅ Indicador online/offline
@@ -188,6 +195,7 @@ Chat disponible entre ambos
 - ✅ Editar/Eliminar mensajes
 
 **Tipos de Mensaje:**
+
 - `text` - Mensaje de texto
 - `image` - Imagen adjunta
 - `file` - Archivo adjunto
@@ -195,6 +203,7 @@ Chat disponible entre ambos
 - `system` - Mensaje del sistema
 
 **Estructura de Chat Room:**
+
 ```typescript
 {
   id: string,
@@ -215,6 +224,7 @@ Chat disponible entre ambos
 **Ubicación:** `app/(tabs)/calculator.tsx`
 
 **Funcionalidades:**
+
 - Cálculos básicos y avanzados
 - Guardar sesiones de cálculo
 - Plantillas predefinidas
@@ -222,6 +232,7 @@ Chat disponible entre ambos
 - Historial de cálculos
 
 **Casos de Uso:**
+
 - Cotización de materiales
 - Cálculo de descuentos
 - Conversiones de unidades
@@ -232,6 +243,7 @@ Chat disponible entre ambos
 **Ubicación:** `app/(tabs)/directory.tsx`
 
 **Funcionalidades:**
+
 - Listado de agentes por zona
 - Filtrado por categoría
 - Búsqueda por nombre
@@ -239,6 +251,7 @@ Chat disponible entre ambos
 - Contacto directo (chat/llamada)
 
 **Filtros Disponibles:**
+
 - Por zona geográfica
 - Por categoría (Ventas, Soporte, etc.)
 - Por disponibilidad
@@ -249,6 +262,7 @@ Chat disponible entre ambos
 **Ubicación:** `app/(tabs)/notifications.tsx`
 
 **Tipos de Notificación:**
+
 - `request_update` - Actualización de solicitud
 - `new_message` - Nuevo mensaje en chat
 - `assignment` - Nueva asignación
@@ -256,11 +270,13 @@ Chat disponible entre ambos
 - `system` - Mensaje del sistema
 
 **Prioridades:**
+
 - `low` - Información general
 - `medium` - Atención recomendada
 - `high` - Requiere acción
 
 **Flujo de Notificaciones:**
+
 ```
 Evento ocurre en el sistema
          ↓
@@ -280,6 +296,7 @@ Badge de contador se actualiza
 ### Tablas Principales
 
 #### 1. users
+
 ```sql
 CREATE TABLE users (
   id UUID PRIMARY KEY,
@@ -307,6 +324,7 @@ CREATE TABLE users (
 ```
 
 #### 2. requests
+
 ```sql
 CREATE TABLE requests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -329,6 +347,7 @@ CREATE TABLE requests (
 ```
 
 #### 3. chat_rooms
+
 ```sql
 CREATE TABLE chat_rooms (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -344,6 +363,7 @@ CREATE TABLE chat_rooms (
 ```
 
 #### 4. messages
+
 ```sql
 CREATE TABLE messages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -365,6 +385,7 @@ CREATE TABLE messages (
 ```
 
 #### 5. notifications
+
 ```sql
 CREATE TABLE notifications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -460,11 +481,11 @@ RLS valida permisos en cada query
 
 ### Roles y Permisos
 
-| Rol | Permisos |
-|-----|----------|
-| **customer** | - Crear solicitudes<br>- Ver sus solicitudes<br>- Chatear con agentes<br>- Recibir notificaciones |
-| **agent** | - Ver solicitudes asignadas<br>- Actualizar estatus<br>- Chatear con clientes<br>- Ver directorio<br>- Crear/editar calculadoras |
-| **admin** | - Todos los permisos<br>- Asignar solicitudes<br>- Gestionar usuarios<br>- Ver estadísticas globales<br>- Acceso a configuración |
+| Rol          | Permisos                                                                                                                         |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| **customer** | - Crear solicitudes<br>- Ver sus solicitudes<br>- Chatear con agentes<br>- Recibir notificaciones                                |
+| **agent**    | - Ver solicitudes asignadas<br>- Actualizar estatus<br>- Chatear con clientes<br>- Ver directorio<br>- Crear/editar calculadoras |
+| **admin**    | - Todos los permisos<br>- Asignar solicitudes<br>- Gestionar usuarios<br>- Ver estadísticas globales<br>- Acceso a configuración |
 
 ---
 
@@ -478,23 +499,16 @@ RLS valida permisos en cada query
 import { createClient } from '@supabase/supabase-js';
 
 // Cliente con tipos estrictos
-export const supabase = createClient<Database>(
-  supabaseUrl,
-  supabaseAnonKey,
-  {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: false,
-    },
-  }
-);
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false,
+  },
+});
 
 // Cliente sin tipos (para operaciones con 'any')
-export const supabaseClient = createClient(
-  supabaseUrl,
-  supabaseAnonKey
-);
+export const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
 ```
 
 ### Contextos de React
@@ -503,12 +517,12 @@ export const supabaseClient = createClient(
 
 ```typescript
 const {
-  user,           // Usuario actual
-  session,        // Sesión de Supabase
-  isLoading,      // Estado de carga
-  isAuthenticated,// Estado de autenticación
-  signIn,         // Función de login
-  signOut,        // Función de logout
+  user, // Usuario actual
+  session, // Sesión de Supabase
+  isLoading, // Estado de carga
+  isAuthenticated, // Estado de autenticación
+  signIn, // Función de login
+  signOut, // Función de logout
 } = useAuth();
 ```
 
@@ -516,11 +530,11 @@ const {
 
 ```typescript
 const {
-  chatRooms,          // Lista de salas de chat
-  messages,           // Mensajes por sala
-  typingUsers,        // Usuarios escribiendo
-  sendMessage,        // Enviar mensaje
-  createChatRoom,     // Crear sala
+  chatRooms, // Lista de salas de chat
+  messages, // Mensajes por sala
+  typingUsers, // Usuarios escribiendo
+  sendMessage, // Enviar mensaje
+  createChatRoom, // Crear sala
   markMessagesAsRead, // Marcar como leído
 } = useChat();
 ```
@@ -529,10 +543,10 @@ const {
 
 ```typescript
 const {
-  notifications,      // Lista de notificaciones
-  unreadCount,        // Contador no leídas
-  sendNotification,   // Enviar notificación
-  markAsRead,         // Marcar como leída
+  notifications, // Lista de notificaciones
+  unreadCount, // Contador no leídas
+  sendNotification, // Enviar notificación
+  markAsRead, // Marcar como leída
 } = useNotifications();
 ```
 
@@ -604,6 +618,7 @@ npm run web      # Web
 ### Crear un Nuevo Módulo
 
 1. **Crear archivo de ruta en `app/(tabs)/`**
+
 ```typescript
 // app/(tabs)/nuevo-modulo.tsx
 import { View, Text } from 'react-native';
@@ -618,6 +633,7 @@ export default function NuevoModulo() {
 ```
 
 2. **Agregar tab en `app/(tabs)/_layout.tsx`**
+
 ```typescript
 <Tabs.Screen
   name="nuevo-modulo"
@@ -635,6 +651,7 @@ export default function NuevoModulo() {
 ### Mejores Prácticas
 
 ✅ **DO:**
+
 - Usar TypeScript para todo
 - Implementar manejo de errores
 - Agregar logging para depuración
@@ -645,6 +662,7 @@ export default function NuevoModulo() {
 - Documentar código complejo
 
 ❌ **DON'T:**
+
 - Hardcodear credenciales
 - Ignorar errores silenciosamente
 - Hacer queries sin optimizar
@@ -699,6 +717,7 @@ EXPO_PUBLIC_ENVIRONMENT=production
 
 **Causa:** Token expirado
 **Solución:**
+
 ```typescript
 // Verificar y refrescar sesión
 const { data, error } = await supabase.auth.refreshSession();
@@ -708,6 +727,7 @@ const { data, error } = await supabase.auth.refreshSession();
 
 **Causa:** Caché de esquema desactualizado
 **Solución:**
+
 - Reiniciar Supabase
 - Verificar migraciones aplicadas
 - Usar `supabaseClient` sin tipos estrictos
@@ -716,6 +736,7 @@ const { data, error } = await supabase.auth.refreshSession();
 
 **Causa:** Políticas RLS bloqueando
 **Solución:**
+
 - Verificar políticas en Supabase Dashboard
 - Validar que el usuario esté autenticado
 - Revisar logs de Supabase
@@ -724,6 +745,7 @@ const { data, error } = await supabase.auth.refreshSession();
 
 **Causa:** Subscripción no configurada
 **Solución:**
+
 ```typescript
 // Verificar que RLS permite SELECT
 // Verificar que el canal está suscrito
@@ -735,6 +757,7 @@ const channel = supabase.channel('room_1').subscribe();
 ## 📞 Soporte y Recursos
 
 ### Documentación Oficial
+
 - [Expo Docs](https://docs.expo.dev)
 - [Supabase Docs](https://supabase.com/docs)
 - [React Native Docs](https://reactnative.dev/docs)

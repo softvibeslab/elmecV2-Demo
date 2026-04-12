@@ -14,7 +14,10 @@ const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
   console.error('❌ Error: faltan credenciales de Supabase');
   console.error('   EXPO_PUBLIC_SUPABASE_URL:', SUPABASE_URL ? '✅' : '❌');
-  console.error('   SUPABASE_SERVICE_ROLE_KEY:', SERVICE_ROLE_KEY ? '✅' : '❌');
+  console.error(
+    '   SUPABASE_SERVICE_ROLE_KEY:',
+    SERVICE_ROLE_KEY ? '✅' : '❌'
+  );
   process.exit(1);
 }
 
@@ -22,8 +25,8 @@ if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: {
     autoRefreshToken: false,
-    persistSession: false
-  }
+    persistSession: false,
+  },
 });
 
 async function checkUser(email) {
@@ -45,14 +48,17 @@ async function checkUser(email) {
     if (userData) {
       console.log('✅ Usuario encontrado en tabla users:');
       console.log(`   ID: ${userData.id}`);
-      console.log(`   Nombre: ${userData.nombre} ${userData.apellido_paterno || ''}`);
+      console.log(
+        `   Nombre: ${userData.nombre} ${userData.apellido_paterno || ''}`
+      );
       console.log(`   Email: ${userData.correo_electronico}`);
       console.log(`   Rol: ${userData.rol}`);
       console.log(`   Empresa: ${userData.empresa}`);
       console.log(`   Activo: ${userData.activo ? 'Sí' : 'No'}`);
 
       // 2. Buscar en auth.users usando el ID
-      const { data: authData, error: authError } = await supabase.auth.admin.getUserById(userData.id);
+      const { data: authData, error: authError } =
+        await supabase.auth.admin.getUserById(userData.id);
 
       if (authError) {
         console.log('⚠️  Usuario NO encontrado en Supabase Auth');
@@ -63,10 +69,19 @@ async function checkUser(email) {
       if (authData.user) {
         console.log('\n✅ Usuario encontrado en Supabase Auth:');
         console.log(`   Email: ${authData.user.email}`);
-        console.log(`   Email confirmado: ${authData.user.email_confirmed_at ? 'Sí' : 'No'}`);
-        console.log(`   Último login: ${authData.user.last_sign_in_at || 'Nunca'}`);
+        console.log(
+          `   Email confirmado: ${authData.user.email_confirmed_at ? 'Sí' : 'No'}`
+        );
+        console.log(
+          `   Último login: ${authData.user.last_sign_in_at || 'Nunca'}`
+        );
         console.log(`   Creado: ${authData.user.created_at}`);
-        return { inUsers: true, inAuth: true, userData, authData: authData.user };
+        return {
+          inUsers: true,
+          inAuth: true,
+          userData,
+          authData: authData.user,
+        };
       }
     } else {
       console.log('❌ Usuario NO encontrado en tabla users');
@@ -79,7 +94,9 @@ async function checkUser(email) {
 }
 
 async function main() {
-  console.log('\n╔════════════════════════════════════════════════════════════╗');
+  console.log(
+    '\n╔════════════════════════════════════════════════════════════╗'
+  );
   console.log('║     VERIFICACIÓN DE USUARIOS ELMEC EN SUPABASE           ║');
   console.log('╚════════════════════════════════════════════════════════════╝');
 
@@ -101,9 +118,13 @@ async function main() {
   }
 
   // Resumen
-  console.log('\n\n╔════════════════════════════════════════════════════════════╗');
+  console.log(
+    '\n\n╔════════════════════════════════════════════════════════════╗'
+  );
   console.log('║                        RESUMEN                             ║');
-  console.log('╚════════════════════════════════════════════════════════════╝\n');
+  console.log(
+    '╚════════════════════════════════════════════════════════════╝\n'
+  );
 
   const canLogin = results.filter(r => r.inUsers && r.inAuth);
   const needsAuth = results.filter(r => r.inUsers && !r.inAuth);
@@ -114,7 +135,9 @@ async function main() {
     console.log('   Contraseña temporal: abc321\n');
     canLogin.forEach(r => {
       console.log(`   📧 ${r.email}`);
-      console.log(`      Nombre: ${r.userData.nombre} ${r.userData.apellido_paterno || ''}`);
+      console.log(
+        `      Nombre: ${r.userData.nombre} ${r.userData.apellido_paterno || ''}`
+      );
       console.log(`      Rol: ${r.userData.rol}`);
       console.log('');
     });

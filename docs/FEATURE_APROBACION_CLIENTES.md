@@ -7,21 +7,25 @@ Esta feature implementa un flujo de seguridad donde todo nuevo cliente registrad
 ## 📋 Casos de Uso
 
 ### 1. Registro de Nuevo Cliente
+
 - **Actor**: Visitante / Prospecto de Cliente.
 - **Acción**: Completa el formulario de registro.
 - **Resultado**: El sistema crea el usuario con `status_aprobacion = 'pendiente'`. Se le muestra un mensaje informando que su cuenta está en revisión.
 
 ### 2. Intento de Login (Sin Aprobación)
+
 - **Actor**: Cliente Pendiente.
 - **Acción**: Intenta iniciar sesión con sus credenciales.
-- **Resultado**: El sistema valida las credenciales pero bloquea el acceso con un mensaje: *"Tu cuenta aún no ha sido aprobada por el equipo de ELMEC. Te notificaremos por correo una vez activada."*
+- **Resultado**: El sistema valida las credenciales pero bloquea el acceso con un mensaje: _"Tu cuenta aún no ha sido aprobada por el equipo de ELMEC. Te notificaremos por correo una vez activada."_
 
 ### 3. Gestión de Aprobaciones (Admin)
+
 - **Actor**: Administrador de ELMEC.
 - **Acción**: Accede al nuevo módulo "Gestión de Clientes" en el Dashboard.
 - **Resultado**: Visualiza una lista de usuarios filtrada por estado y **zona geográfica** (Norte, Sur, Centro, Este, Oeste). Puede **Aprobar** o **Rechazar** con un solo clic.
 
 ### 4. Acceso Post-Aprobación
+
 - **Actor**: Cliente Aprobado.
 - **Acción**: Recibe notificación de activación e inicia sesión.
 - **Resultado**: Acceso total a la plataforma (Solicitudes, Chat, Calculadoras).
@@ -30,7 +34,7 @@ Esta feature implementa un flujo de seguridad donde todo nuevo cliente registrad
 
 ## 🛠️ Flujo de Datos (Desarrollo)
 
-1. **Base de Datos**: 
+1. **Base de Datos**:
    - Agregar columna `status_aprobacion` (enum: 'pendiente', 'aprobado', 'rechazado') a la tabla `users`.
    - Valor por defecto: `'pendiente'`.
 

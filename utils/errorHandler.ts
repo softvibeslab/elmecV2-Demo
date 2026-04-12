@@ -5,7 +5,7 @@ export enum ErrorSeverity {
   LOW = 'low',
   MEDIUM = 'medium',
   HIGH = 'high',
-  CRITICAL = 'critical'
+  CRITICAL = 'critical',
 }
 
 // Error categories
@@ -15,7 +15,7 @@ export enum ErrorCategory {
   DATABASE = 'database',
   VALIDATION = 'validation',
   PERMISSION = 'permission',
-  UNKNOWN = 'unknown'
+  UNKNOWN = 'unknown',
 }
 
 export interface AppError {
@@ -46,11 +46,12 @@ export interface ErrorLogEntry {
 export class ErrorHandler {
   private static errorQueue: ErrorLogEntry[] = [];
   private static maxQueueSize = 100;
-  private static isProduction = process.env.EXPO_PUBLIC_ENVIRONMENT === 'production';
+  private static isProduction =
+    process.env.EXPO_PUBLIC_ENVIRONMENT === 'production';
 
   static handleSupabaseError(error: any): AppError {
     const timestamp = new Date().toISOString();
-    
+
     if (!this.isProduction) {
       console.error('Supabase error:', error);
     }
@@ -60,13 +61,14 @@ export class ErrorHandler {
       case '42P17':
         return {
           code: 'RLS_RECURSION',
-          message: 'Error de configuración de seguridad. Contacta al administrador.',
+          message:
+            'Error de configuración de seguridad. Contacta al administrador.',
           category: ErrorCategory.DATABASE,
           severity: ErrorSeverity.CRITICAL,
           timestamp,
           details: error,
           userMessage: 'Error interno del sistema. Por favor contacta soporte.',
-          retryable: false
+          retryable: false,
         };
 
       case 'PGRST116':
@@ -78,7 +80,7 @@ export class ErrorHandler {
           timestamp,
           details: error,
           userMessage: 'El recurso solicitado no existe.',
-          retryable: false
+          retryable: false,
         };
 
       case '23505':
@@ -90,7 +92,7 @@ export class ErrorHandler {
           timestamp,
           details: error,
           userMessage: 'Ya existe un registro con esos datos.',
-          retryable: false
+          retryable: false,
         };
 
       case '23503':
@@ -102,7 +104,7 @@ export class ErrorHandler {
           timestamp,
           details: error,
           userMessage: 'Error en la integridad de los datos.',
-          retryable: false
+          retryable: false,
         };
 
       default:
@@ -114,14 +116,14 @@ export class ErrorHandler {
           timestamp,
           details: error,
           userMessage: 'Error en la base de datos. Intenta de nuevo.',
-          retryable: true
+          retryable: true,
         };
     }
   }
 
   static handleAuthError(error: any): AppError {
     const timestamp = new Date().toISOString();
-    
+
     if (!this.isProduction) {
       console.error('Auth error:', error);
     }
@@ -142,7 +144,7 @@ export class ErrorHandler {
         timestamp,
         details: error,
         userMessage: 'Email o contraseña incorrectos.',
-        retryable: true
+        retryable: true,
       };
     }
 
@@ -156,7 +158,7 @@ export class ErrorHandler {
           timestamp,
           details: error,
           userMessage: 'Email o contraseña incorrectos.',
-          retryable: true
+          retryable: true,
         };
 
       case 'Email not confirmed':
@@ -168,7 +170,7 @@ export class ErrorHandler {
           timestamp,
           details: error,
           userMessage: 'Debes confirmar tu email antes de continuar.',
-          retryable: false
+          retryable: false,
         };
 
       case 'User already registered':
@@ -180,7 +182,7 @@ export class ErrorHandler {
           timestamp,
           details: error,
           userMessage: 'Ya tienes una cuenta con este email.',
-          retryable: false
+          retryable: false,
         };
 
       default:
@@ -192,14 +194,14 @@ export class ErrorHandler {
           timestamp,
           details: error,
           userMessage: 'Error de autenticación. Intenta de nuevo.',
-          retryable: true
+          retryable: true,
         };
     }
   }
 
   static handleNetworkError(error: any): AppError {
     const timestamp = new Date().toISOString();
-    
+
     if (!this.isProduction) {
       console.error('Network error:', error);
     }
@@ -213,7 +215,7 @@ export class ErrorHandler {
         timestamp,
         details: error,
         userMessage: 'No hay conexión a internet.',
-        retryable: true
+        retryable: true,
       };
     }
 
@@ -225,14 +227,14 @@ export class ErrorHandler {
       timestamp,
       details: error,
       userMessage: 'Error de conexión. Verifica tu internet.',
-      retryable: true
+      retryable: true,
     };
   }
 
   static showUserFriendlyError(error: AppError, showRetryOption = false) {
     const message = error.userMessage || error.message;
     const buttons = [{ text: 'OK', style: 'default' as const }];
-    
+
     if (showRetryOption && error.retryable) {
       buttons.unshift({ text: 'Reintentar', style: 'default' as const });
     }
@@ -245,12 +247,12 @@ export class ErrorHandler {
       id: this.generateErrorId(),
       error: {
         ...error,
-        context: context || error.context || 'unknown'
+        context: context || error.context || 'unknown',
       },
       userId,
       sessionId: this.getSessionId(),
       deviceInfo: this.getDeviceInfo(),
-      stackTrace: new Error().stack
+      stackTrace: new Error().stack,
     };
 
     // Add to local queue
@@ -279,13 +281,13 @@ export class ErrorHandler {
   private static getDeviceInfo() {
     return {
       platform: 'mobile', // You can use react-native-device-info for real device info
-      version: '1.0.0'
+      version: '1.0.0',
     };
   }
 
   private static addToErrorQueue(logEntry: ErrorLogEntry) {
     this.errorQueue.push(logEntry);
-    
+
     // Keep queue size manageable
     if (this.errorQueue.length > this.maxQueueSize) {
       this.errorQueue.shift();
@@ -313,26 +315,46 @@ export class ErrorHandler {
   static getErrorStats() {
     const now = Date.now();
     const last24Hours = this.errorQueue.filter(
-      entry => now - new Date(entry.error.timestamp).getTime() < 24 * 60 * 60 * 1000
+      entry =>
+        now - new Date(entry.error.timestamp).getTime() < 24 * 60 * 60 * 1000
     );
 
     return {
       total: this.errorQueue.length,
       last24Hours: last24Hours.length,
       bySeverity: {
-        critical: this.errorQueue.filter(e => e.error.severity === ErrorSeverity.CRITICAL).length,
-        high: this.errorQueue.filter(e => e.error.severity === ErrorSeverity.HIGH).length,
-        medium: this.errorQueue.filter(e => e.error.severity === ErrorSeverity.MEDIUM).length,
-        low: this.errorQueue.filter(e => e.error.severity === ErrorSeverity.LOW).length
+        critical: this.errorQueue.filter(
+          e => e.error.severity === ErrorSeverity.CRITICAL
+        ).length,
+        high: this.errorQueue.filter(
+          e => e.error.severity === ErrorSeverity.HIGH
+        ).length,
+        medium: this.errorQueue.filter(
+          e => e.error.severity === ErrorSeverity.MEDIUM
+        ).length,
+        low: this.errorQueue.filter(e => e.error.severity === ErrorSeverity.LOW)
+          .length,
       },
       byCategory: {
-        auth: this.errorQueue.filter(e => e.error.category === ErrorCategory.AUTH).length,
-        network: this.errorQueue.filter(e => e.error.category === ErrorCategory.NETWORK).length,
-        database: this.errorQueue.filter(e => e.error.category === ErrorCategory.DATABASE).length,
-        validation: this.errorQueue.filter(e => e.error.category === ErrorCategory.VALIDATION).length,
-        permission: this.errorQueue.filter(e => e.error.category === ErrorCategory.PERMISSION).length,
-        unknown: this.errorQueue.filter(e => e.error.category === ErrorCategory.UNKNOWN).length
-      }
+        auth: this.errorQueue.filter(
+          e => e.error.category === ErrorCategory.AUTH
+        ).length,
+        network: this.errorQueue.filter(
+          e => e.error.category === ErrorCategory.NETWORK
+        ).length,
+        database: this.errorQueue.filter(
+          e => e.error.category === ErrorCategory.DATABASE
+        ).length,
+        validation: this.errorQueue.filter(
+          e => e.error.category === ErrorCategory.VALIDATION
+        ).length,
+        permission: this.errorQueue.filter(
+          e => e.error.category === ErrorCategory.PERMISSION
+        ).length,
+        unknown: this.errorQueue.filter(
+          e => e.error.category === ErrorCategory.UNKNOWN
+        ).length,
+      },
     };
   }
 }
@@ -354,11 +376,20 @@ export const withErrorHandling = <T extends any[], R>(
       let appError: AppError;
 
       // Determine error type and handle accordingly
-      if (error.code && (error.code.startsWith('PGRST') || error.code.match(/^\d+$/))) {
+      if (
+        error.code &&
+        (error.code.startsWith('PGRST') || error.code.match(/^\d+$/))
+      ) {
         appError = ErrorHandler.handleSupabaseError(error);
-      } else if (error.message?.toLowerCase().includes('auth') || error.code === 'invalid_credentials') {
+      } else if (
+        error.message?.toLowerCase().includes('auth') ||
+        error.code === 'invalid_credentials'
+      ) {
         appError = ErrorHandler.handleAuthError(error);
-      } else if (error.message?.toLowerCase().includes('network') || error.name === 'NetworkError') {
+      } else if (
+        error.message?.toLowerCase().includes('network') ||
+        error.name === 'NetworkError'
+      ) {
         appError = ErrorHandler.handleNetworkError(error);
       } else {
         // Handle unknown errors
@@ -372,7 +403,7 @@ export const withErrorHandling = <T extends any[], R>(
           context,
           details: error,
           userMessage: 'Ha ocurrido un error inesperado.',
-          retryable: true
+          retryable: true,
         };
       }
 
@@ -390,7 +421,10 @@ export const withErrorHandling = <T extends any[], R>(
 };
 
 // Utility function for creating validation errors
-export const createValidationError = (message: string, field?: string): AppError => {
+export const createValidationError = (
+  message: string,
+  field?: string
+): AppError => {
   return {
     code: 'VALIDATION_ERROR',
     message,
@@ -399,7 +433,7 @@ export const createValidationError = (message: string, field?: string): AppError
     timestamp: new Date().toISOString(),
     context: field ? `field:${field}` : 'validation',
     userMessage: message,
-    retryable: false
+    retryable: false,
   };
 };
 
@@ -413,15 +447,21 @@ export const createPermissionError = (action: string): AppError => {
     timestamp: new Date().toISOString(),
     context: `action:${action}`,
     userMessage: 'No tienes permisos para realizar esta acción.',
-    retryable: false
+    retryable: false,
   };
 };
 
 // Hook for React components to handle errors
 export const useErrorHandler = () => {
-  const handleError = async (error: any, context?: string, showUserError = true) => {
+  const handleError = async (
+    error: any,
+    context?: string,
+    showUserError = true
+  ) => {
     const wrappedFn = withErrorHandling(
-      async () => { throw error; },
+      async () => {
+        throw error;
+      },
       context,
       { showUserError }
     );

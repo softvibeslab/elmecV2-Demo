@@ -11,7 +11,16 @@ import {
   Image,
   Alert,
 } from 'react-native';
-import { X, Users, Check, Search, Camera, UserPlus, MapPin, AlertTriangle } from 'lucide-react-native';
+import {
+  X,
+  Users,
+  Check,
+  Search,
+  Camera,
+  UserPlus,
+  MapPin,
+  AlertTriangle,
+} from 'lucide-react-native';
 import { useChat } from '@/contexts/ChatContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -151,7 +160,10 @@ export default function CreateGroupChat({
     }
 
     if (!userZona) {
-      Alert.alert('Error', 'No tienes una zona asignada. No puedes crear grupos.');
+      Alert.alert(
+        'Error',
+        'No tienes una zona asignada. No puedes crear grupos.'
+      );
       return;
     }
 
@@ -297,7 +309,10 @@ export default function CreateGroupChat({
               <MapPin size={16} color="#1e40af" />
               <Text style={styles.zonaIndicatorText}>
                 {userZona ? (
-                  <>Solo usuarios de zona: <Text style={styles.zonaName}>{userZona}</Text></>
+                  <>
+                    Solo usuarios de zona:{' '}
+                    <Text style={styles.zonaName}>{userZona}</Text>
+                  </>
                 ) : (
                   <Text style={styles.zonaWarning}>⚠️ Sin zona asignada</Text>
                 )}
@@ -327,9 +342,7 @@ export default function CreateGroupChat({
               {!userZona ? (
                 <View style={styles.emptyContainer}>
                   <AlertTriangle size={48} color="#f59e0b" />
-                  <Text style={styles.emptyText}>
-                    No tienes zona asignada
-                  </Text>
+                  <Text style={styles.emptyText}>No tienes zona asignada</Text>
                   <Text style={styles.emptySubtext}>
                     Contacta al administrador para que te asigne una zona
                   </Text>
@@ -337,7 +350,9 @@ export default function CreateGroupChat({
               ) : loadingUsers ? (
                 <View style={styles.loadingContainer}>
                   <ActivityIndicator size="large" color="#1e40af" />
-                  <Text style={styles.loadingText}>Cargando contactos de tu zona...</Text>
+                  <Text style={styles.loadingText}>
+                    Cargando contactos de tu zona...
+                  </Text>
                 </View>
               ) : filteredUsers.length === 0 ? (
                 <View style={styles.emptyContainer}>

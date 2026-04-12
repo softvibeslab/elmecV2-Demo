@@ -1,6 +1,7 @@
 # 📋 Instrucciones para Agregar Columnas a la Tabla Requests
 
 ## ⚠️ IMPORTANTE
+
 Las columnas `archivos`, `feedback` y `rating` NO existen actualmente en la tabla `requests` de Supabase.
 Esto impide que funcione la carga de archivos y el sistema de feedback.
 
@@ -11,6 +12,7 @@ Esto impide que funcione la carga de archivos y el sistema de feedback.
 ## 🎯 Objetivo
 
 Agregar 3 columnas faltantes a la tabla `requests`:
+
 1. **archivos** - Para almacenar URLs de archivos adjuntos
 2. **feedback** - Para guardar comentarios del usuario
 3. **rating** - Para guardar calificación (1-5 estrellas)
@@ -122,6 +124,7 @@ node scripts/test-requests-crud.js
 ```
 
 **Resultado esperado:**
+
 ```
 ════════════════════════════════════════════════════════════
 📊 REPORTE FINAL DE PRUEBAS - MÓDULO DE SOLICITUDES
@@ -182,6 +185,7 @@ Tasa de éxito:         100.0%
 ### ¿Por qué necesito hacer esto?
 
 El código de la app (`app/(tabs)/requests.tsx`) espera que estas columnas existan para:
+
 - Guardar URLs de archivos adjuntos (líneas 344-353)
 - Mostrar archivos adjuntos (líneas 827-835)
 - Guardar feedback y rating (líneas 838-848)
@@ -191,6 +195,7 @@ Sin estas columnas, esas funcionalidades no funcionarán.
 ### ¿Es seguro ejecutar este script?
 
 ✅ **SÍ**, el script es seguro porque:
+
 - Usa `IF NOT EXISTS` - no hace nada si las columnas ya existen
 - Solo AGREGA columnas, no modifica ni elimina datos existentes
 - Agrega constraints válidos para proteger la integridad de datos
@@ -199,6 +204,7 @@ Sin estas columnas, esas funcionalidades no funcionarán.
 ### ¿Qué pasa con los datos existentes?
 
 ✅ **Nada cambia** en los datos existentes:
+
 - Las solicitudes existentes tendrán `NULL` en las nuevas columnas
 - Esto es normal y correcto
 - Las nuevas solicitudes podrán usar las columnas

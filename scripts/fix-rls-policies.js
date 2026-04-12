@@ -26,11 +26,15 @@ if (fs.existsSync(envPath)) {
 }
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseServiceKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseServiceKey) {
   console.error('❌ Error: Falta configuración de Supabase en .env');
-  console.error('Se requiere: EXPO_PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY');
+  console.error(
+    'Se requiere: EXPO_PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY'
+  );
   process.exit(1);
 }
 
@@ -39,13 +43,23 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 async function checkRLSStatus() {
   console.log('🔍 Verificando estado de RLS en las tablas...\n');
 
-  const tables = ['users', 'requests', 'chat_rooms', 'messages', 'notifications'];
+  const tables = [
+    'users',
+    'requests',
+    'chat_rooms',
+    'messages',
+    'notifications',
+  ];
 
   for (const table of tables) {
-    const { data, error } = await supabase.rpc('check_table_rls', { table_name: table });
+    const { data, error } = await supabase.rpc('check_table_rls', {
+      table_name: table,
+    });
 
     if (error) {
-      console.log(`⚠️  ${table}: No se pudo verificar RLS (probablemente no existe la función helper)`);
+      console.log(
+        `⚠️  ${table}: No se pudo verificar RLS (probablemente no existe la función helper)`
+      );
     } else {
       console.log(`✅ ${table}: RLS ${data ? 'HABILITADO' : 'DESHABILITADO'}`);
     }
@@ -63,8 +77,12 @@ async function fixRequestsData() {
 
     if (countError) {
       console.error('❌ Error contando solicitudes:', countError.message);
-      console.log('⚠️  Esto probablemente indica un problema con las políticas RLS');
-      console.log('💡 Solución: Revisa las políticas RLS en Supabase Dashboard');
+      console.log(
+        '⚠️  Esto probablemente indica un problema con las políticas RLS'
+      );
+      console.log(
+        '💡 Solución: Revisa las políticas RLS en Supabase Dashboard'
+      );
       return;
     }
 
@@ -74,24 +92,30 @@ async function fixRequestsData() {
     console.log('\n📋 Información sobre Políticas RLS:');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('Las políticas RLS están definidas en:');
-    console.log('  📁 /supabase/migrations/20250114_add_rls_policies_requests.sql');
+    console.log(
+      '  📁 /supabase/migrations/20250114_add_rls_policies_requests.sql'
+    );
     console.log('');
     console.log('⚠️  PROBLEMA DETECTADO:');
     console.log('  Las políticas usan "agente" pero el enum usa "agent"');
     console.log('');
     console.log('✅ SOLUCIONES:');
     console.log('  1. En Supabase Dashboard > SQL Editor, ejecutar:');
-    console.log('     DROP POLICY IF EXISTS "agents_can_view_unassigned_requests" ON requests;');
-    console.log('     DROP POLICY IF EXISTS "agents_can_update_assigned_requests" ON requests;');
+    console.log(
+      '     DROP POLICY IF EXISTS "agents_can_view_unassigned_requests" ON requests;'
+    );
+    console.log(
+      '     DROP POLICY IF EXISTS "agents_can_update_assigned_requests" ON requests;'
+    );
     console.log('');
     console.log('     CREATE POLICY "agents_can_view_unassigned_requests"');
     console.log('     ON requests FOR SELECT TO authenticated');
     console.log('     USING (');
-    console.log('       estatus = \'nuevo\' AND agente_id IS NULL');
+    console.log("       estatus = 'nuevo' AND agente_id IS NULL");
     console.log('       AND EXISTS (');
     console.log('         SELECT 1 FROM users');
     console.log('         WHERE users.id = auth.uid()');
-    console.log('           AND users.rol IN (\'agent\', \'admin\')');
+    console.log("           AND users.rol IN ('agent', 'admin')");
     console.log('       )');
     console.log('     );');
     console.log('');
@@ -99,21 +123,21 @@ async function fixRequestsData() {
     console.log('     ON requests FOR UPDATE TO authenticated');
     console.log('     USING (');
     console.log('       agente_id = auth.uid()');
-    console.log('       OR (estatus = \'nuevo\'');
+    console.log("       OR (estatus = 'nuevo'");
     console.log('         AND EXISTS (');
     console.log('           SELECT 1 FROM users');
     console.log('           WHERE users.id = auth.uid()');
-    console.log('             AND users.rol IN (\'agent\', \'admin\')');
+    console.log("             AND users.rol IN ('agent', 'admin')");
     console.log('         )');
     console.log('       )');
     console.log('     )');
     console.log('     WITH CHECK (');
     console.log('       agente_id = auth.uid()');
-    console.log('       OR (estatus IN (\'nuevo\', \'asignado\')');
+    console.log("       OR (estatus IN ('nuevo', 'asignado')");
     console.log('         AND EXISTS (');
     console.log('           SELECT 1 FROM users');
     console.log('           WHERE users.id = auth.uid()');
-    console.log('             AND users.rol IN (\'agent\', \'admin\')');
+    console.log("             AND users.rol IN ('agent', 'admin')");
     console.log('         )');
     console.log('       )');
     console.log('     );');
@@ -121,7 +145,6 @@ async function fixRequestsData() {
     console.log('  2. Alternativamente, ejecuta la migración corregida en:');
     console.log('     /supabase/migrations/fix_rls_policies.sql');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-
   } catch (error) {
     console.error('\n❌ Error:', error.message);
   }
@@ -214,7 +237,13 @@ ORDER BY policyname;
 -- ============================================================================
 `;
 
-  const migrationPath = path.join(__dirname, '..', 'supabase', 'migrations', `${Date.now()}_fix_rls_policies.sql`);
+  const migrationPath = path.join(
+    __dirname,
+    '..',
+    'supabase',
+    'migrations',
+    `${Date.now()}_fix_rls_policies.sql`
+  );
   fs.writeFileSync(migrationPath, migrationSQL);
 
   console.log(`✅ Migración creada en: ${migrationPath}`);
@@ -248,9 +277,11 @@ async function main() {
   }
 }
 
-main().then(() => {
-  process.exit(0);
-}).catch((error) => {
-  console.error('\n💥 Error:', error);
-  process.exit(1);
-});
+main()
+  .then(() => {
+    process.exit(0);
+  })
+  .catch(error => {
+    console.error('\n💥 Error:', error);
+    process.exit(1);
+  });

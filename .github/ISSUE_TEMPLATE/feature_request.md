@@ -32,6 +32,7 @@ assignees: ''
 <!-- Describe cómo el usuario interactuaría con esta funcionalidad -->
 
 ### Flujo de Usuario:
+
 1. El usuario...
 2. Luego...
 3. Finalmente...
@@ -51,12 +52,13 @@ assignees: ''
 <!-- ¿Cómo beneficiaría esta funcionalidad a los usuarios y al negocio? -->
 
 ### Beneficios:
+
 - [ ] Mejora la experiencia del usuario
 - [ ] Aumenta la retención de usuarios
 - [ ] Reduce el tiempo de completar tareas
 - [ ] Proporciona nueva fuente de ingresos
 - [ ] Mejora la accesibilidad
-- [ ] Otro: ___________
+- [ ] Otro: \***\*\_\_\_\*\***
 
 ## 🎯 Audiencia Objetivo
 
@@ -68,7 +70,7 @@ assignees: ''
 - [ ] Usuarios de Android
 - [ ] Usuarios de iOS
 - [ ] Usuarios empresariales
-- [ ] Otro: ___________
+- [ ] Otro: \***\*\_\_\_\*\***
 
 ## 📈 Prioridad
 

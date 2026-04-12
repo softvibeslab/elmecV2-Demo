@@ -56,6 +56,7 @@ const getUnreadCount = (): number => {
 ```
 
 **Problema**:
+
 - Contaba mensajes de TODAS las salas en el estado `messages`
 - No verificaba si el usuario era participante de cada sala
 - Podía contar mensajes de chats donde el usuario no tenía acceso
@@ -88,6 +89,7 @@ const getUnreadCount = (): number => {
 ```
 
 **Mejoras**:
+
 1. ✅ Verifica que la sala existe en `chatRooms`
 2. ✅ Verifica que el usuario está en `room.participants`
 3. ✅ Solo cuenta mensajes donde el usuario es participante
@@ -175,8 +177,8 @@ const getUnreadCount = (): number => {
 ```typescript
 interface ChatMessage extends Message {
   id: string;
-  sender_id: string;      // ID del usuario que envió
-  isRead: boolean;        // Si el usuario actual lo leyó
+  sender_id: string; // ID del usuario que envió
+  isRead: boolean; // Si el usuario actual lo leyó
   message: string;
   created_at: string;
 }
@@ -283,11 +285,11 @@ badgeText: {
 
 ### **Comportamiento Visual**
 
-| Estado | Badge Visible | Número Mostrado |
-|--------|--------------|-----------------|
-| 0 mensajes no leídos | ❌ Oculto | - |
-| 1-99 mensajes | ✅ Visible | Número exacto |
-| 100+ mensajes | ✅ Visible | "99+" |
+| Estado               | Badge Visible | Número Mostrado |
+| -------------------- | ------------- | --------------- |
+| 0 mensajes no leídos | ❌ Oculto     | -               |
+| 1-99 mensajes        | ✅ Visible    | Número exacto   |
+| 100+ mensajes        | ✅ Visible    | "99+"           |
 
 ---
 
@@ -474,6 +476,7 @@ VALIDACIÓN:
 ### **Prueba Manual**
 
 **Pasos**:
+
 1. Iniciar sesión como usuario A
 2. Enviar mensaje a usuario B desde otra cuenta
 3. Verificar que usuario B vea badge con "1"
@@ -492,16 +495,10 @@ describe('getUnreadCount', () => {
   it('debe contar solo mensajes de salas del usuario', () => {
     const user = { id: 'user_1' };
     const messages = {
-      'room_1': [
-        { sender_id: 'user_2', isRead: false }
-      ],
-      'room_2': [
-        { sender_id: 'user_3', isRead: false }
-      ]
+      room_1: [{ sender_id: 'user_2', isRead: false }],
+      room_2: [{ sender_id: 'user_3', isRead: false }],
     };
-    const chatRooms = [
-      { id: 'room_1', participants: ['user_1', 'user_2'] }
-    ];
+    const chatRooms = [{ id: 'room_1', participants: ['user_1', 'user_2'] }];
 
     const count = getUnreadCount();
     expect(count).toBe(1); // Solo room_1
@@ -510,13 +507,9 @@ describe('getUnreadCount', () => {
   it('no debe contar mensajes propios', () => {
     const user = { id: 'user_1' };
     const messages = {
-      'room_1': [
-        { sender_id: 'user_1', isRead: false }
-      ]
+      room_1: [{ sender_id: 'user_1', isRead: false }],
     };
-    const chatRooms = [
-      { id: 'room_1', participants: ['user_1'] }
-    ];
+    const chatRooms = [{ id: 'room_1', participants: ['user_1'] }];
 
     const count = getUnreadCount();
     expect(count).toBe(0);
@@ -531,28 +524,34 @@ describe('getUnreadCount', () => {
 ### **Bug Original: Contador Incoherente**
 
 **Síntoma**:
+
 - El contador mostraba números incorrectos
 - Contaba mensajes de chats ajenos
 - Usuarios reportaban "números raros"
 
 **Causa Raíz**:
+
 ```typescript
 // ❌ No verificaba participación del usuario
 const getUnreadCount = (): number => {
   return Object.values(messages).reduce((total, roomMessages) => {
-    return total + roomMessages.filter(
-      msg => msg.sender_id !== user?.id && !msg.isRead
-    ).length;
+    return (
+      total +
+      roomMessages.filter(msg => msg.sender_id !== user?.id && !msg.isRead)
+        .length
+    );
   }, 0);
 };
 ```
 
 **Problema**:
+
 - `Object.values(messages)` retorna TODOS los mensajes en caché
 - Incluye salas donde el usuario no es participante
 - Posible fuga de información entre usuarios
 
 **Solución Implementada**:
+
 ```typescript
 // ✅ Verifica participación antes de contar
 const getUnreadCount = (): number => {
@@ -580,6 +579,7 @@ const getUnreadCount = (): number => {
 ### **Prevención de Fuga de Información**
 
 **Antes**:
+
 ```
 messages = {
   "room_privado_A_B": [...],  // Solo A y B
@@ -592,6 +592,7 @@ Usuario A veía:
 ```
 
 **Después**:
+
 ```
 chatRooms del usuario A = ["room_privado_A_B"]
 
@@ -606,23 +607,25 @@ Usuario A solo ve:
 
 ### **Complejidad Temporal**
 
-| Escenario | Complejidad | Tiempo Estimado |
-|-----------|-------------|-----------------|
-| 1 sala, 10 mensajes | O(10) | <1ms |
-| 5 salas, 50 mensajes | O(50) | <2ms |
-| 10 salas, 500 mensajes | O(500) | <5ms |
+| Escenario              | Complejidad | Tiempo Estimado |
+| ---------------------- | ----------- | --------------- |
+| 1 sala, 10 mensajes    | O(10)       | <1ms            |
+| 5 salas, 50 mensajes   | O(50)       | <2ms            |
+| 10 salas, 500 mensajes | O(500)      | <5ms            |
 
 ### **Optimizaciones**
 
 1. **Early return**:
+
    ```typescript
-   if (!user) return 0;  // Evita procesamiento
+   if (!user) return 0; // Evita procesamiento
    ```
 
 2. **Skip rooms**:
+
    ```typescript
    if (!room || !room.participants?.includes(user.id)) {
-     return total;  // No procesa mensajes de esta sala
+     return total; // No procesa mensajes de esta sala
    }
    ```
 
@@ -637,6 +640,7 @@ Usuario A solo ve:
 ## 🚀 **Mejoras Futuras**
 
 1. **Memoización**:
+
    ```typescript
    const unreadCount = useMemo(
      () => getUnreadCount(),
@@ -645,6 +649,7 @@ Usuario A solo ve:
    ```
 
 2. **Contador por sala**:
+
    ```typescript
    getRoomUnreadCount(roomId: string): number
    // Ya implementado (líneas 1134-1138)

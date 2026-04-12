@@ -3,6 +3,7 @@
 ## Problema Identificado
 
 Los errores de autenticación en el deploy de Netlify se deben a:
+
 1. Variables de entorno no configuradas en Netlify
 2. Usuario intentando hacer login sin existir en `auth.users`
 
@@ -46,6 +47,7 @@ Las siguientes credenciales funcionan correctamente:
 **Contraseña para todos:** `abc321`
 
 **Usuarios disponibles:**
+
 - c.rosales@elmec.com.mx
 - alex.diaz@elmec.com.mx
 - s.vazquez@elmec.com.mx

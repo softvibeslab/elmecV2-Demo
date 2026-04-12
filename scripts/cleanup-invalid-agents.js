@@ -38,7 +38,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 const AGENTS_TO_DELETE = [
   'Ana García Morales',
   'Carlos Mendoza Silva',
-  'Luis Ramírez Torres'
+  'Luis Ramírez Torres',
 ];
 
 async function cleanupInvalidAgents() {
@@ -59,7 +59,8 @@ async function cleanupInvalidAgents() {
 
     // 2. Identificar agentes a eliminar
     const agentsToDelete = allUsers.filter(user => {
-      const fullName = `${user.nombre} ${user.apellido_paterno} ${user.apellido_materno}`.trim();
+      const fullName =
+        `${user.nombre} ${user.apellido_paterno} ${user.apellido_materno}`.trim();
       return AGENTS_TO_DELETE.some(agentName =>
         fullName.toLowerCase().includes(agentName.toLowerCase())
       );
@@ -77,10 +78,11 @@ async function cleanupInvalidAgents() {
     }
 
     // 3. Identificar usuarios con "nulo" en el nombre
-    const usersWithNulo = allUsers.filter(user =>
-      user.nombre?.toLowerCase().includes('nulo') ||
-      user.apellido_paterno?.toLowerCase().includes('nulo') ||
-      user.apellido_materno?.toLowerCase().includes('nulo')
+    const usersWithNulo = allUsers.filter(
+      user =>
+        user.nombre?.toLowerCase().includes('nulo') ||
+        user.apellido_paterno?.toLowerCase().includes('nulo') ||
+        user.apellido_materno?.toLowerCase().includes('nulo')
     );
 
     console.log('🔍 Usuarios con palabra "nulo":');
@@ -107,7 +109,9 @@ async function cleanupInvalidAgents() {
           .eq('id', agent.id);
 
         if (updateError) {
-          console.error(`   ❌ Error al desactivar ${fullName}: ${updateError.message}`);
+          console.error(
+            `   ❌ Error al desactivar ${fullName}: ${updateError.message}`
+          );
         } else {
           console.log(`   ✅ Desactivado: ${fullName}`);
         }
@@ -121,8 +125,12 @@ async function cleanupInvalidAgents() {
       for (const user of usersWithNulo) {
         const updates = {
           nombre: user.nombre?.replace(/nulo\s*/gi, '').trim() || user.nombre,
-          apellido_paterno: user.apellido_paterno?.replace(/nulo\s*/gi, '').trim() || user.apellido_paterno,
-          apellido_materno: user.apellido_materno?.replace(/nulo\s*/gi, '').trim() || user.apellido_materno,
+          apellido_paterno:
+            user.apellido_paterno?.replace(/nulo\s*/gi, '').trim() ||
+            user.apellido_paterno,
+          apellido_materno:
+            user.apellido_materno?.replace(/nulo\s*/gi, '').trim() ||
+            user.apellido_materno,
         };
 
         const oldName = `${user.nombre} ${user.apellido_paterno} ${user.apellido_materno}`;
@@ -134,7 +142,9 @@ async function cleanupInvalidAgents() {
           .eq('id', user.id);
 
         if (updateError) {
-          console.error(`   ❌ Error al limpiar ${oldName}: ${updateError.message}`);
+          console.error(
+            `   ❌ Error al limpiar ${oldName}: ${updateError.message}`
+          );
         } else {
           console.log(`   ✅ ${oldName} → ${newName}`);
         }
@@ -147,7 +157,6 @@ async function cleanupInvalidAgents() {
     console.log(`   - Agentes desactivados: ${agentsToDelete.length}`);
     console.log(`   - Nombres limpiados: ${usersWithNulo.length}`);
     console.log('\n✅ Limpieza completada exitosamente!');
-
   } catch (error) {
     console.error('❌ Error durante la limpieza:', error);
     process.exit(1);

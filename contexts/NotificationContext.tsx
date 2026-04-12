@@ -13,14 +13,15 @@ import { useAuth } from './AuthContext';
 
 // Configure notification behavior for mobile
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    // Campos adicionales requeridos por los tipos recientes de Expo Notifications
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }) as any,
+  handleNotification: async () =>
+    ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+      // Campos adicionales requeridos por los tipos recientes de Expo Notifications
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }) as any,
 });
 
 export interface InAppNotification {
@@ -213,7 +214,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
         Notifications.addNotificationReceivedListener(notification => {
           console.log('Notificación recibida en primer plano:', notification);
           setNotification(notification);
-          
+
           // Opcional: Mostrar un toast o alerta personalizada
         });
 
@@ -221,7 +222,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       responseListener.current =
         Notifications.addNotificationResponseReceivedListener(response => {
           console.log('El usuario interactuó con la notificación:', response);
-          
+
           // Aquí se puede manejar la navegación profunda (deep linking)
           const data = response.notification.request.content.data;
           if (data?.roomId) {
@@ -283,7 +284,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       const token = (
         await Notifications.getExpoPushTokenAsync({
           projectId:
-            process.env.EXPO_PUBLIC_EAS_PROJECT_ID || '656caaad-2849-4ea2-8374-1632acab1368',
+            process.env.EXPO_PUBLIC_EAS_PROJECT_ID ||
+            '656caaad-2849-4ea2-8374-1632acab1368',
         })
       ).data;
       console.log('Expo push token:', token);
@@ -295,7 +297,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
             .from('users')
             .update({ metadata: { push_token: token } } as any)
             .eq('id', user.id);
-          
+
           if (error) console.error('Error saving push token to DB:', error);
           else console.log('Push token guardado en DB con éxito');
         } catch (dbError) {
@@ -374,17 +376,16 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       data?: any
     ) => {
       try {
-        const { error } = await supabaseClient
-          .from('notifications')
-          .insert({
-            user_id: userId,
-            title,
-            body,
-            type,
-            priority: type === 'error' ? 'high' : type === 'warning' ? 'medium' : 'low',
-            data: data || {},
-            read: false,
-          } as any);
+        const { error } = await supabaseClient.from('notifications').insert({
+          user_id: userId,
+          title,
+          body,
+          type,
+          priority:
+            type === 'error' ? 'high' : type === 'warning' ? 'medium' : 'low',
+          data: data || {},
+          read: false,
+        } as any);
 
         if (error) {
           console.error('Error sending notification to user:', error);

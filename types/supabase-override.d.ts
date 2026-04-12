@@ -5,7 +5,7 @@ declare module '@supabase/supabase-js' {
     Row extends Record<string, unknown>,
     Result,
     RelationName,
-    Relationships = unknown
+    Relationships = unknown,
   > {
     update(values: any): this;
     insert(values: any): this;

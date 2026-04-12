@@ -37,11 +37,11 @@ Este manual proporciona guías detalladas para realizar pruebas de calidad (QA) 
 
 ### Usuarios de Prueba
 
-| Email | Password | Rol | Uso |
-|-------|----------|-----|-----|
-| i.pineda@elmec.com.mx | Admin123! | Admin | Pruebas de administración |
-| j.gonzalez@elmec.com.mx | Agent123! | Agent | Pruebas de agente |
-| cliente@gmail.com | Cliente123! | Customer | Pruebas de cliente |
+| Email                   | Password    | Rol      | Uso                       |
+| ----------------------- | ----------- | -------- | ------------------------- |
+| i.pineda@elmec.com.mx   | Admin123!   | Admin    | Pruebas de administración |
+| j.gonzalez@elmec.com.mx | Agent123!   | Agent    | Pruebas de agente         |
+| cliente@gmail.com       | Cliente123! | Customer | Pruebas de cliente        |
 
 ---
 
@@ -109,22 +109,26 @@ node scripts/test-requests-creation.js
 **Tipo:** Funcional
 
 **Precondiciones:**
+
 - Usuario registrado en el sistema
 - App abierta en pantalla de login
 
 **Pasos:**
+
 1. Abrir la aplicación
 2. Ingresar email: `cliente@gmail.com`
 3. Ingresar password: `Cliente123!`
 4. Tocar botón "Iniciar Sesión"
 
 **Resultado Esperado:**
+
 - ✅ Usuario redirigido a Dashboard
 - ✅ Datos del usuario visibles en UI
 - ✅ Tabs de navegación disponibles
 - ✅ No hay errores en consola
 
 **Criterios de Aceptación:**
+
 - Login completa en < 3 segundos
 - Token JWT guardado correctamente
 - Sesión persiste al cerrar/abrir app
@@ -137,12 +141,14 @@ node scripts/test-requests-creation.js
 **Tipo:** Negativo
 
 **Pasos:**
+
 1. Abrir la aplicación
 2. Ingresar email: `cliente@gmail.com`
 3. Ingresar password incorrecta: `WrongPass123`
 4. Tocar botón "Iniciar Sesión"
 
 **Resultado Esperado:**
+
 - ✅ Mensaje de error claro: "Credenciales incorrectas"
 - ✅ Usuario permanece en pantalla de login
 - ✅ Campos de input no se limpian (mantienen email)
@@ -156,14 +162,17 @@ node scripts/test-requests-creation.js
 **Tipo:** Funcional
 
 **Precondiciones:**
+
 - Usuario autenticado
 
 **Pasos:**
+
 1. Navegar a Configuración
 2. Tocar "Cerrar Sesión"
 3. Confirmar en el diálogo
 
 **Resultado Esperado:**
+
 - ✅ Usuario redirigido a Login
 - ✅ Token eliminado de storage
 - ✅ No se pueden acceder tabs sin autenticación
@@ -179,10 +188,12 @@ node scripts/test-requests-creation.js
 **Tipo:** Funcional
 
 **Precondiciones:**
+
 - Usuario autenticado como Customer
 - En pantalla de Solicitudes
 
 **Pasos:**
+
 1. Tocar botón "+" (Crear nueva)
 2. Ingresar título: "Solicitud de prueba QA"
 3. Ingresar mensaje: "Esta es una solicitud de prueba para validar el sistema"
@@ -192,6 +203,7 @@ node scripts/test-requests-creation.js
 7. Tocar "Enviar Solicitud"
 
 **Resultado Esperado:**
+
 - ✅ Spinner visible durante proceso
 - ✅ Alert de éxito: "Solicitud creada correctamente"
 - ✅ Modal se cierra automáticamente
@@ -201,6 +213,7 @@ node scripts/test-requests-creation.js
 - ✅ Logs en consola muestran proceso completo
 
 **Criterios de Aceptación:**
+
 - Creación completa en < 5 segundos
 - Solicitud guardada en BD
 - Si hay agente asignado, recibe notificación
@@ -213,12 +226,14 @@ node scripts/test-requests-creation.js
 **Tipo:** Validación
 
 **Pasos:**
+
 1. Tocar botón "+" (Crear nueva)
 2. Dejar título vacío
 3. Dejar mensaje vacío
 4. Tocar "Enviar Solicitud"
 
 **Resultado Esperado:**
+
 - ✅ Alert de error: "Por favor completa el título y mensaje"
 - ✅ Modal NO se cierra
 - ✅ No se crea solicitud en BD
@@ -232,6 +247,7 @@ node scripts/test-requests-creation.js
 **Tipo:** Validación
 
 **Test 1: Título muy corto**
+
 1. Ingresar título: "Test" (4 caracteres)
 2. Ingresar mensaje válido
 3. Tocar "Enviar Solicitud"
@@ -239,6 +255,7 @@ node scripts/test-requests-creation.js
 **Resultado:** Alert "El título debe tener entre 5 y 200 caracteres"
 
 **Test 2: Título muy largo**
+
 1. Ingresar título de 201+ caracteres
 2. Ingresar mensaje válido
 3. Tocar "Enviar Solicitud"
@@ -253,9 +270,11 @@ node scripts/test-requests-creation.js
 **Tipo:** Funcional
 
 **Pasos:**
+
 1. En lista de solicitudes, tocar una solicitud
 
 **Resultado Esperado:**
+
 - ✅ Muestra todos los datos:
   - Título
   - Mensaje completo
@@ -274,15 +293,18 @@ node scripts/test-requests-creation.js
 **Tipo:** Funcional
 
 **Precondiciones:**
+
 - Usuario autenticado como Agent
 - Solicitud asignada al agente
 
 **Pasos:**
+
 1. Tocar solicitud asignada
 2. Tocar en la solicitud para ver opciones
 3. Seleccionar "En Proceso"
 
 **Resultado Esperado:**
+
 - ✅ Estado actualizado inmediatamente
 - ✅ Color/icono de estado cambia
 - ✅ Cliente recibe notificación
@@ -296,11 +318,13 @@ node scripts/test-requests-creation.js
 **Tipo:** Funcional
 
 **Pasos:**
+
 1. En pantalla de Solicitudes
 2. Usar barra de búsqueda
 3. Ingresar texto: "soporte"
 
 **Resultado Esperado:**
+
 - ✅ Lista filtrada muestra solo solicitudes con "soporte" en título/mensaje
 - ✅ Contador actualizado
 - ✅ Filtrado en tiempo real
@@ -315,13 +339,16 @@ node scripts/test-requests-creation.js
 **Tipo:** Funcional
 
 **Precondiciones:**
+
 - Solicitud con agente asignado
 
 **Pasos:**
+
 1. Abrir solicitud
 2. Tocar botón "Charlar"
 
 **Resultado Esperado:**
+
 - ✅ Redirige a pantalla de chat
 - ✅ Sala de chat creada/abierta
 - ✅ Mensaje de bienvenida del sistema
@@ -336,11 +363,13 @@ node scripts/test-requests-creation.js
 **Tipo:** Funcional
 
 **Pasos:**
+
 1. Estar en sala de chat
 2. Escribir mensaje: "Hola, necesito ayuda"
 3. Tocar botón de enviar
 
 **Resultado Esperado:**
+
 - ✅ Mensaje aparece inmediatamente (optimistic update)
 - ✅ Checkmark de "enviado" después de confirmación
 - ✅ Mensaje guardado en BD
@@ -358,14 +387,17 @@ node scripts/test-requests-creation.js
 **Tipo:** Realtime
 
 **Precondiciones:**
+
 - Dos dispositivos/sesiones abiertas
 - Usuario A y Usuario B en misma sala
 
 **Pasos:**
+
 1. Usuario A envía mensaje: "Mensaje de prueba"
 2. Observar en dispositivo de Usuario B
 
 **Resultado Esperado:**
+
 - ✅ Mensaje aparece automáticamente en Usuario B
 - ✅ Sin necesidad de refrescar
 - ✅ Notificación sonora/visual (si app en background)
@@ -381,13 +413,16 @@ node scripts/test-requests-creation.js
 **Tipo:** UX
 
 **Precondiciones:**
+
 - Dos usuarios en misma sala
 
 **Pasos:**
+
 1. Usuario A empieza a escribir
 2. Observar en dispositivo de Usuario B
 
 **Resultado Esperado:**
+
 - ✅ Texto "Usuario A está escribiendo..." visible
 - ✅ Indicador desaparece cuando deja de escribir
 - ✅ Indicador desaparece cuando envía mensaje
@@ -400,10 +435,12 @@ node scripts/test-requests-creation.js
 **Tipo:** Validación
 
 **Pasos:**
+
 1. Dejar input vacío
 2. Tocar botón de enviar
 
 **Resultado Esperado:**
+
 - ✅ Botón de enviar deshabilitado
 - ✅ O: Alert "El mensaje no puede estar vacío"
 - ✅ No se crea mensaje en BD
@@ -418,13 +455,16 @@ node scripts/test-requests-creation.js
 **Tipo:** Funcional
 
 **Precondiciones:**
+
 - Usuario autenticado como Agent
 
 **Pasos:**
+
 1. Otro usuario (Customer) crea solicitud y asigna a este agente
 2. Observar tab de Notificaciones
 
 **Resultado Esperado:**
+
 - ✅ Badge de contador aumenta en tab
 - ✅ Notificación visible en lista
 - ✅ Título: "Nueva solicitud asignada"
@@ -440,9 +480,11 @@ node scripts/test-requests-creation.js
 **Tipo:** Funcional
 
 **Pasos:**
+
 1. Tocar notificación no leída
 
 **Resultado Esperado:**
+
 - ✅ Estado cambia a "leída"
 - ✅ Estilo visual cambia (menos opaco)
 - ✅ Badge de contador disminuye
@@ -456,9 +498,11 @@ node scripts/test-requests-creation.js
 **Tipo:** Funcional
 
 **Pasos:**
+
 1. Tocar notificación de tipo "request_update"
 
 **Resultado Esperado:**
+
 - ✅ Redirige a solicitud específica
 - ✅ Solicitud se abre con datos correctos
 - ✅ Notificación marcada como leída
@@ -473,18 +517,22 @@ node scripts/test-requests-creation.js
 **Tipo:** Funcional
 
 **Test 1: Suma**
+
 1. Ingresar: 5 + 3 =
 2. Resultado esperado: 8
 
 **Test 2: Resta**
+
 1. Ingresar: 10 - 4 =
 2. Resultado esperado: 6
 
 **Test 3: Multiplicación**
+
 1. Ingresar: 6 × 7 =
 2. Resultado esperado: 42
 
 **Test 4: División**
+
 1. Ingresar: 15 ÷ 3 =
 2. Resultado esperado: 5
 
@@ -496,12 +544,14 @@ node scripts/test-requests-creation.js
 **Tipo:** Funcional
 
 **Pasos:**
+
 1. Realizar varios cálculos
 2. Tocar botón "Guardar"
 3. Ingresar nombre: "Cotización Cliente X"
 4. Confirmar
 
 **Resultado Esperado:**
+
 - ✅ Sesión guardada en BD
 - ✅ Visible en lista de sesiones guardadas
 - ✅ Puede recuperarse posteriormente
@@ -516,9 +566,11 @@ node scripts/test-requests-creation.js
 **Tipo:** Funcional
 
 **Pasos:**
+
 1. Navegar a tab "Directorio"
 
 **Resultado Esperado:**
+
 - ✅ Lista de agentes visible
 - ✅ Cada agente muestra:
   - Foto (o placeholder)
@@ -536,10 +588,12 @@ node scripts/test-requests-creation.js
 **Tipo:** Funcional
 
 **Pasos:**
+
 1. Usar filtro de zona
 2. Seleccionar "Norte"
 
 **Resultado Esperado:**
+
 - ✅ Lista filtrada muestra solo agentes de zona Norte
 - ✅ Contador actualizado
 - ✅ Filtro puede removerse
@@ -552,10 +606,12 @@ node scripts/test-requests-creation.js
 **Tipo:** Funcional
 
 **Pasos:**
+
 1. Tocar agente en lista
 2. Tocar botón "Chatear"
 
 **Resultado Esperado:**
+
 - ✅ Crea/abre sala de chat con agente
 - ✅ Redirige a chat
 - ✅ Listo para enviar mensaje
@@ -570,12 +626,14 @@ node scripts/test-requests-creation.js
 **Tipo:** Funcional
 
 **Pasos:**
+
 1. Ir a Configuración > Cuenta
 2. Cambiar nombre: "Nuevo Nombre"
 3. Cambiar teléfono: "+52 123 456 7890"
 4. Tocar "Guardar"
 
 **Resultado Esperado:**
+
 - ✅ Datos actualizados en BD
 - ✅ Cambios reflejados en UI
 - ✅ Alert de éxito
@@ -595,6 +653,7 @@ Un cliente crea una solicitud urgente, se asigna a un agente, chatean para resol
 **Pasos Detallados:**
 
 **Como Cliente:**
+
 1. Login con `cliente@gmail.com`
 2. Ir a tab "Solicitudes"
 3. Tocar "+" para crear nueva
@@ -611,29 +670,12 @@ Un cliente crea una solicitud urgente, se asigna a un agente, chatean para resol
 9. Enviar mensaje: "Hola, necesito ayuda urgente con este equipo"
 10. Esperar respuesta del agente
 
-**Como Agente:**
-11. Logout del cliente
-12. Login con `j.gonzalez@elmec.com.mx`
-13. Ir a tab "Notificaciones"
-14. Verificar notificación de nueva solicitud
-15. Tocar notificación (redirige a solicitud)
-16. Verificar datos de solicitud
-17. Tocar solicitud para cambiar estado a "En Proceso"
-18. Tocar botón "Charlar"
-19. Verificar mensaje del cliente
-20. Responder: "Hola, ya estoy revisando el caso. ¿Desde cuándo presenta el error?"
-21. Continuar conversación (2-3 mensajes más)
-22. Volver a solicitud
-23. Cambiar estado a "Resuelto"
+**Como Agente:** 11. Logout del cliente 12. Login con `j.gonzalez@elmec.com.mx` 13. Ir a tab "Notificaciones" 14. Verificar notificación de nueva solicitud 15. Tocar notificación (redirige a solicitud) 16. Verificar datos de solicitud 17. Tocar solicitud para cambiar estado a "En Proceso" 18. Tocar botón "Charlar" 19. Verificar mensaje del cliente 20. Responder: "Hola, ya estoy revisando el caso. ¿Desde cuándo presenta el error?" 21. Continuar conversación (2-3 mensajes más) 22. Volver a solicitud 23. Cambiar estado a "Resuelto"
 
-**Como Cliente:**
-24. Logout del agente
-25. Login nuevamente como cliente
-26. Verificar notificación de cambio de estado
-27. Ver solicitud actualizada a "Resuelto"
-28. Ver historial de chat completo
+**Como Cliente:** 24. Logout del agente 25. Login nuevamente como cliente 26. Verificar notificación de cambio de estado 27. Ver solicitud actualizada a "Resuelto" 28. Ver historial de chat completo
 
 **Verificaciones:**
+
 - ✅ Todos los estados se actualizan en tiempo real
 - ✅ Notificaciones llegan correctamente
 - ✅ Chat funciona bidireccionalmente
@@ -647,6 +689,7 @@ Un cliente crea una solicitud urgente, se asigna a un agente, chatean para resol
 **Duración estimada:** 5 minutos
 
 **Pasos:**
+
 1. Abrir app (primera vez)
 2. Tocar "Registrarse"
 3. Llenar formulario de registro
@@ -658,6 +701,7 @@ Un cliente crea una solicitud urgente, se asigna a un agente, chatean para resol
 9. Cerrar sesión
 
 **Verificaciones:**
+
 - ✅ Usuario creado en BD
 - ✅ Puede autenticarse
 - ✅ Tiene rol correcto (customer)
@@ -671,6 +715,7 @@ Un cliente crea una solicitud urgente, se asigna a un agente, chatean para resol
 ### Checklist de Regresión (Ejecutar antes de cada release)
 
 #### Módulo: Autenticación
+
 - [ ] Login con credenciales correctas
 - [ ] Login con credenciales incorrectas
 - [ ] Logout
@@ -678,6 +723,7 @@ Un cliente crea una solicitud urgente, se asigna a un agente, chatean para resol
 - [ ] Refresh de token automático
 
 #### Módulo: Solicitudes
+
 - [ ] Crear solicitud
 - [ ] Ver lista de solicitudes
 - [ ] Filtrar solicitudes
@@ -686,6 +732,7 @@ Un cliente crea una solicitud urgente, se asigna a un agente, chatean para resol
 - [ ] Adjuntar archivos (si habilitado)
 
 #### Módulo: Chat
+
 - [ ] Crear sala de chat
 - [ ] Enviar mensaje de texto
 - [ ] Recibir mensaje en tiempo real
@@ -694,18 +741,21 @@ Un cliente crea una solicitud urgente, se asigna a un agente, chatean para resol
 - [ ] Historial de mensajes
 
 #### Módulo: Notificaciones
+
 - [ ] Recibir notificación
 - [ ] Marcar como leída
 - [ ] Navegar desde notificación
 - [ ] Badge de contador
 
 #### Performance
+
 - [ ] Tiempo de login < 3s
 - [ ] Tiempo de carga de solicitudes < 2s
 - [ ] Mensajes en realtime < 1s latencia
 - [ ] App no consume > 200MB RAM
 
 #### Compatibilidad
+
 - [ ] Android 10+
 - [ ] iOS 13+
 - [ ] Orientación portrait
@@ -728,6 +778,7 @@ Un cliente crea una solicitud urgente, se asigna a un agente, chatean para resol
 **Fecha:** [YYYY-MM-DD]
 
 ### Entorno
+
 - **Plataforma:** [iOS/Android/Web]
 - **Versión de OS:** [14.5, Android 11, etc.]
 - **Dispositivo:** [iPhone 12, Samsung Galaxy S21, etc.]
@@ -735,28 +786,35 @@ Un cliente crea una solicitud urgente, se asigna a un agente, chatean para resol
 - **Build:** [123]
 
 ### Descripción
+
 [Descripción clara y concisa del bug]
 
 ### Pasos para Reproducir
+
 1. [Paso 1]
 2. [Paso 2]
 3. [Paso 3]
 
 ### Resultado Esperado
+
 [Qué debería pasar]
 
 ### Resultado Actual
+
 [Qué está pasando]
 
 ### Evidencia
+
 - Screenshots: [Adjuntar]
 - Videos: [Adjuntar]
 - Logs: [Adjuntar]
 
 ### Workaround
+
 [Si existe alguna forma temporal de evitar el bug]
 
 ### Notas Adicionales
+
 [Información extra relevante]
 ```
 
@@ -772,6 +830,7 @@ Un cliente crea una solicitud urgente, se asigna a un agente, chatean para resol
 **Fecha:** 2025-10-22
 
 ### Entorno
+
 - **Plataforma:** iOS
 - **Versión de OS:** 16.5
 - **Dispositivo:** iPhone 13
@@ -779,11 +838,13 @@ Un cliente crea una solicitud urgente, se asigna a un agente, chatean para resol
 - **Build:** 125
 
 ### Descripción
+
 Después de estar en una sala de chat por aproximadamente 5 minutos sin
 enviar mensajes, el botón de enviar deja de funcionar. El mensaje se
 escribe pero no se envía al tocar el botón.
 
 ### Pasos para Reproducir
+
 1. Login como cliente
 2. Abrir chat con agente
 3. Enviar mensaje inicial
@@ -792,20 +853,25 @@ escribe pero no se envía al tocar el botón.
 6. Tocar botón de enviar
 
 ### Resultado Esperado
+
 El mensaje debe enviarse normalmente sin importar el tiempo transcurrido
 
 ### Resultado Actual
+
 El botón no responde, el mensaje no se envía. En consola aparece error:
 "Session expired"
 
 ### Evidencia
+
 - Screenshot: [adjunto]
 - Console log: "Error: JWT expired at..."
 
 ### Workaround
+
 Cerrar y volver a abrir el chat. Esto refresca la sesión.
 
 ### Notas Adicionales
+
 Posiblemente relacionado con el refresh automático de JWT token.
 Verificar configuración de Supabase Auth.
 ```
@@ -817,6 +883,7 @@ Verificar configuración de Supabase Auth.
 ### Pre-Release Checklist
 
 **Funcionalidad**
+
 - [ ] Todos los casos de prueba críticos pasan
 - [ ] Todos los casos de prueba de alta prioridad pasan
 - [ ] Flujos E2E completos funcionan
@@ -824,12 +891,14 @@ Verificar configuración de Supabase Auth.
 - [ ] No hay bugs críticos abiertos
 
 **Performance**
+
 - [ ] Tiempos de respuesta dentro de SLA
 - [ ] Uso de memoria aceptable
 - [ ] No hay memory leaks
 - [ ] Animaciones fluidas (60 FPS)
 
 **UX/UI**
+
 - [ ] Todas las pantallas siguen guía de diseño
 - [ ] Textos sin errores ortográficos
 - [ ] Imágenes cargando correctamente
@@ -837,12 +906,14 @@ Verificar configuración de Supabase Auth.
 - [ ] Estados de loading visibles
 
 **Seguridad**
+
 - [ ] Autenticación funciona correctamente
 - [ ] Permisos RLS validados
 - [ ] Datos sensibles no expuestos en logs
 - [ ] HTTPS en todas las conexiones
 
 **Compatibilidad**
+
 - [ ] Probado en iOS (versión mínima)
 - [ ] Probado en Android (versión mínima)
 - [ ] Probado en diferentes tamaños de pantalla
@@ -850,11 +921,13 @@ Verificar configuración de Supabase Auth.
 - [ ] Modo landscape funcional (si aplica)
 
 **Datos**
+
 - [ ] Migraciones aplicadas correctamente
 - [ ] Datos de prueba disponibles
 - [ ] Backup de producción creado
 
 **Documentación**
+
 - [ ] Release notes actualizadas
 - [ ] Changelog actualizado
 - [ ] Known issues documentados
@@ -880,20 +953,24 @@ npm run test:e2e
 ### Herramientas Recomendadas
 
 **Testing**
+
 - Jest - Unit tests
 - Detox - E2E tests para React Native
 - Postman - API testing manual
 
 **Debugging**
+
 - React DevTools
 - Flipper
 - Chrome DevTools (para web)
 
 **Monitoreo**
+
 - Supabase Dashboard - DB queries
 - Expo DevTools - Build/deploy
 
 **Reportes**
+
 - Jira / Linear - Bug tracking
 - TestRail - Test case management
 - Confluence - Documentación
@@ -904,14 +981,14 @@ npm run test:e2e
 
 ### KPIs a Monitorear
 
-| Métrica | Target | Crítico |
-|---------|--------|---------|
-| Test Coverage | > 80% | < 60% |
-| Bugs encontrados en QA | N/A | N/A |
+| Métrica                        | Target  | Crítico  |
+| ------------------------------ | ------- | -------- |
+| Test Coverage                  | > 80%   | < 60%    |
+| Bugs encontrados en QA         | N/A     | N/A      |
 | Bugs encontrados en producción | < 5/mes | > 20/mes |
-| Tiempo promedio de fix | < 48h | > 7 días |
-| Tests ejecutados | 100% | < 80% |
-| Tests que pasan | > 95% | < 85% |
+| Tiempo promedio de fix         | < 48h   | > 7 días |
+| Tests ejecutados               | 100%    | < 80%    |
+| Tests que pasan                | > 95%   | < 85%    |
 
 ### Reporte Semanal de QA
 
@@ -919,6 +996,7 @@ npm run test:e2e
 ## Reporte QA - Semana XX/2025
 
 ### Resumen
+
 - Tests ejecutados: 150
 - Tests exitosos: 142 (94.7%)
 - Tests fallidos: 8 (5.3%)
@@ -927,17 +1005,21 @@ npm run test:e2e
 - Bugs abiertos: 23
 
 ### Bugs Críticos
+
 - BUG-042: Chat no envía después de 5 min [EN PROGRESO]
 
 ### Bugs de Alta Prioridad
+
 - BUG-043: Notificaciones no llegan en iOS [NUEVO]
 - BUG-044: Solicitud no actualiza estado [RESUELTO]
 
 ### Áreas de Riesgo
+
 - Módulo de chat presenta problemas de sesión
 - Performance degradada con > 100 solicitudes
 
 ### Recomendaciones
+
 - Agregar auto-refresh de sesión
 - Implementar paginación en lista de solicitudes
 ```
@@ -949,21 +1031,25 @@ npm run test:e2e
 ### Escalación de Issues
 
 **Nivel 1:** Tester QA
+
 - Ejecuta pruebas
 - Reporta bugs
 - Verifica fixes
 
 **Nivel 2:** QA Lead
+
 - Revisa reportes
 - Prioriza bugs
 - Coordina con desarrollo
 
 **Nivel 3:** Desarrollo
+
 - Fix de bugs
 - Implementación de features
 - Code reviews
 
 **Nivel 4:** Arquitecto / CTO
+
 - Decisiones técnicas
 - Arquitectura
 - Performance crítica
@@ -973,11 +1059,13 @@ npm run test:e2e
 ## 📚 Recursos Adicionales
 
 ### Documentación Relacionada
+
 - [WIKI Completa](./WIKI-COMPLETA.md)
 - [Manual Técnico](./MANUAL-TECNICO.md)
 - [Matriz de Pruebas](./MATRIZ-PRUEBAS.md)
 
 ### Links Útiles
+
 - Expo Docs: https://docs.expo.dev
 - Supabase Docs: https://supabase.com/docs
 - React Native Testing: https://reactnative.dev/docs/testing-overview

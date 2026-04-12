@@ -188,9 +188,7 @@ export default function AccountSettings() {
               placeholderTextColor="#9ca3af"
             />
           </View>
-          <Text style={styles.helperText}>
-            El correo no se puede modificar
-          </Text>
+          <Text style={styles.helperText}>El correo no se puede modificar</Text>
         </View>
 
         {/* Teléfono */}

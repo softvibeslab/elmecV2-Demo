@@ -110,6 +110,7 @@ EXPO_PUBLIC_EAS_PROJECT_ID=elmec-mobile-app-demo
 ### Si usas GitHub (Deploy Automático):
 
 1. Haz commit de los cambios:
+
    ```bash
    git add .
    git commit -m "chore: configurar para deploy en Netlify"
@@ -142,18 +143,21 @@ Una vez completado el build:
 2. **Prueba el login** con estas credenciales:
 
 ### 👨‍💼 Admin
+
 ```
 Email: i.pineda@elmec.com.mx
 Password: Elmec2024!Admin
 ```
 
 ### 👷 Agente
+
 ```
 Email: j.gonzalez@elmec.com.mx
 Password: Elmec2024!Agent
 ```
 
 ### 👤 Cliente
+
 ```
 Email: cliente@gmail.com
 Password: Elmec2024!Client
@@ -198,18 +202,21 @@ Una vez que tengas tu URL de Netlify (ej: `https://elmec-app.netlify.app`):
 Antes de considerar el deploy exitoso, verifica:
 
 ### Infraestructura
+
 - [ ] Site deployado en Netlify
 - [ ] URL accesible públicamente
 - [ ] Build completado sin errores
 - [ ] Variables de entorno configuradas
 
 ### Supabase
+
 - [ ] Conexión a base de datos funciona
 - [ ] Auth funciona correctamente
 - [ ] Políticas RLS activas
 - [ ] Dominios configurados en Supabase
 
 ### Funcionalidad
+
 - [ ] Login funciona
 - [ ] Registro de usuarios funciona
 - [ ] Dashboard carga datos
@@ -218,6 +225,7 @@ Antes de considerar el deploy exitoso, verifica:
 - [ ] Notificaciones funcionan
 
 ### Seguridad
+
 - [ ] Headers de seguridad activos
 - [ ] CSP configurado
 - [ ] HTTPS activo
@@ -232,6 +240,7 @@ Antes de considerar el deploy exitoso, verifica:
 **Problema**: El build falla en Netlify
 
 **Solución**:
+
 1. Verifica que Node 20.19.4 esté configurado en `netlify.toml`
 2. Revisa el log de build en Netlify
 3. Asegúrate de que todas las variables de entorno estén configuradas
@@ -241,6 +250,7 @@ Antes de considerar el deploy exitoso, verifica:
 **Problema**: La app no se conecta a Supabase
 
 **Solución**:
+
 1. Verifica variables de entorno en Netlify
 2. Confirma que la URL de Netlify esté en Supabase > Authentication > URL Configuration
 3. Revisa que las credenciales sean correctas
@@ -250,6 +260,7 @@ Antes de considerar el deploy exitoso, verifica:
 **Problema**: El login no funciona
 
 **Solución**:
+
 1. Verifica que los usuarios existan en Supabase Auth
 2. Confirma que "Email confirmation" esté deshabilitado o que los emails estén confirmados
 3. Revisa políticas RLS en Supabase
@@ -259,6 +270,7 @@ Antes de considerar el deploy exitoso, verifica:
 **Problema**: No se cargan datos
 
 **Solución**:
+
 1. Verifica que las migraciones estén ejecutadas
 2. Revisa políticas RLS (pueden estar bloqueando acceso)
 3. Confirma que hay datos de prueba en las tablas
@@ -289,6 +301,7 @@ npm run preview
 Si llegaste hasta aquí y todo funciona, ¡felicidades! 🎊
 
 Tu aplicación ELMEC está ahora:
+
 - ✅ Deployada en Netlify
 - ✅ Conectada a Supabase
 - ✅ Accesible públicamente
@@ -300,6 +313,7 @@ Tu aplicación ELMEC está ahora:
 ## 📞 SOPORTE
 
 Si necesitas ayuda:
+
 1. Revisa los logs en Netlify Dashboard
 2. Verifica la conexión con Supabase usando `npm run test-supabase`
 3. Consulta la documentación de Netlify: https://docs.netlify.com

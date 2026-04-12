@@ -276,11 +276,11 @@ export default function ChatList() {
                 style={[
                   styles.connectionIndicator,
                   connectionStatus === 'connected' &&
-                  styles.connectionConnected,
+                    styles.connectionConnected,
                   connectionStatus === 'connecting' &&
-                  styles.connectionConnecting,
+                    styles.connectionConnecting,
                   connectionStatus === 'disconnected' &&
-                  styles.connectionDisconnected,
+                    styles.connectionDisconnected,
                 ]}
               >
                 {connectionStatus === 'connected' ? (

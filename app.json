@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Elmec MFR",
-    "slug": "elmec-mobile-app",
+    "slug": "elmec",
     "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/images/branding/logo.png",
@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "extra": {
       "eas": {
-        "projectId": "656caaad-2849-4ea2-8374-1632acab1368"
+        "projectId": "96c91e46-dc10-43b5-9cd9-4d91217fd50c"
       }
     },
     "ios": {
@@ -60,14 +60,16 @@
       "package": "com.elmec.mfr",
       "minSdkVersion": 24,
       "permissions": [
-        "RECEIVE_BOOT_COMPLETED",
-        "VIBRATE",
-        "POST_NOTIFICATIONS"
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.RECORD_AUDIO"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/branding/logo.png",
         "backgroundColor": "#ffffff"
       }
-    }
+    },
+    "owner": "softvibeslab"
   }
 }

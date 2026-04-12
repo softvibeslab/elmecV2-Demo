@@ -42,6 +42,7 @@ Policy Name: Public read access
 5. En **"Target roles"**, selecciona: **public**
 
 6. En el campo **"USING expression"**, pega:
+
 ```sql
 bucket_id = 'request-files'
 ```
@@ -71,6 +72,7 @@ Policy Name: Authenticated users can upload
 5. En **"Target roles"**, selecciona: **authenticated**
 
 6. En el campo **"WITH CHECK expression"**, pega:
+
 ```sql
 bucket_id = 'request-files'
 ```
@@ -100,11 +102,13 @@ Policy Name: Users can update own files
 5. En **"Target roles"**, selecciona: **authenticated**
 
 6. En el campo **"USING expression"**, pega:
+
 ```sql
 bucket_id = 'request-files' AND auth.uid()::text = owner
 ```
 
 7. En el campo **"WITH CHECK expression"**, pega:
+
 ```sql
 bucket_id = 'request-files' AND auth.uid()::text = owner
 ```
@@ -134,6 +138,7 @@ Policy Name: Users can delete own files
 5. En **"Target roles"**, selecciona: **authenticated**
 
 6. En el campo **"USING expression"**, pega:
+
 ```sql
 bucket_id = 'request-files' AND auth.uid()::text = owner
 ```
@@ -166,6 +171,7 @@ node scripts/check-storage-bucket.js
 ```
 
 Deberías ver:
+
 ```
 ✅ El bucket 'request-files' EXISTE
 ✅ El bucket es accesible
@@ -189,6 +195,7 @@ Y ¡listo! La funcionalidad de carga de archivos estará funcionando completamen
 ## 📸 Capturas de Pantalla de Referencia
 
 ### Cómo se ve "New Policy":
+
 ```
 ┌─────────────────────────────────────┐
 │  Policy name                        │
@@ -243,8 +250,8 @@ Ejecuta `node scripts/check-storage-bucket.js` y intenta subir un archivo desde 
 ## 📞 Soporte
 
 Si tienes problemas:
+
 1. Revisa que las 4 políticas estén creadas
 2. Verifica que el bucket sea público
 3. Ejecuta el script de verificación
 4. Revisa los logs en `npx expo start`
-

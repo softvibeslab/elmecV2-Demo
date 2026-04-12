@@ -60,17 +60,17 @@
 
 ### 📊 Estadísticas del Proyecto
 
-| Métrica | Valor |
-|---------|-------|
-| Archivos TypeScript/JavaScript | 57 |
-| Líneas de código | ~9,031 |
-| Pantallas | 20 |
-| Componentes reutilizables | 14+ |
-| Contexts globales | 3 |
-| Redux Slices | 1 |
-| Custom Hooks | 3 |
-| Dependencias principales | 45 |
-| Completitud estimada | **85%** |
+| Métrica                        | Valor   |
+| ------------------------------ | ------- |
+| Archivos TypeScript/JavaScript | 57      |
+| Líneas de código               | ~9,031  |
+| Pantallas                      | 20      |
+| Componentes reutilizables      | 14+     |
+| Contexts globales              | 3       |
+| Redux Slices                   | 1       |
+| Custom Hooks                   | 3       |
+| Dependencias principales       | 45      |
+| Completitud estimada           | **85%** |
 
 ---
 
@@ -79,6 +79,7 @@
 ### 🛠️ Stack Tecnológico
 
 #### Frontend
+
 ```
 - React Native: 0.82.0
 - React: 19.2.0
@@ -88,12 +89,14 @@
 ```
 
 #### Estado Global
+
 ```
 - Redux Toolkit: 2.9.0 (Calculadora)
 - Context API (Auth, Chat, Notifications)
 ```
 
 #### Backend as a Service
+
 ```
 - Supabase: 2.57.2
   - PostgreSQL Database
@@ -103,6 +106,7 @@
 ```
 
 #### UI/UX
+
 ```
 - React Native StyleSheet (estilos nativos)
 - expo-linear-gradient (gradientes)
@@ -111,6 +115,7 @@
 ```
 
 #### Deployment
+
 ```
 - Netlify (Web)
 - EAS (Mobile - configurado)
@@ -240,6 +245,7 @@ elmecV2-Demo/
 **Propósito**: Gestión centralizada de autenticación y sesión de usuario
 
 **Funcionalidades**:
+
 - Login con email/password
 - Registro de nuevos usuarios
 - Logout con actualización de estado offline
@@ -248,19 +254,21 @@ elmecV2-Demo/
 - Modo BASIC_AUTH para desarrollo
 
 **Estado Expuesto**:
+
 ```typescript
 interface AuthContextType {
-  isAuthenticated: boolean
-  user: User | null
-  session: Session | null
-  loading: boolean
-  login: (email: string, password: string) => Promise<boolean>
-  register: (userData: UserData) => Promise<boolean>
-  logout: () => Promise<void>
+  isAuthenticated: boolean;
+  user: User | null;
+  session: Session | null;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<boolean>;
+  register: (userData: UserData) => Promise<boolean>;
+  logout: () => Promise<void>;
 }
 ```
 
 **Flujo de Login**:
+
 1. Usuario envía email + password
 2. AuthContext llama a `supabase.auth.signInWithPassword()`
 3. Si exitoso, carga perfil de tabla `users`
@@ -269,6 +277,7 @@ interface AuthContextType {
 6. Redirige a `/(tabs)`
 
 **Manejo de Errores**:
+
 - Invalid credentials
 - Email not confirmed
 - User not found
@@ -276,6 +285,7 @@ interface AuthContextType {
 - Timeout errors
 
 **Archivos Relacionados**:
+
 - `app/auth/login.tsx` (UI de login)
 - `app/auth/register.tsx` (UI de registro)
 - `services/supabaseService.ts` (métodos de API)
@@ -287,6 +297,7 @@ interface AuthContextType {
 **Estado**: ✅ Completo
 
 **Componentes**:
+
 - Input de email con icono
 - Input de password con toggle show/hide
 - Botón de login con loading state
@@ -294,16 +305,18 @@ interface AuthContextType {
 - Credenciales de prueba (demo)
 
 **Validaciones**:
+
 - Campos requeridos
 - Formato de email
 - Manejo de errores específicos
 
 **Estados**:
+
 ```typescript
-const [email, setEmail] = useState('')
-const [password, setPassword] = useState('')
-const [showPassword, setShowPassword] = useState(false)
-const [loading, setLoading] = useState(false)
+const [email, setEmail] = useState('');
+const [password, setPassword] = useState('');
+const [showPassword, setShowPassword] = useState(false);
+const [loading, setLoading] = useState(false);
 ```
 
 ---
@@ -313,6 +326,7 @@ const [loading, setLoading] = useState(false)
 **Estado**: ✅ Completo
 
 **Campos del Formulario**:
+
 - Empresa
 - Nombre, Apellido Paterno, Apellido Materno
 - Email
@@ -321,6 +335,7 @@ const [loading, setLoading] = useState(false)
 - Contraseña
 
 **Flujo de Registro**:
+
 1. Validar campos requeridos
 2. Crear usuario en `auth.users` (Supabase Auth)
 3. Crear perfil en `public.users` con rol 'customer'
@@ -337,6 +352,7 @@ const [loading, setLoading] = useState(false)
 **Propósito**: Sistema de chat en tiempo real con todas las features modernas
 
 **Funcionalidades Principales**:
+
 - Cargar chat rooms del usuario
 - Cargar mensajes con paginación
 - Enviar mensajes (texto, imagen, audio, archivo, sistema)
@@ -348,6 +364,7 @@ const [loading, setLoading] = useState(false)
 - Optimistic updates
 
 **Estado Expuesto**:
+
 ```typescript
 interface ChatContextType {
   chatRooms: ChatRoom[]
@@ -369,29 +386,39 @@ interface ChatContextType {
 ```
 
 **Real-time Subscriptions**:
+
 ```typescript
 // Escucha INSERT de nuevos mensajes
 supabase
   .channel('messages')
-  .on('postgres_changes', {
-    event: 'INSERT',
-    schema: 'public',
-    table: 'messages'
-  }, handleNewMessage)
-  .subscribe()
+  .on(
+    'postgres_changes',
+    {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'messages',
+    },
+    handleNewMessage
+  )
+  .subscribe();
 
 // Escucha UPDATE de mensajes editados
 supabase
   .channel('messages-updates')
-  .on('postgres_changes', {
-    event: 'UPDATE',
-    schema: 'public',
-    table: 'messages'
-  }, handleMessageUpdate)
-  .subscribe()
+  .on(
+    'postgres_changes',
+    {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'messages',
+    },
+    handleMessageUpdate
+  )
+  .subscribe();
 ```
 
 **Tipos de Mensajes Soportados**:
+
 - `text`: Mensajes de texto plano
 - `image`: Imágenes con preview
 - `audio`: Grabaciones de audio
@@ -417,6 +444,7 @@ supabase
    - Buscar emojis
 
 3. **Adjuntar Archivos**
+
    ```typescript
    // Opciones de adjuntos
    - Galería de imágenes (con edición)
@@ -425,6 +453,7 @@ supabase
    ```
 
 4. **Grabación de Audio** (solo móvil)
+
    ```typescript
    // Estados de grabación
    - Grabando
@@ -440,9 +469,10 @@ supabase
    - Copiar al portapapeles
 
 6. **Typing Indicators**
+
    ```typescript
    // Muestra "Usuario está escribiendo..."
-   sendTypingIndicator(roomId, true)
+   sendTypingIndicator(roomId, true);
    ```
 
 7. **Load More Messages**
@@ -450,6 +480,7 @@ supabase
    - Scroll hacia arriba para cargar más
 
 **Componentes UI**:
+
 - Header con nombre de chat room y participantes
 - FlatList de mensajes (optimizado con `getItemLayout`)
 - Input bar con emojis y adjuntos
@@ -458,6 +489,7 @@ supabase
 - Image preview modal
 
 **Performance Optimizations**:
+
 ```typescript
 // FlatList optimizations
 removeClippedSubviews={true}
@@ -481,14 +513,20 @@ getItemLayout={(data, index) => ({
 **Funcionalidades**:
 
 1. **Crear Nueva Solicitud**
+
    ```typescript
    interface RequestData {
-     titulo: string
-     mensaje: string
-     tipo: 'soporte_tecnico' | 'facturacion' | 'informacion' | 'queja' | 'sugerencia'
-     prioridad: 'baja' | 'media' | 'alta' | 'urgente'
-     agente_id?: string // Asignación manual o automática
-     attachments?: File[] // Hasta 3 archivos, max 5MB
+     titulo: string;
+     mensaje: string;
+     tipo:
+       | 'soporte_tecnico'
+       | 'facturacion'
+       | 'informacion'
+       | 'queja'
+       | 'sugerencia';
+     prioridad: 'baja' | 'media' | 'alta' | 'urgente';
+     agente_id?: string; // Asignación manual o automática
+     attachments?: File[]; // Hasta 3 archivos, max 5MB
    }
    ```
 
@@ -516,18 +554,20 @@ getItemLayout={(data, index) => ({
    - Feedback del usuario
 
 **Simulación Demo**:
+
 ```typescript
 // useEffect que simula cambios automáticos de estado
 // ⚠️ REMOVER en producción
 useEffect(() => {
   const interval = setInterval(() => {
     // Cambia estados aleatoriamente cada 10s
-  }, 10000)
-  return () => clearInterval(interval)
-}, [])
+  }, 10000);
+  return () => clearInterval(interval);
+}, []);
 ```
 
 **Componentes Relacionados**:
+
 - `AdvancedSearchComponent`: Búsqueda y filtros
 - `FileUploadComponent`: Subida de archivos
 
@@ -568,6 +608,7 @@ useEffect(() => {
    ```
 
 **Performance Optimizations**:
+
 ```typescript
 // FlatList optimizations
 <FlatList
@@ -585,14 +626,15 @@ useEffect(() => {
 ```
 
 **Estados**:
+
 ```typescript
-const [users, setUsers] = useState<User[]>([])
-const [searchQuery, setSearchQuery] = useState('')
-const [selectedCategoria, setSelectedCategoria] = useState<string | null>(null)
-const [selectedZona, setSelectedZona] = useState<string | null>(null)
-const [loading, setLoading] = useState(true)
-const [error, setError] = useState<string | null>(null)
-const [refreshing, setRefreshing] = useState(false)
+const [users, setUsers] = useState<User[]>([]);
+const [searchQuery, setSearchQuery] = useState('');
+const [selectedCategoria, setSelectedCategoria] = useState<string | null>(null);
+const [selectedZona, setSelectedZona] = useState<string | null>(null);
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState<string | null>(null);
+const [refreshing, setRefreshing] = useState(false);
 ```
 
 ---
@@ -606,15 +648,16 @@ const [refreshing, setRefreshing] = useState(false)
 **Tipos de Notificaciones**:
 
 1. **In-App Notifications**
+
    ```typescript
    interface InAppNotification {
-     id: string
-     title: string
-     body: string
-     type: 'info' | 'success' | 'warning' | 'error'
-     read: boolean
-     data?: any
-     created_at: string
+     id: string;
+     title: string;
+     body: string;
+     type: 'info' | 'success' | 'warning' | 'error';
+     read: boolean;
+     data?: any;
+     created_at: string;
    }
    ```
 
@@ -628,24 +671,26 @@ const [refreshing, setRefreshing] = useState(false)
    - Request permissions
 
 **Funcionalidades**:
+
 ```typescript
 // Enviar notificación demo
-sendDemoNotification(title, body, type, data)
+sendDemoNotification(title, body, type, data);
 
 // Enviar notificación local
-sendLocalNotification(title, body, data)
+sendLocalNotification(title, body, data);
 
 // Marcar como leído
-markNotificationAsRead(id)
+markNotificationAsRead(id);
 
 // Marcar todas como leído
-markAllAsRead()
+markAllAsRead();
 
 // Limpiar notificaciones
-clearNotifications()
+clearNotifications();
 ```
 
 **Configuración de Listeners**:
+
 ```typescript
 // Notificación recibida mientras app está en foreground
 Notifications.setNotificationHandler({
@@ -654,12 +699,12 @@ Notifications.setNotificationHandler({
     shouldPlaySound: true,
     shouldSetBadge: true,
   }),
-})
+});
 
 // Notificación tapped
-Notifications.addNotificationResponseReceivedListener((response) => {
+Notifications.addNotificationResponseReceivedListener(response => {
   // Navegar a pantalla específica según data
-})
+});
 ```
 
 ---
@@ -671,56 +716,59 @@ Notifications.addNotificationResponseReceivedListener((response) => {
 **Estado**: ✅ Completo
 
 **Estado de Redux**:
+
 ```typescript
 interface CalculatorState {
   // Parámetros de entrada
-  D: string    // Diámetro de la herramienta
-  Z: string    // Número de dientes/filos
-  N: string    // Velocidad de rotación (RPM)
-  Vc: string   // Velocidad de corte (m/min)
-  fz: string   // Avance por diente
-  fn: string   // Avance por revolución
-  vf: string   // Velocidad de avance
-  ap: string   // Profundidad axial
-  ae: string   // Profundidad radial
-  np: string   // Número de pasadas
-  lm: string   // Longitud a mecanizar
+  D: string; // Diámetro de la herramienta
+  Z: string; // Número de dientes/filos
+  N: string; // Velocidad de rotación (RPM)
+  Vc: string; // Velocidad de corte (m/min)
+  fz: string; // Avance por diente
+  fn: string; // Avance por revolución
+  vf: string; // Velocidad de avance
+  ap: string; // Profundidad axial
+  ae: string; // Profundidad radial
+  np: string; // Número de pasadas
+  lm: string; // Longitud a mecanizar
 
   // Resultados calculados
-  tc: string   // Tiempo de corte
-  Q: string    // Tasa de remoción de material
+  tc: string; // Tiempo de corte
+  Q: string; // Tasa de remoción de material
 
   // Configuración
-  medida: 'mt' | 'im'     // Métrico o Imperial
-  velocidad: 'n' | 'fn'   // RPM o Avance
+  medida: 'mt' | 'im'; // Métrico o Imperial
+  velocidad: 'n' | 'fn'; // RPM o Avance
 
   // UI State
-  editable: number
-  keyboardHeight: string
-  scrollHeight: string
-  textoCa: string
+  editable: number;
+  keyboardHeight: string;
+  scrollHeight: string;
+  textoCa: string;
 }
 ```
 
 **Actions**:
+
 ```typescript
 // Actualizar campo
-setField({ field: 'D', value: '10' })
+setField({ field: 'D', value: '10' });
 
 // Limpiar todos los campos
-clearAll()
+clearAll();
 
 // Cambiar sistema de medida
-setMedida('mt') // o 'im'
+setMedida('mt'); // o 'im'
 
 // Cambiar tipo de velocidad
-setVelocidad('n') // o 'fn'
+setVelocidad('n'); // o 'fn'
 
 // Actualizar texto de categoría
-updateTextoCa('Texto...')
+updateTextoCa('Texto...');
 ```
 
 **Archivos de Pantalla**:
+
 - `app/calculator/index.tsx` ✅ (Menú)
 - `app/calculator/BarrenadoScreen.tsx` ⚠️ (No verificado)
 - `app/calculator/FresadoScreen.tsx` ⚠️ (No verificado)
@@ -779,8 +827,9 @@ updateTextoCa('Texto...')
 **Secciones**:
 
 1. **Saludo Personalizado**
+
    ```typescript
-   const greeting = `Hola, ${user?.nombre} ${user?.apellido_paterno}`
+   const greeting = `Hola, ${user?.nombre} ${user?.apellido_paterno}`;
    ```
 
 2. **Accesos Rápidos**
@@ -789,11 +838,17 @@ updateTextoCa('Texto...')
    - Calculadora
 
 3. **Actividad Reciente** ⚠️ (hardcodeado)
+
    ```typescript
    const recentActivity = [
-     { id: '1', title: 'Nueva solicitud...', time: 'Hace 5 min', type: 'solicitud' },
+     {
+       id: '1',
+       title: 'Nueva solicitud...',
+       time: 'Hace 5 min',
+       type: 'solicitud',
+     },
      // ...
-   ]
+   ];
    ```
 
 4. **Estadísticas** ⚠️ (hardcodeado)
@@ -802,10 +857,11 @@ updateTextoCa('Texto...')
      { label: 'Solicitudes', value: '12', icon: FileText },
      { label: 'Mensajes', value: '24', icon: MessageCircle },
      { label: 'Contactos', value: '48', icon: Users },
-   ]
+   ];
    ```
 
 **TODO**:
+
 - [ ] Reemplazar datos hardcodeados con queries reales a Supabase
 - [ ] Implementar gráficos de actividad
 - [ ] Agregar filtros de fecha
@@ -816,37 +872,37 @@ updateTextoCa('Texto...')
 
 ### ✅ MÓDULOS COMPLETOS (85%)
 
-| Módulo | Completitud | Notas |
-|--------|-------------|-------|
-| **Autenticación** | 100% | Login, Register, Logout, Sesión persistente |
-| **Sistema de Chat** | 100% ⭐⭐⭐⭐⭐ | Completo y avanzado |
-| **Directorio** | 100% | Optimizado con FlatList |
-| **Solicitudes CRM** | 95% | Funcional, con simulaciones demo |
-| **Notificaciones** | 100% | In-app, Push, Web |
-| **Perfil** | 90% | Funcional, menús de config pendientes |
-| **Redux Store** | 100% | Configurado para calculadora |
-| **TypeScript** | 100% | Tipado estricto completo |
-| **Deployment Config** | 100% | Netlify configurado |
-| **Real-time** | 100% | Supabase Realtime integrado |
+| Módulo                | Completitud     | Notas                                       |
+| --------------------- | --------------- | ------------------------------------------- |
+| **Autenticación**     | 100%            | Login, Register, Logout, Sesión persistente |
+| **Sistema de Chat**   | 100% ⭐⭐⭐⭐⭐ | Completo y avanzado                         |
+| **Directorio**        | 100%            | Optimizado con FlatList                     |
+| **Solicitudes CRM**   | 95%             | Funcional, con simulaciones demo            |
+| **Notificaciones**    | 100%            | In-app, Push, Web                           |
+| **Perfil**            | 90%             | Funcional, menús de config pendientes       |
+| **Redux Store**       | 100%            | Configurado para calculadora                |
+| **TypeScript**        | 100%            | Tipado estricto completo                    |
+| **Deployment Config** | 100%            | Netlify configurado                         |
+| **Real-time**         | 100%            | Supabase Realtime integrado                 |
 
 ### 🚧 MÓDULOS EN DESARROLLO (60%)
 
-| Módulo | Completitud | Notas |
-|--------|-------------|-------|
-| **Calculadoras** | 60% | Archivos no verificados |
-| **Home/Dashboard** | 85% | UI completa, datos hardcodeados |
-| **Admin Dashboard** | 50% | No verificado |
-| **Configuración** | 30% | Menús pendientes |
-| **Componentes** | 70% | Varios no verificados |
+| Módulo              | Completitud | Notas                           |
+| ------------------- | ----------- | ------------------------------- |
+| **Calculadoras**    | 60%         | Archivos no verificados         |
+| **Home/Dashboard**  | 85%         | UI completa, datos hardcodeados |
+| **Admin Dashboard** | 50%         | No verificado                   |
+| **Configuración**   | 30%         | Menús pendientes                |
+| **Componentes**     | 70%         | Varios no verificados           |
 
 ### ⏳ MÓDULOS PENDIENTES (0%)
 
-| Módulo | Completitud | Notas |
-|--------|-------------|-------|
-| **Tests** | 0% | Sin tests implementados |
-| **Optimizaciones** | 30% | Code splitting pendiente |
-| **Documentación** | 40% | README básico |
-| **Modo Offline** | 0% | No implementado |
+| Módulo             | Completitud | Notas                    |
+| ------------------ | ----------- | ------------------------ |
+| **Tests**          | 0%          | Sin tests implementados  |
+| **Optimizaciones** | 30%         | Code splitting pendiente |
+| **Documentación**  | 40%         | README básico            |
+| **Modo Offline**   | 0%          | No implementado          |
 
 ---
 
@@ -855,6 +911,7 @@ updateTextoCa('Texto...')
 ### 🔴 PRIORIDAD CRÍTICA (Pre-Deployment)
 
 #### 1. Tests
+
 ```bash
 # TODO: Implementar tests básicos
 - [ ] Test de login/logout
@@ -865,6 +922,7 @@ updateTextoCa('Texto...')
 ```
 
 #### 2. Verificar Archivos de Calculadora
+
 ```bash
 # TODO: Verificar existencia e implementación
 - [ ] app/calculator/BarrenadoScreen.tsx
@@ -875,27 +933,34 @@ updateTextoCa('Texto...')
 ```
 
 #### 3. Remover Simulaciones Demo
+
 ```typescript
 // TODO: Remover de app/(tabs)/requests.tsx (líneas 433-467)
 useEffect(() => {
   const interval = setInterval(() => {
     // Simulación de cambios de estado
-  }, 10000)
-  return () => clearInterval(interval)
-}, [])
+  }, 10000);
+  return () => clearInterval(interval);
+}, []);
 ```
 
 #### 4. Reemplazar Datos Hardcodeados
+
 ```typescript
 // TODO: En app/(tabs)/index.tsx
 // Reemplazar:
-const recentActivity = [ /* datos estáticos */ ]
-const stats = [ /* datos estáticos */ ]
+const recentActivity = [
+  /* datos estáticos */
+];
+const stats = [
+  /* datos estáticos */
+];
 
 // Por queries reales a Supabase
 ```
 
 #### 5. Corregir Bugs Conocidos
+
 ```typescript
 // TODO: app/(tabs)/chat/index.tsx:153
 // Reemplazar window.location.reload() con router.replace()
@@ -905,6 +970,7 @@ const stats = [ /* datos estáticos */ ]
 ```
 
 #### 6. Limpiar Logs de Consola
+
 ```bash
 # TODO: Buscar y remover console.log
 grep -r "console.log" app/ components/ contexts/
@@ -919,6 +985,7 @@ logger.info('...')
 ### 🟡 PRIORIDAD MEDIA (Post-Launch)
 
 #### 1. Completar Dashboard
+
 ```typescript
 // TODO: app/(tabs)/index.tsx
 - [ ] Implementar query de actividad reciente real
@@ -928,6 +995,7 @@ logger.info('...')
 ```
 
 #### 2. Implementar Admin Dashboard
+
 ```typescript
 // TODO: components/AdminDashboard.tsx
 - [ ] Gestión de usuarios
@@ -937,6 +1005,7 @@ logger.info('...')
 ```
 
 #### 3. Menús de Configuración
+
 ```typescript
 // TODO: Crear pantallas
 - [ ] app/settings/index.tsx (Configuración)
@@ -946,6 +1015,7 @@ logger.info('...')
 ```
 
 #### 4. Verificar Componentes
+
 ```bash
 # TODO: Leer y verificar implementación
 - [ ] components/NotificationToast.tsx
@@ -956,16 +1026,17 @@ logger.info('...')
 ```
 
 #### 5. Subida de Archivos a Supabase Storage
+
 ```typescript
 // TODO: services/supabaseService.ts
 export const uploadFile = async (file: File, bucket: string) => {
   const { data, error } = await supabase.storage
     .from(bucket)
-    .upload(`${userId}/${file.name}`, file)
+    .upload(`${userId}/${file.name}`, file);
 
-  if (error) throw error
-  return data
-}
+  if (error) throw error;
+  return data;
+};
 ```
 
 ---
@@ -973,6 +1044,7 @@ export const uploadFile = async (file: File, bucket: string) => {
 ### 🟢 PRIORIDAD BAJA (Mejoras Futuras)
 
 #### 1. Modo Offline
+
 ```typescript
 // TODO: Implementar
 - [ ] Offline storage con SQLite
@@ -981,6 +1053,7 @@ export const uploadFile = async (file: File, bucket: string) => {
 ```
 
 #### 2. Internacionalización
+
 ```typescript
 // TODO: i18n/locales/en.json
 - [ ] Agregar inglés
@@ -989,6 +1062,7 @@ export const uploadFile = async (file: File, bucket: string) => {
 ```
 
 #### 3. PWA Avanzado
+
 ```typescript
 // TODO: service-worker.js
 - [ ] Service Workers
@@ -997,6 +1071,7 @@ export const uploadFile = async (file: File, bucket: string) => {
 ```
 
 #### 4. Analytics
+
 ```bash
 # TODO: Integrar analytics
 npm install firebase @react-native-firebase/analytics
@@ -1044,6 +1119,7 @@ ls -la dist/
    - Seleccionar repositorio
 
 2. **Configurar Build Settings**
+
    ```
    Build command: npm ci && npm run build:production
    Publish directory: dist
@@ -1134,6 +1210,7 @@ curl -I https://tu-app.netlify.app | grep -i "X-Frame-Options"
 ### Errores Comunes
 
 #### 1. "Supabase Auth Error: Invalid JWT"
+
 ```bash
 # Solución: Verificar que las keys de Supabase sean correctas
 # .env
@@ -1142,12 +1219,14 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJxxx...
 ```
 
 #### 2. "Cannot connect to Supabase"
+
 ```bash
 # Solución: Verificar firewall y CSP headers
 # Netlify debe permitir conexiones a *.supabase.co
 ```
 
 #### 3. "Module not found: @/"
+
 ```bash
 # Solución: Verificar babel-plugin-module-resolver
 # babel.config.js debe tener:
@@ -1160,6 +1239,7 @@ plugins: [
 ```
 
 #### 4. "Expo Router navigation not working"
+
 ```bash
 # Solución: Verificar que todos los archivos tengan default export
 # Verificar que _layout.tsx esté en cada carpeta de rutas
@@ -1170,6 +1250,7 @@ plugins: [
 ## Recursos Adicionales
 
 ### Documentación Oficial
+
 - [Expo Docs](https://docs.expo.dev/)
 - [React Native Docs](https://reactnative.dev/docs/getting-started)
 - [Supabase Docs](https://supabase.com/docs)
@@ -1177,11 +1258,13 @@ plugins: [
 - [Redux Toolkit Docs](https://redux-toolkit.js.org/)
 
 ### Comunidad
+
 - [Expo Discord](https://discord.com/invite/4gtbPAdpaE)
 - [Supabase Discord](https://discord.supabase.com/)
 - [React Native Community](https://reactnative.dev/community/overview)
 
 ### Herramientas
+
 - [Supabase Studio](https://supabase.com/dashboard)
 - [Netlify Dashboard](https://app.netlify.com/)
 - [EAS Dashboard](https://expo.dev/)
@@ -1191,6 +1274,7 @@ plugins: [
 ## Contacto y Soporte
 
 Para dudas o soporte técnico:
+
 - **Email**: soporte@elmec.com.mx
 - **GitHub Issues**: [Crear issue](https://github.com/tu-usuario/elmecV2-Demo/issues)
 

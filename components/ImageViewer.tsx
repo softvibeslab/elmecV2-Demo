@@ -1,5 +1,15 @@
 import React from 'react';
-import { Platform, Modal, View, Image, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Text } from 'react-native';
+import {
+  Platform,
+  Modal,
+  View,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Dimensions,
+  Text,
+} from 'react-native';
 import { X } from 'lucide-react-native';
 
 interface ImageViewerProps {
@@ -20,22 +30,31 @@ export default function ImageViewer({
   onRequestClose,
 }: ImageViewerProps) {
   // For native platforms, use react-native-image-viewing if available
-  if (Platform.OS !== 'web') {
-    try {
-      // Dynamic import for native platforms only
-      const RNImageViewing = require('react-native-image-viewing').default;
-      return (
-        <RNImageViewing
-          images={images}
-          imageIndex={imageIndex}
-          visible={visible}
-          onRequestClose={onRequestClose}
-        />
-      );
-    } catch (error) {
-      // Fallback to custom modal if package not available
-      console.warn('react-native-image-viewing not available, using fallback');
+  // Use lazy loading to prevent bundling issues on web
+  const [nativeViewer, setNativeViewer] = React.useState<any>(null);
+
+  React.useEffect(() => {
+    if (Platform.OS !== 'web' && !nativeViewer) {
+      // Lazy load only on native platforms
+      import('react-native-image-viewing')
+        .then(mod => {
+          setNativeViewer(() => mod.default);
+        })
+        .catch(() => {
+          console.warn('react-native-image-viewing not available');
+        });
     }
+  }, [Platform.OS]);
+
+  if (Platform.OS !== 'web' && nativeViewer && visible) {
+    return (
+      <nativeViewer
+        images={images}
+        imageIndex={imageIndex}
+        visible={visible}
+        onRequestClose={onRequestClose}
+      />
+    );
   }
 
   // For web, use custom modal implementation

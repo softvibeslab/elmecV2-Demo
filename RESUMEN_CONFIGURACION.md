@@ -67,6 +67,7 @@
 3. Crea las 4 políticas en el dashboard de Supabase
 
 **Resumen rápido:**
+
 - Ve a: https://app.supabase.com → Tu proyecto → Storage → Policies
 - Crea 4 políticas para la tabla `objects`:
   1. **Public read access** (SELECT)
@@ -83,6 +84,7 @@ node scripts/check-storage-bucket.js
 ```
 
 Deberías ver:
+
 ```
 ✅ El bucket 'request-files' EXISTE
 ✅ El bucket es accesible
@@ -92,11 +94,13 @@ Deberías ver:
 ### Paso 3: Iniciar la Aplicación
 
 **Opción A: Con Expo Go (Desarrollo)**
+
 ```bash
 npx expo start --clear
 ```
 
 **Opción B: Build Nativo (si modificaste app.json antes)**
+
 ```bash
 npx expo prebuild --clean
 npx expo run:android  # o npx expo run:ios
@@ -229,9 +233,13 @@ Si tienes problemas, consulta:
 ## 🎬 Siguiente Paso Inmediato
 
 ### 1️⃣ Abre `CONFIGURACION_SUPABASE.md`
+
 ### 2️⃣ Configura las 4 políticas (5 minutos)
+
 ### 3️⃣ Ejecuta `node scripts/check-storage-bucket.js`
+
 ### 4️⃣ Ejecuta `npx expo start --clear`
+
 ### 5️⃣ ¡Prueba la funcionalidad!
 
 ---

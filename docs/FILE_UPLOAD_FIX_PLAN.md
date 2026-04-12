@@ -7,35 +7,43 @@ El módulo de solicitudes no permite adjuntar archivos o imágenes al crear una 
 ## Problemas Identificados
 
 ### 1. ❌ Permisos Faltantes en `app.json`
+
 **Problema:** No se configuraron los plugins necesarios para acceder a la galería, cámara y documentos.
 
 **Impacto:** La app no solicita permisos al usuario, provocando que las funciones de selección fallen silenciosamente.
 
 **Archivos afectados:**
+
 - `app.json:24-47`
 
 ### 2. ❌ Falta Funcionalidad de Cámara
+
 **Problema:** El componente solo permite seleccionar de galería o documentos, pero no tomar fotos directamente.
 
 **Impacto:** Los usuarios no pueden tomar fotos nuevas para adjuntar a solicitudes.
 
 **Archivos afectados:**
+
 - `components/FileUploadComponent.tsx:89-171`
 
 ### 3. ❌ Manejo de Errores Incompleto
+
 **Problema:** No hay logs de errores ni manejo adecuado cuando fallan los permisos.
 
 **Impacto:** Dificulta el debugging y la experiencia del usuario es pobre.
 
 **Archivos afectados:**
+
 - `components/FileUploadComponent.tsx`
 
 ### 4. ⚠️ Bucket de Supabase Posiblemente No Configurado
+
 **Problema:** El bucket `request-files` puede no existir o no tener las políticas correctas.
 
 **Impacto:** Los archivos no se pueden subir aunque todo lo demás funcione.
 
 **Archivos afectados:**
+
 - Configuración de Supabase (externo)
 
 ## Soluciones Implementadas
@@ -43,6 +51,7 @@ El módulo de solicitudes no permite adjuntar archivos o imágenes al crear una 
 ### ✅ 1. Configuración de Permisos en `app.json`
 
 **Cambios realizados:**
+
 ```json
 {
   "plugins": [
@@ -64,6 +73,7 @@ El módulo de solicitudes no permite adjuntar archivos o imágenes al crear una 
 ```
 
 **Beneficios:**
+
 - ✅ La app solicita permisos correctamente
 - ✅ Mensajes claros al usuario sobre por qué se necesitan los permisos
 - ✅ Compatibilidad con iOS y Android
@@ -73,12 +83,14 @@ El módulo de solicitudes no permite adjuntar archivos o imágenes al crear una 
 **Cambios realizados en `components/FileUploadComponent.tsx`:**
 
 1. **Import de Platform:**
+
 ```typescript
 import { Platform } from 'react-native';
 import { Camera } from 'lucide-react-native';
 ```
 
 2. **Nueva función `takePhoto`:**
+
 ```typescript
 const takePhoto = async () => {
   try {
@@ -86,7 +98,10 @@ const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
 
     if (status !== 'granted') {
-      Alert.alert('Permisos requeridos', 'Necesitamos permisos para acceder a tu cámara');
+      Alert.alert(
+        'Permisos requeridos',
+        'Necesitamos permisos para acceder a tu cámara'
+      );
       setUploading(false);
       return;
     }
@@ -119,6 +134,7 @@ const takePhoto = async () => {
 ```
 
 3. **Nuevo botón en la UI:**
+
 ```typescript
 {Platform.OS !== 'web' && (
   <TouchableOpacity
@@ -133,6 +149,7 @@ const takePhoto = async () => {
 ```
 
 **Beneficios:**
+
 - ✅ Los usuarios pueden tomar fotos directamente
 - ✅ Solo aparece en plataformas nativas (no en web)
 - ✅ Solicita permisos de cámara correctamente
@@ -143,21 +160,24 @@ const takePhoto = async () => {
 **Cambios realizados:**
 
 1. **Logs de consola agregados:**
+
 ```typescript
 console.error('Error picking image:', error);
 console.error('Error taking photo:', error);
 ```
 
 2. **Return anticipado al denegar permisos:**
+
 ```typescript
 if (status !== 'granted') {
   Alert.alert('Permisos requeridos', '...');
-  setUploading(false);  // ← Agregado
+  setUploading(false); // ← Agregado
   return;
 }
 ```
 
 **Beneficios:**
+
 - ✅ Mejor debugging en desarrollo
 - ✅ El estado de loading se limpia correctamente
 - ✅ Mensajes de error claros al usuario
@@ -167,12 +187,14 @@ if (status !== 'granted') {
 **Archivo creado:** `scripts/setup-storage-bucket.ts`
 
 Este script:
+
 - ✅ Verifica si el bucket existe
 - ✅ Crea el bucket si no existe
 - ✅ Proporciona instrucciones para configurar políticas
 - ✅ Documenta la configuración necesaria
 
 **Uso:**
+
 ```bash
 npx ts-node scripts/setup-storage-bucket.ts
 ```
@@ -180,6 +202,7 @@ npx ts-node scripts/setup-storage-bucket.ts
 ### ✅ 5. Documentación Completa
 
 **Archivos creados:**
+
 - `docs/FILE_UPLOAD_TROUBLESHOOTING.md` - Guía de solución de problemas
 - `docs/FILE_UPLOAD_FIX_PLAN.md` - Este archivo (plan de corrección)
 
@@ -211,6 +234,7 @@ npx expo run:ios
 ### Configuración de Supabase
 
 **Opción 1: Usando el script (recomendado)**
+
 ```bash
 npx ts-node scripts/setup-storage-bucket.ts
 ```
@@ -230,12 +254,14 @@ npx ts-node scripts/setup-storage-bucket.ts
 ### Checklist de Pruebas
 
 #### 1. Permisos
+
 - [ ] La app solicita permiso de galería al presionar "Galería"
 - [ ] La app solicita permiso de cámara al presionar "Cámara"
 - [ ] Los permisos se solicitan solo una vez
 - [ ] Si se rechazan, muestra mensaje apropiado
 
 #### 2. Selección de Archivos
+
 - [ ] Puedo seleccionar archivos con el botón "Archivo"
 - [ ] Puedo seleccionar imágenes de la galería
 - [ ] Puedo tomar fotos con la cámara (solo nativo)
@@ -245,12 +271,14 @@ npx ts-node scripts/setup-storage-bucket.ts
 - [ ] Se respeta el límite de 5MB por archivo
 
 #### 3. Upload a Supabase
+
 - [ ] Los archivos se suben correctamente
 - [ ] Aparece mensaje de éxito
 - [ ] Los archivos se ven en Supabase Storage
 - [ ] Las URLs son públicamente accesibles
 
 #### 4. Integración con Solicitudes
+
 - [ ] Puedo crear una solicitud con archivos
 - [ ] Los archivos se asocian correctamente a la solicitud
 - [ ] La solicitud muestra "📎 X archivos adjuntos"
@@ -259,6 +287,7 @@ npx ts-node scripts/setup-storage-bucket.ts
 ### Casos de Prueba
 
 **Caso 1: Upload exitoso**
+
 1. Crear nueva solicitud
 2. Adjuntar 1 imagen de galería
 3. Adjuntar 1 PDF
@@ -266,15 +295,18 @@ npx ts-node scripts/setup-storage-bucket.ts
 5. ✅ La solicitud debe crearse con 2 archivos adjuntos
 
 **Caso 2: Permisos denegados**
+
 1. Negar permisos de galería
 2. Intentar adjuntar imagen
 3. ✅ Debe mostrar mensaje de error apropiado
 
 **Caso 3: Archivo muy grande**
+
 1. Intentar adjuntar archivo > 5MB
 2. ✅ Debe rechazar con mensaje de error
 
 **Caso 4: Límite de archivos**
+
 1. Adjuntar 3 archivos
 2. Intentar adjuntar un 4to
 3. ✅ El botón debe estar deshabilitado

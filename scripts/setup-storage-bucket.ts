@@ -18,7 +18,8 @@ async function setupStorageBucket() {
 
   try {
     // 1. Verificar si el bucket existe
-    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+    const { data: buckets, error: listError } =
+      await supabase.storage.listBuckets();
 
     if (listError) {
       console.error('❌ Error al listar buckets:', listError);
@@ -35,9 +36,8 @@ async function setupStorageBucket() {
     console.log(`📦 Creando bucket '${BUCKET_NAME}'...`);
 
     // 2. Crear el bucket
-    const { data: bucket, error: createError } = await supabase.storage.createBucket(
-      BUCKET_NAME,
-      {
+    const { data: bucket, error: createError } =
+      await supabase.storage.createBucket(BUCKET_NAME, {
         public: true, // Archivos son públicamente accesibles
         fileSizeLimit: MAX_FILE_SIZE,
         allowedMimeTypes: [
@@ -53,16 +53,19 @@ async function setupStorageBucket() {
           'application/vnd.ms-excel',
           'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ],
-      }
-    );
+      });
 
     if (createError) {
       console.error('❌ Error al crear bucket:', createError);
-      console.log('\n⚠️  Por favor, crea el bucket manualmente en el dashboard de Supabase:');
+      console.log(
+        '\n⚠️  Por favor, crea el bucket manualmente en el dashboard de Supabase:'
+      );
       console.log(`   1. Ve a Storage en tu proyecto de Supabase`);
       console.log(`   2. Crea un nuevo bucket llamado "${BUCKET_NAME}"`);
       console.log(`   3. Marca como público`);
-      console.log(`   4. Establece límite de tamaño a ${MAX_FILE_SIZE / 1024 / 1024}MB`);
+      console.log(
+        `   4. Establece límite de tamaño a ${MAX_FILE_SIZE / 1024 / 1024}MB`
+      );
       return;
     }
 
@@ -70,7 +73,9 @@ async function setupStorageBucket() {
 
     // 3. Configurar políticas de seguridad
     console.log('🔐 Configurando políticas de seguridad...');
-    console.log('\n⚠️  Debes configurar las siguientes políticas en el dashboard de Supabase:');
+    console.log(
+      '\n⚠️  Debes configurar las siguientes políticas en el dashboard de Supabase:'
+    );
     console.log('\nPolítica 1: Permitir lectura pública');
     console.log('Tipo: SELECT');
     console.log('Target roles: public');
@@ -103,7 +108,7 @@ setupStorageBucket()
     console.log('\n✨ Script finalizado');
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('\n❌ Error fatal:', error);
     process.exit(1);
   });

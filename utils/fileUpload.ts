@@ -17,6 +17,88 @@ export interface FileToUpload {
   size: number;
 }
 
+const MIME_TYPES_BY_EXTENSION: Record<string, string> = {
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  heic: 'image/heic',
+  heif: 'image/heif',
+  pdf: 'application/pdf',
+  txt: 'text/plain',
+  csv: 'text/csv',
+  doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  xls: 'application/vnd.ms-excel',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  zip: 'application/zip',
+  mp3: 'audio/mpeg',
+  m4a: 'audio/mp4',
+  wav: 'audio/wav',
+  mp4: 'video/mp4',
+  mov: 'video/quicktime',
+};
+
+function normalizeMimeType(file: FileToUpload): string {
+  const rawType = file.type?.trim();
+  if (rawType && rawType.includes('/')) {
+    return rawType;
+  }
+
+  const extension = file.name?.split('.').pop()?.toLowerCase();
+  if (extension && MIME_TYPES_BY_EXTENSION[extension]) {
+    return MIME_TYPES_BY_EXTENSION[extension];
+  }
+
+  if (rawType === 'image') return 'image/jpeg';
+  if (rawType === 'audio') return 'audio/mpeg';
+  if (rawType === 'video') return 'video/mp4';
+
+  return 'application/octet-stream';
+}
+
+function base64ToArrayBuffer(base64: string): ArrayBuffer {
+  const sanitized = base64.replace(/\s/g, '');
+  const chars =
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+  const validLength =
+    sanitized.indexOf('=') === -1 ? sanitized.length : sanitized.indexOf('=');
+  const outputLength = Math.floor((validLength * 3) / 4);
+  const bytes = new Uint8Array(outputLength);
+
+  let byteIndex = 0;
+
+  for (let i = 0; i < sanitized.length; i += 4) {
+    const encoded1 = chars.indexOf(sanitized[i] || 'A');
+    const encoded2 = chars.indexOf(sanitized[i + 1] || 'A');
+    const encoded3 = chars.indexOf(sanitized[i + 2] || '=');
+    const encoded4 = chars.indexOf(sanitized[i + 3] || '=');
+
+    if (encoded1 < 0 || encoded2 < 0 || encoded3 < 0 || encoded4 < 0) {
+      throw new Error('Contenido base64 invalido');
+    }
+
+    const chunk =
+      (encoded1 << 18) |
+      (encoded2 << 12) |
+      ((encoded3 & 63) << 6) |
+      (encoded4 & 63);
+
+    if (byteIndex < outputLength) {
+      bytes[byteIndex++] = (chunk >> 16) & 0xff;
+    }
+    if (sanitized[i + 2] !== '=' && byteIndex < outputLength) {
+      bytes[byteIndex++] = (chunk >> 8) & 0xff;
+    }
+    if (sanitized[i + 3] !== '=' && byteIndex < outputLength) {
+      bytes[byteIndex++] = chunk & 0xff;
+    }
+  }
+
+  return bytes.buffer;
+}
+
 /**
  * Convert data URL to Blob without using fetch (CSP-safe)
  */
@@ -47,6 +129,46 @@ async function fileURIToBlob(uri: string): Promise<Blob> {
   return await response.blob();
 }
 
+async function resolveReadableNativeUri(
+  uri: string,
+  fileName: string
+): Promise<{
+  readableUri: string;
+  cleanupUri?: string;
+  size: number;
+}> {
+  const fileInfo = await FileSystem.getInfoAsync(uri);
+  if (fileInfo.exists) {
+    return {
+      readableUri: uri,
+      size: fileInfo.size ?? 0,
+    };
+  }
+
+  if (!uri.startsWith('content://') || !FileSystem.cacheDirectory) {
+    throw new Error('No se pudo acceder al archivo seleccionado');
+  }
+
+  const extension = fileName.split('.').pop() || 'bin';
+  const cleanupUri = `${FileSystem.cacheDirectory}upload-${Date.now()}.${extension}`;
+
+  await FileSystem.copyAsync({
+    from: uri,
+    to: cleanupUri,
+  });
+
+  const copiedInfo = await FileSystem.getInfoAsync(cleanupUri);
+  if (!copiedInfo.exists) {
+    throw new Error('No se pudo preparar el archivo para subir');
+  }
+
+  return {
+    readableUri: cleanupUri,
+    cleanupUri,
+    size: copiedInfo.size ?? 0,
+  };
+}
+
 /**
  * Upload a file to Supabase Storage
  * @param file - File information to upload
@@ -59,8 +181,17 @@ export async function uploadFileToStorage(
   bucket: string = 'request-files',
   folder: string = 'attachments'
 ): Promise<UploadResult | null> {
+  let cleanupUri: string | undefined;
+
   try {
-    console.log('Starting file upload:', { name: file.name, size: file.size, type: file.type });
+    const contentType = normalizeMimeType(file);
+
+    console.log('Starting file upload:', {
+      name: file.name,
+      size: file.size,
+      type: contentType,
+      uri: file.uri,
+    });
 
     // Validate file
     if (!file.uri || !file.name) {
@@ -84,62 +215,81 @@ export async function uploadFileToStorage(
 
     console.log('Uploading to path:', filePath);
 
-    // Get blob based on platform
-    let blob: Blob;
+    // Get upload body based on platform
+    let uploadBody: Blob | ArrayBuffer;
+    let actualSize = file.size;
 
     if (Platform.OS === 'web') {
       // For web, directly convert URI to blob
       try {
-        blob = await fileURIToBlob(file.uri);
+        const blob = await fileURIToBlob(file.uri);
+        uploadBody = blob;
+        actualSize = actualSize || blob.size;
       } catch (webError) {
         console.error('Error converting file to blob on web:', webError);
         throw new Error('No se pudo leer el archivo');
       }
     } else {
-      // For native platforms, use FileSystem
+      // For native platforms, upload ArrayBuffer. Blob conversion is unreliable.
       let fileBase64: string;
       try {
-        const fileInfo = await FileSystem.getInfoAsync(file.uri);
-        if (!fileInfo.exists) {
-          console.error('File does not exist:', file.uri);
-          return null;
+        const nativeFile = await resolveReadableNativeUri(file.uri, file.name);
+        cleanupUri = nativeFile.cleanupUri;
+        actualSize = actualSize || nativeFile.size;
+
+        fileBase64 = await FileSystem.readAsStringAsync(
+          nativeFile.readableUri,
+          {
+            encoding: FileSystem.EncodingType.Base64,
+          }
+        );
+
+        if (!fileBase64) {
+          throw new Error('Archivo vacio');
         }
 
-        fileBase64 = await FileSystem.readAsStringAsync(file.uri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-
-        // Convert base64 to blob without fetch (CSP-safe)
-        const dataUrl = `data:${file.type};base64,${fileBase64}`;
-        blob = dataURLtoBlob(dataUrl);
+        uploadBody = base64ToArrayBuffer(fileBase64);
       } catch (readError) {
         console.error('Error reading file:', readError);
         throw new Error('No se pudo leer el archivo');
       }
     }
 
+    if (actualSize > maxSize) {
+      console.error('Resolved file too large:', actualSize);
+      throw new Error('El archivo es demasiado grande. Tamaño máximo: 5MB');
+    }
+
     // Upload to Supabase Storage
     const { data, error } = await supabase.storage
       .from(bucket)
-      .upload(filePath, blob, {
-        contentType: file.type,
-        upsert: false,
+      .upload(filePath, uploadBody, {
+        contentType,
+        upsert: true, // Cambiado a true para evitar errores de duplicados en reintentos
       });
 
     if (error) {
       console.error('Supabase storage upload error:', error);
 
       // Check if bucket doesn't exist
-      if (error.message?.includes('not found') || error.message?.includes('does not exist')) {
+      if (
+        error.message?.includes('not found') ||
+        error.message?.includes('does not exist')
+      ) {
         throw new Error(
           `El bucket de almacenamiento "${bucket}" no existe. ` +
-          'Por favor contacta al administrador para configurar el almacenamiento.'
+            'Por favor contacta al administrador para configurar el almacenamiento.'
         );
       }
 
       // Check if file is too large
-      if (error.message?.includes('size') || error.message?.includes('too large')) {
-        throw new Error('El archivo es demasiado grande. Tamaño máximo permitido: 5MB');
+      if (
+        error.message?.includes('size') ||
+        error.message?.includes('too large')
+      ) {
+        throw new Error(
+          'El archivo es demasiado grande. Tamaño máximo permitido: 5MB'
+        );
       }
 
       throw new Error(`Error al subir archivo: ${error.message}`);
@@ -166,12 +316,20 @@ export async function uploadFileToStorage(
       url: urlData.publicUrl,
       path: data.path,
       name: file.name,
-      size: file.size,
-      type: file.type,
+      size: actualSize,
+      type: contentType,
     };
   } catch (error) {
     console.error('Error uploading file:', error);
     throw error;
+  } finally {
+    if (cleanupUri) {
+      await FileSystem.deleteAsync(cleanupUri, { idempotent: true }).catch(
+        cleanupError => {
+          console.warn('Could not remove temporary upload file:', cleanupError);
+        }
+      );
+    }
   }
 }
 
@@ -200,7 +358,9 @@ export async function uploadMultipleFiles(
       }
     } catch (error) {
       console.error(`Error uploading file ${file.name}:`, error);
-      errors.push(error instanceof Error ? error : new Error('Error desconocido'));
+      errors.push(
+        error instanceof Error ? error : new Error('Error desconocido')
+      );
     }
   }
 
@@ -230,9 +390,7 @@ export async function deleteFileFromStorage(
   try {
     console.log('Deleting file:', filePath);
 
-    const { error } = await supabase.storage
-      .from(bucket)
-      .remove([filePath]);
+    const { error } = await supabase.storage.from(bucket).remove([filePath]);
 
     if (error) {
       console.error('Error deleting file:', error);
@@ -256,4 +414,52 @@ export function formatFileSize(bytes: number): string {
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+}
+
+/**
+ * Validates if a file meets the requirements for upload
+ * @param file - File object to validate
+ * @param maxSizeInMB - Maximum size allowed in MB
+ * @param allowedTypes - Array of allowed MIME types (e.g. ['image/jpeg', 'application/pdf'])
+ * @returns { valid: boolean, error?: string }
+ */
+export function validateFileForUpload(
+  file: { size: number; type: string; name: string },
+  maxSizeInMB: number = 5,
+  allowedTypes: string[] = [
+    'image/jpeg',
+    'image/png',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  ]
+): { valid: boolean; error?: string } {
+  // Size validation
+  const maxSizeInBytes = maxSizeInMB * 1024 * 1024;
+  if (file.size > maxSizeInBytes) {
+    return {
+      valid: false,
+      error: `El archivo "${file.name}" excede el límite de ${maxSizeInMB}MB.`,
+    };
+  }
+
+  // Type validation (optional, can be skipped if allowedTypes is empty)
+  if (allowedTypes.length > 0) {
+    const isAllowed = allowedTypes.some(type => {
+      if (type.endsWith('/*')) {
+        const baseType = type.split('/')[0];
+        return file.type.startsWith(`${baseType}/`);
+      }
+      return file.type === type;
+    });
+
+    if (!isAllowed) {
+      return {
+        valid: false,
+        error: `El formato del archivo "${file.name}" no está permitido. Use imágenes, PDF o Word.`,
+      };
+    }
+  }
+
+  return { valid: true };
 }

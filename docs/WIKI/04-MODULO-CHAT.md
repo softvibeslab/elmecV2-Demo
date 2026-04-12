@@ -1,6 +1,7 @@
 # MÓDULO 4: CHAT (Messaging)
 
 ## 📋 Índice
+
 1. [Visión General](#visión-general)
 2. [Arquitectura del Módulo](#arquitectura-del-módulo)
 3. [Funciones y Variables](#funciones-y-variables)
@@ -14,9 +15,11 @@
 ## 📱 Visión General
 
 ### Propósito
+
 El módulo de Chat proporciona un sistema de mensajería interno en tiempo real para comunicación directa entre usuarios de ELMEC. Permite conversaciones 1-a-1, vinculación con solicitudes, y gestión completa de mensajes.
 
 ### Funcionalidades Principales
+
 - 💬 **Lista de Conversaciones**: Vista de todas las salas de chat activas
 - 🔍 **Búsqueda de Chats**: Por nombre del otro participante
 - 🟢 **Presencia Online**: Indicador de usuarios conectados
@@ -28,22 +31,26 @@ El módulo de Chat proporciona un sistema de mensajería interno en tiempo real 
 
 ### Estructura de 2 Pantallas
 
-| Pantalla | Archivo | Ruta | Propósito |
-|----------|---------|------|-----------|
-| **Lista de Chats** | `app/(tabs)/chat/index.tsx` | `/chat` | Ver todas las conversaciones |
-| **Sala de Chat** | `app/(tabs)/chat/[roomId].tsx` | `/chat/{roomId}` | Conversación específica |
+| Pantalla           | Archivo                        | Ruta             | Propósito                    |
+| ------------------ | ------------------------------ | ---------------- | ---------------------------- |
+| **Lista de Chats** | `app/(tabs)/chat/index.tsx`    | `/chat`          | Ver todas las conversaciones |
+| **Sala de Chat**   | `app/(tabs)/chat/[roomId].tsx` | `/chat/{roomId}` | Conversación específica      |
 
 ### Ubicación
+
 **Archivos**:
+
 - `/app/(tabs)/chat/index.tsx` - Lista
 - `/app/(tabs)/chat/[roomId].tsx` - Sala (NO documentado aún)
 - `/app/(tabs)/chat/_layout.tsx` - Layout
 
 **Rutas**:
+
 - `/chat` - Lista de conversaciones
 - `/chat/[roomId]` - Sala individual
 
 ### Rol de Usuario
+
 - ✅ Disponible para: **Todos los roles** (customer, agent, admin)
 - 🔒 Los usuarios solo ven chats donde están como participantes
 
@@ -96,13 +103,13 @@ interface ChatRoomWithRequest extends ChatRoom {
 
 ### Dependencias Críticas
 
-| Dependencia | Propósito | Criticidad |
-|------------|-----------|------------|
-| `@/contexts/ChatContext` | useChat hook con chatRooms, messages, getRoomUnreadCount | 🔴 Crítica |
-| `@/contexts/AuthContext` | user.id para filtrar participantes | 🔴 Crítica |
-| `expo-router` | Navegación a sala específica | 🟡 Alta |
-| `lucide-react-native` | Iconografía | 🟢 Media |
-| `react-native` RefreshControl | Pull-to-refresh | 🟢 Media |
+| Dependencia                   | Propósito                                                | Criticidad |
+| ----------------------------- | -------------------------------------------------------- | ---------- |
+| `@/contexts/ChatContext`      | useChat hook con chatRooms, messages, getRoomUnreadCount | 🔴 Crítica |
+| `@/contexts/AuthContext`      | user.id para filtrar participantes                       | 🔴 Crítica |
+| `expo-router`                 | Navegación a sala específica                             | 🟡 Alta    |
+| `lucide-react-native`         | Iconografía                                              | 🟢 Media   |
+| `react-native` RefreshControl | Pull-to-refresh                                          | 🟢 Media   |
 
 ### Estructura Visual - Lista de Chats
 
@@ -146,24 +153,25 @@ interface ChatRoomWithRequest extends ChatRoom {
 
 ### Variables de Estado
 
-| Variable | Tipo | Inicial | Descripción | Scope |
-|----------|------|---------|-------------|-------|
-| `searchQuery` | `string` | `''` | Texto de búsqueda | Component |
-| `refreshing` | `boolean` | `false` | Estado de pull-to-refresh | UI State |
+| Variable      | Tipo      | Inicial | Descripción               | Scope     |
+| ------------- | --------- | ------- | ------------------------- | --------- |
+| `searchQuery` | `string`  | `''`    | Texto de búsqueda         | Component |
+| `refreshing`  | `boolean` | `false` | Estado de pull-to-refresh | UI State  |
 
 ### Datos del Contexto (useChat)
 
-| Variable | Tipo | Descripción |
-|----------|------|-------------|
-| `chatRooms` | `ChatRoom[]` | Todas las salas donde user es participante |
-| `messages` | `Record<string, Message[]>` | Mensajes por roomId |
-| `loading` | `boolean` | Cargando lista inicial |
-| `error` | `string \| null` | Error en carga |
-| `getRoomUnreadCount(roomId)` | `(roomId: string) => number` | Contador de no leídos |
+| Variable                     | Tipo                         | Descripción                                |
+| ---------------------------- | ---------------------------- | ------------------------------------------ |
+| `chatRooms`                  | `ChatRoom[]`                 | Todas las salas donde user es participante |
+| `messages`                   | `Record<string, Message[]>`  | Mensajes por roomId                        |
+| `loading`                    | `boolean`                    | Cargando lista inicial                     |
+| `error`                      | `string \| null`             | Error en carga                             |
+| `getRoomUnreadCount(roomId)` | `(roomId: string) => number` | Contador de no leídos                      |
 
 ### Funciones Principales
 
 #### 1. **getOtherParticipantName(room)**
+
 ```typescript
 Propósito: Obtener nombre del otro participante (no el user actual)
 
@@ -183,6 +191,7 @@ Ejemplo:
 ```
 
 #### 2. **getOtherParticipantInitials(name)**
+
 ```typescript
 Propósito: Generar iniciales para avatar
 
@@ -198,6 +207,7 @@ Algoritmo:
 ```
 
 #### 3. **formatTime(timestamp)**
+
 ```typescript
 Propósito: Formato relativo de tiempo
 
@@ -225,6 +235,7 @@ Lógica:
 ```
 
 #### 4. **getLastMessagePreview(room)**
+
 ```typescript
 Propósito: Obtener preview del último mensaje
 
@@ -250,6 +261,7 @@ Lógica:
 ```
 
 #### 5. **onRefresh()**
+
 ```typescript
 Propósito: Pull-to-refresh manual
 
@@ -284,6 +296,7 @@ const filteredRooms = chatRooms.filter(room => {
 #### 1. **chat_rooms** (Principal)
 
 **Schema**:
+
 ```sql
 CREATE TABLE chat_rooms (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -303,6 +316,7 @@ CREATE INDEX idx_chat_rooms_updated ON chat_rooms(updated_at DESC);
 ```
 
 **Query en useChat (Context)**:
+
 ```sql
 SELECT
   chat_rooms.*,
@@ -315,21 +329,22 @@ ORDER BY updated_at DESC;
 
 **Campos Utilizados**:
 
-| Campo | Tipo | Descripción | Uso en UI |
-|-------|------|-------------|-----------|
-| `id` | uuid | Identificador único | Key, navegación a sala |
-| `tipo` | enum | support\|sales\|general | No mostrado directamente |
-| `participants` | uuid[] | IDs de usuarios en la sala | Filtrar "el otro" participante |
-| `request_id` | uuid? | FK a requests (opcional) | Mostrar info de solicitud vinculada |
-| `created_at` | timestamp | Fecha de creación | No mostrado |
-| `updated_at` | timestamp | Última actividad | Ordenar lista |
-| `last_message` | jsonb | Cache del último mensaje | Preview en lista |
-| `is_active` | boolean | Chat activo/archivado | WHERE is_active = true |
-| `metadata` | jsonb | participant_names, etc. | Obtener nombre del otro |
+| Campo          | Tipo      | Descripción                | Uso en UI                           |
+| -------------- | --------- | -------------------------- | ----------------------------------- |
+| `id`           | uuid      | Identificador único        | Key, navegación a sala              |
+| `tipo`         | enum      | support\|sales\|general    | No mostrado directamente            |
+| `participants` | uuid[]    | IDs de usuarios en la sala | Filtrar "el otro" participante      |
+| `request_id`   | uuid?     | FK a requests (opcional)   | Mostrar info de solicitud vinculada |
+| `created_at`   | timestamp | Fecha de creación          | No mostrado                         |
+| `updated_at`   | timestamp | Última actividad           | Ordenar lista                       |
+| `last_message` | jsonb     | Cache del último mensaje   | Preview en lista                    |
+| `is_active`    | boolean   | Chat activo/archivado      | WHERE is_active = true              |
+| `metadata`     | jsonb     | participant_names, etc.    | Obtener nombre del otro             |
 
 #### 2. **messages** (Indirecta via Context)
 
 **Schema**:
+
 ```sql
 CREATE TABLE messages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -354,6 +369,7 @@ CREATE INDEX idx_messages_created ON messages(created_at ASC);
 ```
 
 **Consulta en useChat**:
+
 ```sql
 SELECT * FROM messages
 WHERE chat_room_id = :roomId
@@ -363,17 +379,19 @@ LIMIT 50;
 ```
 
 **Contador de No Leídos**:
+
 ```typescript
 // En getRoomUnreadCount
-const unreadCount = messages[roomId]?.filter(msg =>
-  msg.sender_id !== user.id &&
-  !msg.read_by?.[user.id]
-).length || 0;
+const unreadCount =
+  messages[roomId]?.filter(
+    msg => msg.sender_id !== user.id && !msg.read_by?.[user.id]
+  ).length || 0;
 ```
 
 #### 3. **requests** (Join Opcional)
 
 **Query JOIN**:
+
 ```sql
 SELECT
   chat_rooms.*,
@@ -390,26 +408,26 @@ WHERE ...
 
 ### Relación Detallada UI ↔ Base de Datos
 
-| Elemento UI | Query/Campo | Transformación | Ejemplo |
-|-------------|-------------|----------------|---------|
-| **ChatItem - Avatar** |
-| Iniciales | `metadata.participant_names[otro]` | `getOtherParticipantInitials()` | "AG" |
-| **ChatItem - Header** |
-| Nombre | `metadata.participant_names[otro]` | `getOtherParticipantName()` | "Ana García" |
-| Timestamp | `last_message.created_at` o `updated_at` | `formatTime()` | "2m", "3h" |
+| Elemento UI                     | Query/Campo                              | Transformación                  | Ejemplo                      |
+| ------------------------------- | ---------------------------------------- | ------------------------------- | ---------------------------- |
+| **ChatItem - Avatar**           |
+| Iniciales                       | `metadata.participant_names[otro]`       | `getOtherParticipantInitials()` | "AG"                         |
+| **ChatItem - Header**           |
+| Nombre                          | `metadata.participant_names[otro]`       | `getOtherParticipantName()`     | "Ana García"                 |
+| Timestamp                       | `last_message.created_at` o `updated_at` | `formatTime()`                  | "2m", "3h"                   |
 | **ChatItem - Indicador Online** |
-| Verde/Gris | Hardcoded `Math.random() > 0.5` | ⚠️ NO viene de BD | 🟢 |
-| **ChatItem - Preview** |
-| Texto preview | `last_message.message` | `getLastMessagePreview()` | "Hola, ¿cómo...(" (40 chars) |
-| Icono tipo | `last_message.type` | Emoji según tipo | 📷, 📎, 🎵 |
-| **ChatItem - Badge No Leídos** |
-| Contador | `messages[roomId]` filtrados | `getRoomUnreadCount()` | [3] |
-| **ChatItem - Request Info** |
-| Título | `requests.titulo` (JOIN) | Condicional si request_id | "Solicitud de soporte" |
-| **Lista - Ordenamiento** |
-| Orden | `ORDER BY updated_at DESC` | Más reciente primero | - |
-| **Lista - Filtro Activos** |
-| WHERE | `is_active = true` | Solo chats activos | - |
+| Verde/Gris                      | Hardcoded `Math.random() > 0.5`          | ⚠️ NO viene de BD               | 🟢                           |
+| **ChatItem - Preview**          |
+| Texto preview                   | `last_message.message`                   | `getLastMessagePreview()`       | "Hola, ¿cómo...(" (40 chars) |
+| Icono tipo                      | `last_message.type`                      | Emoji según tipo                | 📷, 📎, 🎵                   |
+| **ChatItem - Badge No Leídos**  |
+| Contador                        | `messages[roomId]` filtrados             | `getRoomUnreadCount()`          | [3]                          |
+| **ChatItem - Request Info**     |
+| Título                          | `requests.titulo` (JOIN)                 | Condicional si request_id       | "Solicitud de soporte"       |
+| **Lista - Ordenamiento**        |
+| Orden                           | `ORDER BY updated_at DESC`               | Más reciente primero            | -                            |
+| **Lista - Filtro Activos**      |
+| WHERE                           | `is_active = true`                       | Solo chats activos              | -                            |
 
 ---
 
@@ -612,11 +630,13 @@ setMessages(prev => ({
 **Actor**: Usuario autenticado (cualquier rol)
 
 **Precondiciones**:
+
 - Usuario autenticado
 - ChatContext cargado
 - Tiene al menos 1 chat room
 
 **Flujo Principal**:
+
 1. Usuario navega a `/chat` desde tabs
 2. Sistema monta componente ChatList
 3. Sistema obtiene datos de useChat():
@@ -639,11 +659,13 @@ setMessages(prev => ({
 8. Usuario visualiza lista ordenada por updated_at DESC
 
 **Postcondiciones**:
+
 - Lista visible con todas las conversaciones activas
 - Indicadores de no leídos correctos
 - Últimos mensajes preview
 
 **Flujos Alternativos**:
+
 - **3a. loading = true**: Mostrar spinner "Cargando conversaciones..."
 - **3b. error**: Mostrar error + botón "Reintentar"
 - **7a. chatRooms vacío**: Mostrar empty state + botón "Ver Directorio"
@@ -655,33 +677,37 @@ setMessages(prev => ({
 **Actor**: Usuario con múltiples chats
 
 **Precondiciones**:
+
 - ChatList cargado
 - Tiene > 5 conversaciones
 
 **Flujo Principal**:
+
 1. Usuario toca campo de búsqueda
 2. Sistema muestra teclado
 3. Usuario escribe "Ana"
 4. Sistema ejecuta onChange:
    ```typescript
-   setSearchQuery("Ana")
+   setSearchQuery('Ana');
    ```
 5. Sistema re-computa filteredRooms:
    ```typescript
    chatRooms.filter(room => {
      const other = getOtherParticipantName(room); // "Ana García"
-     return "ana garcía".includes("ana"); // true
-   })
+     return 'ana garcía'.includes('ana'); // true
+   });
    ```
 6. Sistema encuentra 1 sala
 7. ScrollView re-renderiza solo 1 ChatItem
 
 **Postcondiciones**:
+
 - Solo conversación con "Ana" visible
 - Resto de salas ocultas
 - Búsqueda case-insensitive
 
 **Flujo Alternativo**:
+
 - **6a. Sin resultados**: Empty state "No se encontraron chats"
 
 ---
@@ -691,15 +717,17 @@ setMessages(prev => ({
 **Actor**: Usuario
 
 **Precondiciones**:
+
 - ChatList visible con conversaciones
 - Sala existe en chatRooms
 
 **Flujo Principal**:
+
 1. Usuario visualiza ChatItem de "Ana García"
 2. Usuario toca el ChatItem
 3. Sistema ejecuta onPress:
    ```typescript
-   router.push(`/chat/${room.id}`)
+   router.push(`/chat/${room.id}`);
    ```
 4. expo-router navega a `/chat/abc123...`
 5. Sistema monta componente [roomId].tsx
@@ -711,6 +739,7 @@ setMessages(prev => ({
    - Input para escribir
 
 **Postcondiciones**:
+
 - Usuario en pantalla de chat
 - Mensajes cargados
 - Input listo para escribir
@@ -722,15 +751,17 @@ setMessages(prev => ({
 **Actor**: Usuario
 
 **Precondiciones**:
+
 - Usuario en Directorio
 - Seleccionó persona para chatear
 
 **Flujo Principal**:
+
 1. Usuario toca botón [Chat] en PersonCard de "Luis Martínez"
 2. Sistema ejecuta handleStartChat(person)
 3. Sistema llama useChat().createChatRoom():
    ```typescript
-   createChatRoom(person.id, "Luis Martínez")
+   createChatRoom(person.id, 'Luis Martínez');
    ```
 4. useChat verifica si existe sala con participants:
    ```sql
@@ -740,16 +771,16 @@ setMessages(prev => ({
    ```
 5. **Caso: Sala NO existe**:
    a. INSERT INTO chat_rooms:
-      ```typescript
-      {
-        tipo: 'general',
-        participants: [user.id, person.id],
-        is_active: true,
-        metadata: {
-          participant_names: ["Usuario Actual", "Luis Martínez"]
-        }
-      }
-      ```
+   ```typescript
+   {
+     tipo: 'general',
+     participants: [user.id, person.id],
+     is_active: true,
+     metadata: {
+       participant_names: ["Usuario Actual", "Luis Martínez"]
+     }
+   }
+   ```
    b. Retornar nuevo roomId
 6. **Caso: Sala existe**:
    a. Retornar roomId existente
@@ -757,6 +788,7 @@ setMessages(prev => ({
 8. Usuario en pantalla de chat
 
 **Postcondiciones**:
+
 - Sala creada o reutilizada
 - Usuario puede empezar a chatear
 - Sala visible en ChatList de ambos usuarios
@@ -768,30 +800,36 @@ setMessages(prev => ({
 **Actor**: Usuario
 
 **Precondiciones**:
+
 - Tiene mensajes no leídos en una sala
 
 **Flujo Principal**:
+
 1. Usuario abre ChatList
 2. Sistema itera chatRooms
 3. Para sala "Ana García", sistema ejecuta:
    ```typescript
-   getRoomUnreadCount(room.id)
+   getRoomUnreadCount(room.id);
    ```
 4. useChat calcula:
    ```typescript
-   const unreadCount = messages[roomId]?.filter(msg =>
-     msg.sender_id !== user.id &&   // No soy yo quien envió
-     !msg.read_by?.[user.id]        // No lo he leído
-   ).length || 0;
+   const unreadCount =
+     messages[roomId]?.filter(
+       msg =>
+         msg.sender_id !== user.id && // No soy yo quien envió
+         !msg.read_by?.[user.id] // No lo he leído
+     ).length || 0;
    ```
 5. Resultado: 3 mensajes no leídos
 6. Sistema renderiza badge:
    ```jsx
-   {unreadCount > 0 && (
-     <View style={styles.unreadBadge}>
-       <Text>3</Text>
-     </View>
-   )}
+   {
+     unreadCount > 0 && (
+       <View style={styles.unreadBadge}>
+         <Text>3</Text>
+       </View>
+     );
+   }
    ```
 7. ChatItem se muestra con:
    - Fondo amarillo claro
@@ -799,6 +837,7 @@ setMessages(prev => ({
    - Texto en negrita
 
 **Postcondiciones**:
+
 - Usuario sabe cuántos mensajes tiene sin leer
 - Puede priorizar conversaciones
 
@@ -809,22 +848,25 @@ setMessages(prev => ({
 **Actor**: Usuario
 
 **Precondiciones**:
+
 - ChatList visible
 - ScrollView en posición inicial
 
 **Flujo Principal**:
+
 1. Usuario hace pull down en ScrollView
 2. Sistema detecta gesto
 3. RefreshControl ejecuta onRefresh
 4. Sistema ejecuta:
    ```typescript
-   setRefreshing(true)
-   setTimeout(() => setRefreshing(false), 1000)
+   setRefreshing(true);
+   setTimeout(() => setRefreshing(false), 1000);
    ```
 5. Spinner de refresh visible
 6. Tras 1 segundo, spinner desaparece
 
 **Postcondiciones**:
+
 - Lista "refrescada" (en demo, sin cambios reales)
 - Feedback visual al usuario
 
@@ -837,10 +879,12 @@ setMessages(prev => ({
 **Actor**: Usuario (customer o agent)
 
 **Precondiciones**:
+
 - Existe chat room con request_id
 - request existe en BD
 
 **Flujo Principal**:
+
 1. Usuario ve ChatList
 2. Sistema renderiza ChatItem de sala vinculada
 3. Sistema verifica: `room.request_id && room.requests`
@@ -852,6 +896,7 @@ setMessages(prev => ({
    </View>
    ```
 6. Usuario ve:
+
    ```
    [Avatar] Carlos Rosales
            📷 Imagen                [2]
@@ -860,6 +905,7 @@ setMessages(prev => ({
    ```
 
 **Postcondiciones**:
+
 - Usuario sabe que chat está relacionado a un ticket
 - Puede hacer clic para ver más detalles (futuro)
 
@@ -869,96 +915,96 @@ setMessages(prev => ({
 
 ### Matriz de Pruebas Funcionales - Lista
 
-| ID | Caso de Prueba | Precondición | Entrada | Resultado Esperado | Prioridad | Estado |
-|----|----------------|--------------|---------|-------------------|-----------|--------|
-| CHAT-L01 | Cargar lista de chats | User con chats | Navegar a /chat | Lista visible, chatRooms ordenados por updated_at DESC | Alta | ⬜ |
-| CHAT-L02 | Mostrar contador de chats | 5 chats activos | Carga inicial | Header: "5 conversaciones" | Media | ⬜ |
-| CHAT-L03 | Cargar lista vacía | User sin chats | Navegar a /chat | Empty state: "No hay conversaciones" | Alta | ⬜ |
-| CHAT-L04 | Manejar error de carga | BD offline | Navegar a /chat | Error + botón "Reintentar" | Alta | ⬜ |
-| CHAT-L05 | Loading state | Carga inicial | mount | Spinner + "Cargando conversaciones..." | Media | ⬜ |
-| CHAT-L06 | Filtrar usuario actual | User en participants | Carga | Solo chats donde user es participante | Alta | ⬜ |
-| CHAT-L07 | Ordenar por más reciente | Chats con diferentes updated_at | Carga | Más reciente arriba | Alta | ⬜ |
-| CHAT-L08 | Solo chats activos | is_active = false en BD | Carga | No aparece en lista | Media | ⬜ |
+| ID       | Caso de Prueba            | Precondición                    | Entrada         | Resultado Esperado                                     | Prioridad | Estado |
+| -------- | ------------------------- | ------------------------------- | --------------- | ------------------------------------------------------ | --------- | ------ |
+| CHAT-L01 | Cargar lista de chats     | User con chats                  | Navegar a /chat | Lista visible, chatRooms ordenados por updated_at DESC | Alta      | ⬜     |
+| CHAT-L02 | Mostrar contador de chats | 5 chats activos                 | Carga inicial   | Header: "5 conversaciones"                             | Media     | ⬜     |
+| CHAT-L03 | Cargar lista vacía        | User sin chats                  | Navegar a /chat | Empty state: "No hay conversaciones"                   | Alta      | ⬜     |
+| CHAT-L04 | Manejar error de carga    | BD offline                      | Navegar a /chat | Error + botón "Reintentar"                             | Alta      | ⬜     |
+| CHAT-L05 | Loading state             | Carga inicial                   | mount           | Spinner + "Cargando conversaciones..."                 | Media     | ⬜     |
+| CHAT-L06 | Filtrar usuario actual    | User en participants            | Carga           | Solo chats donde user es participante                  | Alta      | ⬜     |
+| CHAT-L07 | Ordenar por más reciente  | Chats con diferentes updated_at | Carga           | Más reciente arriba                                    | Alta      | ⬜     |
+| CHAT-L08 | Solo chats activos        | is_active = false en BD         | Carga           | No aparece en lista                                    | Media     | ⬜     |
 
 ### Matriz de Pruebas Funcionales - Búsqueda
 
-| ID | Caso de Prueba | Entrada | Resultado Esperado | Prioridad | Estado |
-|----|----------------|---------|-------------------|-----------|--------|
-| CHAT-S01 | Buscar por nombre exacto | "Ana García" | Solo chat con Ana García | Alta | ⬜ |
-| CHAT-S02 | Buscar por nombre parcial | "Ana" | Todos con "Ana" en nombre | Alta | ⬜ |
-| CHAT-S03 | Búsqueda case-insensitive | "ANA" o "ana" | Mismo resultado | Alta | ⬜ |
-| CHAT-S04 | Búsqueda sin resultados | "XYZ999" | Empty state: "No se encontraron chats" | Media | ⬜ |
-| CHAT-S05 | Limpiar búsqueda | Borrar texto | Mostrar todos los chats | Baja | ⬜ |
+| ID       | Caso de Prueba            | Entrada       | Resultado Esperado                     | Prioridad | Estado |
+| -------- | ------------------------- | ------------- | -------------------------------------- | --------- | ------ |
+| CHAT-S01 | Buscar por nombre exacto  | "Ana García"  | Solo chat con Ana García               | Alta      | ⬜     |
+| CHAT-S02 | Buscar por nombre parcial | "Ana"         | Todos con "Ana" en nombre              | Alta      | ⬜     |
+| CHAT-S03 | Búsqueda case-insensitive | "ANA" o "ana" | Mismo resultado                        | Alta      | ⬜     |
+| CHAT-S04 | Búsqueda sin resultados   | "XYZ999"      | Empty state: "No se encontraron chats" | Media     | ⬜     |
+| CHAT-S05 | Limpiar búsqueda          | Borrar texto  | Mostrar todos los chats                | Baja      | ⬜     |
 
 ### Matriz de Pruebas Funcionales - ChatItem
 
-| ID | Elemento | Caso | Resultado Esperado | Prioridad | Estado |
-|----|----------|------|-------------------|-----------|--------|
-| CHAT-I01 | Avatar iniciales | Nombre: "Ana García López" | Avatar muestra "AG" | Alta | ⬜ |
-| CHAT-I02 | Nombre del otro | participants: [user, "Carlos"] | Muestra "Carlos Rosales" | Alta | ⬜ |
-| CHAT-I03 | Timestamp < 1min | created_at: hace 30s | "Ahora" | Media | ⬜ |
-| CHAT-I04 | Timestamp < 1hr | created_at: hace 15min | "15m" | Media | ⬜ |
-| CHAT-I05 | Timestamp < 24hr | created_at: hace 3hr | "3h" | Media | ⬜ |
-| CHAT-I06 | Timestamp < 1 semana | created_at: hace 2 días | "Lun", "Mar" | Media | ⬜ |
-| CHAT-I07 | Timestamp > 1 semana | created_at: hace 10 días | "04/10" | Baja | ⬜ |
-| CHAT-I08 | Preview texto corto | "Hola" | "Hola" | Alta | ⬜ |
-| CHAT-I09 | Preview texto largo | "A" * 60 | Truncado a 40 chars + "..." | Alta | ⬜ |
-| CHAT-I10 | Preview imagen | type: 'image' | "📷 Imagen" | Media | ⬜ |
-| CHAT-I11 | Preview audio | type: 'audio' | "🎵 Audio" | Media | ⬜ |
-| CHAT-I12 | Preview archivo | type: 'file' | "📎 Archivo" | Media | ⬜ |
-| CHAT-I13 | Preview sistema | type: 'system' | "🔔 Mensaje del sistema" | Baja | ⬜ |
-| CHAT-I14 | Badge no leídos = 0 | 0 mensajes sin leer | Badge no visible | Alta | ⬜ |
-| CHAT-I15 | Badge no leídos 1-99 | 5 mensajes sin leer | Badge azul con "5" | Alta | ⬜ |
-| CHAT-I16 | Badge no leídos > 99 | 150 mensajes sin leer | Badge azul con "99+" | Media | ⬜ |
-| CHAT-I17 | Fondo no leídos | unreadCount > 0 | Fondo amarillo claro | Alta | ⬜ |
-| CHAT-I18 | Texto negrita no leídos | unreadCount > 0 | Nombre en negrita (Inter-Bold) | Media | ⬜ |
-| CHAT-I19 | Request info visible | request_id existe | "📋 Título de solicitud" | Media | ⬜ |
-| CHAT-I20 | Request info oculta | request_id = null | Sección no renderizada | Baja | ⬜ |
+| ID       | Elemento                | Caso                           | Resultado Esperado             | Prioridad | Estado |
+| -------- | ----------------------- | ------------------------------ | ------------------------------ | --------- | ------ |
+| CHAT-I01 | Avatar iniciales        | Nombre: "Ana García López"     | Avatar muestra "AG"            | Alta      | ⬜     |
+| CHAT-I02 | Nombre del otro         | participants: [user, "Carlos"] | Muestra "Carlos Rosales"       | Alta      | ⬜     |
+| CHAT-I03 | Timestamp < 1min        | created_at: hace 30s           | "Ahora"                        | Media     | ⬜     |
+| CHAT-I04 | Timestamp < 1hr         | created_at: hace 15min         | "15m"                          | Media     | ⬜     |
+| CHAT-I05 | Timestamp < 24hr        | created_at: hace 3hr           | "3h"                           | Media     | ⬜     |
+| CHAT-I06 | Timestamp < 1 semana    | created_at: hace 2 días        | "Lun", "Mar"                   | Media     | ⬜     |
+| CHAT-I07 | Timestamp > 1 semana    | created_at: hace 10 días       | "04/10"                        | Baja      | ⬜     |
+| CHAT-I08 | Preview texto corto     | "Hola"                         | "Hola"                         | Alta      | ⬜     |
+| CHAT-I09 | Preview texto largo     | "A" \* 60                      | Truncado a 40 chars + "..."    | Alta      | ⬜     |
+| CHAT-I10 | Preview imagen          | type: 'image'                  | "📷 Imagen"                    | Media     | ⬜     |
+| CHAT-I11 | Preview audio           | type: 'audio'                  | "🎵 Audio"                     | Media     | ⬜     |
+| CHAT-I12 | Preview archivo         | type: 'file'                   | "📎 Archivo"                   | Media     | ⬜     |
+| CHAT-I13 | Preview sistema         | type: 'system'                 | "🔔 Mensaje del sistema"       | Baja      | ⬜     |
+| CHAT-I14 | Badge no leídos = 0     | 0 mensajes sin leer            | Badge no visible               | Alta      | ⬜     |
+| CHAT-I15 | Badge no leídos 1-99    | 5 mensajes sin leer            | Badge azul con "5"             | Alta      | ⬜     |
+| CHAT-I16 | Badge no leídos > 99    | 150 mensajes sin leer          | Badge azul con "99+"           | Media     | ⬜     |
+| CHAT-I17 | Fondo no leídos         | unreadCount > 0                | Fondo amarillo claro           | Alta      | ⬜     |
+| CHAT-I18 | Texto negrita no leídos | unreadCount > 0                | Nombre en negrita (Inter-Bold) | Media     | ⬜     |
+| CHAT-I19 | Request info visible    | request_id existe              | "📋 Título de solicitud"       | Media     | ⬜     |
+| CHAT-I20 | Request info oculta     | request_id = null              | Sección no renderizada         | Baja      | ⬜     |
 
 ### Matriz de Pruebas de Navegación
 
-| ID | Caso | Entrada | Resultado Esperado | Prioridad | Estado |
-|----|------|---------|-------------------|-----------|--------|
-| CHAT-N01 | Abrir sala desde lista | Tocar ChatItem | Navega a /chat/{roomId} | Alta | ⬜ |
-| CHAT-N02 | Parámetro roomId correcto | Tocar sala "abc123" | params.roomId === "abc123" | Alta | ⬜ |
-| CHAT-N03 | Botón [+] nuevo chat | Tocar [+] | Navega a /directory | Media | ⬜ |
-| CHAT-N04 | Botón "Ver Directorio" | Empty state, tocar botón | Navega a /directory | Media | ⬜ |
+| ID       | Caso                      | Entrada                  | Resultado Esperado         | Prioridad | Estado |
+| -------- | ------------------------- | ------------------------ | -------------------------- | --------- | ------ |
+| CHAT-N01 | Abrir sala desde lista    | Tocar ChatItem           | Navega a /chat/{roomId}    | Alta      | ⬜     |
+| CHAT-N02 | Parámetro roomId correcto | Tocar sala "abc123"      | params.roomId === "abc123" | Alta      | ⬜     |
+| CHAT-N03 | Botón [+] nuevo chat      | Tocar [+]                | Navega a /directory        | Media     | ⬜     |
+| CHAT-N04 | Botón "Ver Directorio"    | Empty state, tocar botón | Navega a /directory        | Media     | ⬜     |
 
 ### Matriz de Pruebas de Integración
 
-| ID | Componente A | Componente B | Caso | Resultado Esperado | Estado |
-|----|--------------|--------------|------|-------------------|--------|
-| CHAT-INT01 | ChatList | ChatContext | useChat() | chatRooms, messages, loading | ⬜ |
-| CHAT-INT02 | ChatList | AuthContext | user.id | Filtrado correcto de participantes | ⬜ |
-| CHAT-INT03 | ChatList | expo-router | router.push() | Navegación funcional | ⬜ |
-| CHAT-INT04 | ChatContext | Supabase chat_rooms | Query | Datos cargados correctamente | ⬜ |
-| CHAT-INT05 | ChatContext | Supabase messages | Query | Mensajes por sala cargados | ⬜ |
-| CHAT-INT06 | ChatList | RefreshControl | onRefresh | Callback ejecutado | ⬜ |
+| ID         | Componente A | Componente B        | Caso          | Resultado Esperado                 | Estado |
+| ---------- | ------------ | ------------------- | ------------- | ---------------------------------- | ------ |
+| CHAT-INT01 | ChatList     | ChatContext         | useChat()     | chatRooms, messages, loading       | ⬜     |
+| CHAT-INT02 | ChatList     | AuthContext         | user.id       | Filtrado correcto de participantes | ⬜     |
+| CHAT-INT03 | ChatList     | expo-router         | router.push() | Navegación funcional               | ⬜     |
+| CHAT-INT04 | ChatContext  | Supabase chat_rooms | Query         | Datos cargados correctamente       | ⬜     |
+| CHAT-INT05 | ChatContext  | Supabase messages   | Query         | Mensajes por sala cargados         | ⬜     |
+| CHAT-INT06 | ChatList     | RefreshControl      | onRefresh     | Callback ejecutado                 | ⬜     |
 
 ### Matriz de Pruebas de UI/UX
 
-| ID | Elemento | Criterio | Verificación | Estado |
-|----|----------|----------|--------------|--------|
-| CHAT-UI01 | ChatItem | Legibilidad | Nombre visible en Inter-SemiBold 16px | ⬜ |
-| CHAT-UI02 | Avatar | Contraste | Iniciales blancas en fondo azul | ⬜ |
-| CHAT-UI03 | Indicador online | Visibilidad | Círculo 16x16px visible | ⬜ |
-| CHAT-UI04 | Badge no leídos | Contraste | Texto blanco en fondo azul | ⬜ |
-| CHAT-UI05 | Timestamp | Tamaño | 12px, legible pero no prominente | ⬜ |
-| CHAT-UI06 | Preview mensaje | Truncado | Máximo 1 línea, ellipsis | ⬜ |
-| CHAT-UI07 | Fondo no leído | Color | #fefce8 (amarillo muy claro) | ⬜ |
-| CHAT-UI08 | SearchInput | Touch target | Altura 48px, fácil de tocar | ⬜ |
-| CHAT-UI09 | Empty state | Guidance | Icono + mensaje + botón acción | ⬜ |
-| CHAT-UI10 | Pull-to-refresh | Animación | Spinner suave sin jank | ⬜ |
+| ID        | Elemento         | Criterio     | Verificación                          | Estado |
+| --------- | ---------------- | ------------ | ------------------------------------- | ------ |
+| CHAT-UI01 | ChatItem         | Legibilidad  | Nombre visible en Inter-SemiBold 16px | ⬜     |
+| CHAT-UI02 | Avatar           | Contraste    | Iniciales blancas en fondo azul       | ⬜     |
+| CHAT-UI03 | Indicador online | Visibilidad  | Círculo 16x16px visible               | ⬜     |
+| CHAT-UI04 | Badge no leídos  | Contraste    | Texto blanco en fondo azul            | ⬜     |
+| CHAT-UI05 | Timestamp        | Tamaño       | 12px, legible pero no prominente      | ⬜     |
+| CHAT-UI06 | Preview mensaje  | Truncado     | Máximo 1 línea, ellipsis              | ⬜     |
+| CHAT-UI07 | Fondo no leído   | Color        | #fefce8 (amarillo muy claro)          | ⬜     |
+| CHAT-UI08 | SearchInput      | Touch target | Altura 48px, fácil de tocar           | ⬜     |
+| CHAT-UI09 | Empty state      | Guidance     | Icono + mensaje + botón acción        | ⬜     |
+| CHAT-UI10 | Pull-to-refresh  | Animación    | Spinner suave sin jank                | ⬜     |
 
 ### Matriz de Pruebas de Performance
 
-| ID | Escenario | Métrica | Valor Esperado | Herramienta | Estado |
-|----|-----------|---------|----------------|-------------|--------|
-| CHAT-P01 | Carga inicial (10 chats) | Tiempo hasta render | < 300ms | React DevTools | ⬜ |
-| CHAT-P02 | Carga inicial (100 chats) | Tiempo hasta render | < 1s | React DevTools | ⬜ |
-| CHAT-P03 | Búsqueda | Latencia por keystroke | < 50ms | Performance API | ⬜ |
-| CHAT-P04 | Scroll lista | FPS | > 50fps | Flipper | ⬜ |
-| CHAT-P05 | Navegación a sala | Tiempo transición | < 200ms | Console.time | ⬜ |
+| ID       | Escenario                 | Métrica                | Valor Esperado | Herramienta     | Estado |
+| -------- | ------------------------- | ---------------------- | -------------- | --------------- | ------ |
+| CHAT-P01 | Carga inicial (10 chats)  | Tiempo hasta render    | < 300ms        | React DevTools  | ⬜     |
+| CHAT-P02 | Carga inicial (100 chats) | Tiempo hasta render    | < 1s           | React DevTools  | ⬜     |
+| CHAT-P03 | Búsqueda                  | Latencia por keystroke | < 50ms         | Performance API | ⬜     |
+| CHAT-P04 | Scroll lista              | FPS                    | > 50fps        | Flipper         | ⬜     |
+| CHAT-P05 | Navegación a sala         | Tiempo transición      | < 200ms        | Console.time    | ⬜     |
 
 ---
 
@@ -1010,6 +1056,7 @@ setMessages(prev => ({
 #### 🔴 Prioridad Crítica
 
 **1. Implementar Presencia Online Real**
+
 ```typescript
 // En ChatContext
 const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
@@ -1030,14 +1077,18 @@ useEffect(() => {
   // Subscription a cambios
   const sub = supabase
     .channel('user-presence')
-    .on('postgres_changes', {
-      event: 'UPDATE',
-      schema: 'public',
-      table: 'users',
-      filter: 'is_online=eq.true'
-    }, (payload) => {
-      setOnlineUsers(prev => new Set(prev).add(payload.new.id));
-    })
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'users',
+        filter: 'is_online=eq.true',
+      },
+      payload => {
+        setOnlineUsers(prev => new Set(prev).add(payload.new.id));
+      }
+    )
     .subscribe();
 
   return () => sub.unsubscribe();
@@ -1048,44 +1099,51 @@ const isOnline = onlineUsers.has(otherUserId);
 ```
 
 **2. Implementar Subscripciones Realtime a Mensajes**
+
 ```typescript
 // En ChatContext
 useEffect(() => {
   const sub = supabase
     .channel('new-messages')
-    .on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'messages'
-    }, (payload) => {
-      const newMessage = payload.new as Message;
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+      },
+      payload => {
+        const newMessage = payload.new as Message;
 
-      // Actualizar messages
-      setMessages(prev => ({
-        ...prev,
-        [newMessage.chat_room_id]: [
-          ...(prev[newMessage.chat_room_id] || []),
-          newMessage
-        ]
-      }));
+        // Actualizar messages
+        setMessages(prev => ({
+          ...prev,
+          [newMessage.chat_room_id]: [
+            ...(prev[newMessage.chat_room_id] || []),
+            newMessage,
+          ],
+        }));
 
-      // Actualizar last_message en chatRooms
-      setChatRooms(prev => prev.map(room =>
-        room.id === newMessage.chat_room_id
-          ? {
-              ...room,
-              last_message: {
-                id: newMessage.id,
-                message: newMessage.message,
-                sender_id: newMessage.sender_id,
-                created_at: newMessage.created_at,
-                type: newMessage.type
-              },
-              updated_at: newMessage.created_at
-            }
-          : room
-      ));
-    })
+        // Actualizar last_message en chatRooms
+        setChatRooms(prev =>
+          prev.map(room =>
+            room.id === newMessage.chat_room_id
+              ? {
+                  ...room,
+                  last_message: {
+                    id: newMessage.id,
+                    message: newMessage.message,
+                    sender_id: newMessage.sender_id,
+                    created_at: newMessage.created_at,
+                    type: newMessage.type,
+                  },
+                  updated_at: newMessage.created_at,
+                }
+              : room
+          )
+        );
+      }
+    )
     .subscribe();
 
   return () => sub.unsubscribe();
@@ -1093,6 +1151,7 @@ useEffect(() => {
 ```
 
 **3. Pull-to-Refresh Funcional**
+
 ```typescript
 const onRefresh = async () => {
   setRefreshing(true);
@@ -1115,6 +1174,7 @@ const reloadChatRooms = async () => {
 #### 🟡 Prioridad Alta
 
 **4. Búsqueda Avanzada (Mensajes + Metadata)**
+
 ```typescript
 const filteredRooms = chatRooms.filter(room => {
   const query = searchQuery.toLowerCase();
@@ -1134,6 +1194,7 @@ const filteredRooms = chatRooms.filter(room => {
 ```
 
 **5. Indicador de Escritura**
+
 ```typescript
 // Broadcast cuando user escribe
 const handleInputChange = (text: string) => {
@@ -1164,6 +1225,7 @@ supabase.channel(`room-${roomId}`).on('broadcast', { event: 'typing' }, ({ paylo
 ```
 
 **6. Archivar/Eliminar Conversaciones**
+
 ```typescript
 // Swipe actions en ChatItem
 <Swipeable
@@ -1201,16 +1263,16 @@ const archiveChat = async (roomId: string) => {
 
 ## 📊 Métricas de Calidad
 
-| Métrica | Valor Actual | Objetivo | Estado |
-|---------|--------------|----------|--------|
-| Cobertura de Pruebas | 0% | 80% | 🔴 |
-| Realtime Updates | 0% | 100% | 🔴 |
-| Presencia Online Real | 0% | 100% | 🔴 |
-| Pull-to-Refresh Funcional | 0% | 100% | 🔴 |
-| Tiempo Carga (10 chats) | ~200ms | < 500ms | 🟢 |
-| Tiempo Carga (100 chats) | ~1s | < 1.5s | 🟢 |
-| Búsqueda Latencia | < 50ms | < 100ms | 🟢 |
-| FPS Scroll | ~55fps | > 50fps | 🟢 |
+| Métrica                   | Valor Actual | Objetivo | Estado |
+| ------------------------- | ------------ | -------- | ------ |
+| Cobertura de Pruebas      | 0%           | 80%      | 🔴     |
+| Realtime Updates          | 0%           | 100%     | 🔴     |
+| Presencia Online Real     | 0%           | 100%     | 🔴     |
+| Pull-to-Refresh Funcional | 0%           | 100%     | 🔴     |
+| Tiempo Carga (10 chats)   | ~200ms       | < 500ms  | 🟢     |
+| Tiempo Carga (100 chats)  | ~1s          | < 1.5s   | 🟢     |
+| Búsqueda Latencia         | < 50ms       | < 100ms  | 🟢     |
+| FPS Scroll                | ~55fps       | > 50fps  | 🟢     |
 
 ---
 
@@ -1219,6 +1281,7 @@ const archiveChat = async (roomId: string) => {
 ### Checklist de Pruebas Manuales
 
 #### Carga y Visualización
+
 - [ ] Lista carga al navegar a /chat
 - [ ] Contador de conversaciones correcto
 - [ ] Loading state visible durante carga
@@ -1228,6 +1291,7 @@ const archiveChat = async (roomId: string) => {
 - [ ] Ordenado por más reciente primero
 
 #### ChatItem - Datos
+
 - [ ] Nombre del otro participante correcto
 - [ ] Iniciales en avatar correctas (2 letras)
 - [ ] Timestamp formateado correctamente
@@ -1241,28 +1305,33 @@ const archiveChat = async (roomId: string) => {
 - [ ] Nombre en negrita si hay no leídos
 
 #### ChatItem - Request Vinculado
+
 - [ ] Info de solicitud visible si existe
 - [ ] Título de solicitud correcto
 - [ ] No visible si request_id es null
 
 #### Búsqueda
+
 - [ ] Búsqueda por nombre funciona
 - [ ] Búsqueda case-insensitive
 - [ ] Sin resultados muestra empty state
 - [ ] Limpiar búsqueda muestra todos
 
 #### Navegación
+
 - [ ] Tocar ChatItem navega a /chat/{roomId}
 - [ ] roomId correcto en params
 - [ ] Botón [+] navega a /directory
 - [ ] Botón "Ver Directorio" navega a /directory
 
 #### Pull-to-Refresh
+
 - [ ] Pull down muestra spinner
 - [ ] Spinner desaparece tras 1s
 - [ ] (En demo) No recarga datos
 
 #### Presencia Online
+
 - [ ] Indicador verde/gris visible
 - [ ] (En demo) Valor aleatorio, no real
 
@@ -1271,6 +1340,7 @@ const archiveChat = async (roomId: string) => {
 ### Datos de Prueba
 
 **Crear Chat Rooms de Prueba**:
+
 ```sql
 -- Chat entre user1 y user2
 INSERT INTO chat_rooms (
@@ -1302,6 +1372,7 @@ INSERT INTO chat_rooms (
 ```
 
 **Crear Mensajes de Prueba**:
+
 ```sql
 INSERT INTO messages (
   chat_room_id, sender_id, sender_name, message, type, read_by

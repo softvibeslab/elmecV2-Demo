@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,11 +7,13 @@ import {
   TouchableOpacity,
   Image,
   Alert,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   Users,
   FileText,
@@ -20,11 +22,49 @@ import {
   CircleCheck as CheckCircle,
   CircleAlert as AlertCircle,
   MoreHorizontal,
+  Lightbulb,
+  X,
 } from 'lucide-react-native';
+import { AppTourGuide } from '@/components/AppTourGuide';
 
 export default function Home() {
   const { user } = useAuth();
   const router = useRouter();
+
+  // Tour guide state
+  const [showTour, setShowTour] = useState(false);
+  const [tourCompleted, setTourCompleted] = useState(false);
+
+  // Check if tour was completed
+  useEffect(() => {
+    const checkTourStatus = async () => {
+      const completed = await AsyncStorage.getItem('appTourCompleted');
+      if (!completed) {
+        // Show tour after 2 seconds
+        const timer = setTimeout(() => {
+          setShowTour(true);
+        }, 2000);
+        return () => clearTimeout(timer);
+      } else {
+        setTourCompleted(true);
+      }
+    };
+    checkTourStatus();
+  }, []);
+
+  const handleTourComplete = async () => {
+    try {
+      await AsyncStorage.setItem('appTourCompleted', 'true');
+      setTourCompleted(true);
+      setShowTour(false);
+    } catch (error) {
+      console.error('Error saving tour status:', error);
+    }
+  };
+
+  const handleShowTour = () => {
+    setShowTour(true);
+  };
 
   const quickActions = [
     {
@@ -61,7 +101,8 @@ export default function Home() {
 
       let query = supabase
         .from('requests')
-        .select(`
+        .select(
+          `
           id,
           titulo,
           estatus,
@@ -70,7 +111,8 @@ export default function Home() {
           created_at,
           agente:users!requests_agente_id_fkey(nombre, apellido_paterno),
           usuario:users!requests_usuario_id_fkey(nombre, apellido_paterno)
-        `)
+        `
+        )
         .order('updated_at', { ascending: false })
         .limit(3);
 
@@ -173,20 +215,23 @@ export default function Home() {
             </Text>
             <Text style={styles.userCompany}>{user?.empresa}</Text>
           </View>
-          <View style={styles.logoContainer}>
-            <Image
-              source={require('@/assets/images/branding/logo.png')}
-              style={styles.logo}
-              resizeMode="contain"
-            />
+          <View style={styles.headerActions}>
+            {!tourCompleted && (
+              <TouchableOpacity
+                style={styles.tourButton}
+                onPress={handleShowTour}
+              >
+                <Lightbulb size={20} color="#ffffff" />
+              </TouchableOpacity>
+            )}
+            <View style={styles.logoContainer}>
+              <Image
+                source={require('@/assets/images/branding/logo.png')}
+                style={styles.logo}
+                resizeMode="contain"
+              />
+            </View>
           </View>
-        </View>
-        <View style={styles.truckContainer}>
-          <Image
-            source={require('@/assets/images/branding/truck.png')}
-            style={styles.truckImage}
-            resizeMode="contain"
-          />
         </View>
       </LinearGradient>
 
@@ -234,14 +279,28 @@ export default function Home() {
                 <Text style={{ color: '#6b7280' }}>Cargando...</Text>
               </View>
             ) : recentRequests.length === 0 ? (
-              <View style={{ padding: 20, alignItems: 'center', backgroundColor: '#fff', borderRadius: 12 }}>
-                <Text style={{ color: '#6b7280', fontStyle: 'italic' }}>No hay actividad reciente</Text>
+              <View
+                style={{
+                  padding: 20,
+                  alignItems: 'center',
+                  backgroundColor: '#fff',
+                  borderRadius: 12,
+                }}
+              >
+                <Text style={{ color: '#6b7280', fontStyle: 'italic' }}>
+                  No hay actividad reciente
+                </Text>
               </View>
             ) : (
               recentRequests.map(item => {
-                const contacto = user?.rol === 'customer'
-                  ? (item.agente ? `${item.agente.nombre} ${item.agente.apellido_paterno}` : 'Sin asignar')
-                  : (item.usuario ? `${item.usuario.nombre} ${item.usuario.apellido_paterno}` : 'Desconocido');
+                const contacto =
+                  user?.rol === 'customer'
+                    ? item.agente
+                      ? `${item.agente.nombre} ${item.agente.apellido_paterno}`
+                      : 'Sin asignar'
+                    : item.usuario
+                      ? `${item.usuario.nombre} ${item.usuario.apellido_paterno}`
+                      : 'Desconocido';
                 return (
                   <View key={item.id} style={styles.activityItem}>
                     <View style={styles.activityIcon}>
@@ -250,13 +309,16 @@ export default function Home() {
                     <View style={styles.activityContent}>
                       <Text style={styles.activityTitle}>{item.titulo}</Text>
                       <Text style={styles.activityAgent}>
-                        {user?.rol === 'customer' ? 'Agente: ' : 'Cliente: '}{contacto}
+                        {user?.rol === 'customer' ? 'Agente: ' : 'Cliente: '}
+                        {contacto}
                       </Text>
                       <View style={styles.activityMeta}>
                         <Text style={styles.activityStatus}>
                           {getStatusText(item.estatus)}
                         </Text>
-                        <Text style={styles.activityTime}>hace {getRelativeTime(item.updated_at)}</Text>
+                        <Text style={styles.activityTime}>
+                          hace {getRelativeTime(item.updated_at)}
+                        </Text>
                       </View>
                     </View>
                   </View>
@@ -286,7 +348,25 @@ export default function Home() {
             </View>
           </View>
         </View>
+
+        {/* Tour Button */}
+        {!tourCompleted && (
+          <TouchableOpacity
+            style={styles.floatingTourButton}
+            onPress={handleShowTour}
+          >
+            <Lightbulb size={24} color="#ffffff" />
+            <Text style={styles.floatingTourText}>Ver Guía</Text>
+          </TouchableOpacity>
+        )}
       </View>
+
+      {/* App Tour Guide */}
+      <AppTourGuide
+        visible={showTour}
+        onClose={() => setShowTour(false)}
+        onComplete={handleTourComplete}
+      />
     </ScrollView>
   );
 }
@@ -300,6 +380,8 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 32,
     paddingHorizontal: 24,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
   },
   headerContent: {
     flexDirection: 'row',
@@ -355,20 +437,10 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  truckContainer: {
-    marginTop: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 120,
-  },
-  truckImage: {
-    width: '100%',
-    height: '100%',
-  },
   content: {
     flex: 1,
     padding: 24,
-    marginTop: -16,
+    marginTop: 0,
   },
   section: {
     marginBottom: 32,
@@ -517,5 +589,42 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Inter-Regular',
     color: '#6b7280',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  tourButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  floatingTourButton: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#202B52',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  floatingTourText: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#ffffff',
   },
 });

@@ -1,9 +1,11 @@
 # 📋 Instrucciones para Agregar Columnas a la Tabla Messages
 
 ## ⚠️ IMPORTANTE
+
 Las columnas `reply_to`, `file_name`, `file_size`, `audio_duration`, `edited_at` y `read_by` NO existen actualmente en la tabla `messages` de Supabase.
 
 Esto impide que funcionen las siguientes características del chat:
+
 - ❌ **Responder a mensajes** (reply)
 - ❌ **Enviar archivos con metadata** (nombre, tamaño)
 - ❌ **Enviar notas de audio** con duración
@@ -17,6 +19,7 @@ Esto impide que funcionen las siguientes características del chat:
 ## 🎯 Objetivo
 
 Agregar 6 columnas faltantes a la tabla `messages`:
+
 1. **reply_to** - Para responder a mensajes específicos
 2. **file_name** - Para almacenar nombre del archivo
 3. **file_size** - Para almacenar tamaño en bytes
@@ -132,6 +135,7 @@ node scripts/test-chat-module.js
 ```
 
 **Resultado esperado:**
+
 ```
 ════════════════════════════════════════════════════════════
 📊 REPORTE FINAL DE PRUEBAS - MÓDULO DE CHAT
@@ -150,14 +154,14 @@ Tasa de éxito:         ~93%+
 
 ## 📊 ¿Qué Habilita Cada Columna?
 
-| Columna | Funcionalidad | Impacto |
-|---------|---------------|---------|
-| **reply_to** | Responder a mensajes específicos | 🔴 CRÍTICO - WhatsApp style replies |
-| **file_name** | Mostrar nombre del archivo adjunto | 🔴 CRÍTICO - UX de archivos |
-| **file_size** | Mostrar tamaño del archivo | 🟡 ALTO - Info útil para usuario |
-| **audio_duration** | Mostrar duración de notas de voz | 🔴 CRÍTICO - Experiencia de audio |
-| **edited_at** | Indicador de mensaje editado | 🟡 ALTO - Transparencia |
-| **read_by** | Doble check azul (leído) | 🟡 ALTO - WhatsApp style read receipts |
+| Columna            | Funcionalidad                      | Impacto                                |
+| ------------------ | ---------------------------------- | -------------------------------------- |
+| **reply_to**       | Responder a mensajes específicos   | 🔴 CRÍTICO - WhatsApp style replies    |
+| **file_name**      | Mostrar nombre del archivo adjunto | 🔴 CRÍTICO - UX de archivos            |
+| **file_size**      | Mostrar tamaño del archivo         | 🟡 ALTO - Info útil para usuario       |
+| **audio_duration** | Mostrar duración de notas de voz   | 🔴 CRÍTICO - Experiencia de audio      |
+| **edited_at**      | Indicador de mensaje editado       | 🟡 ALTO - Transparencia                |
+| **read_by**        | Doble check azul (leído)           | 🟡 ALTO - WhatsApp style read receipts |
 
 ---
 
@@ -166,6 +170,7 @@ Tasa de éxito:         ~93%+
 ### ¿Por qué necesito hacer esto?
 
 El código de la app (`ChatContext.tsx` y `[roomId].tsx`) espera que estas columnas existan para:
+
 - **Responder mensajes**: `ChatContext.tsx:380` usa `reply_to`
 - **Archivos adjuntos**: `[roomId].tsx:439-440` usa `file_name` y `file_size`
 - **Audio**: `[roomId].tsx:530` usa `audio_duration`
@@ -177,6 +182,7 @@ Sin estas columnas, esas funcionalidades fallarán con errores de BD.
 ### ¿Es seguro ejecutar este script?
 
 ✅ **SÍ**, el script es seguro porque:
+
 - Usa `IF NOT EXISTS` - no hace nada si las columnas ya existen
 - Solo AGREGA columnas, no modifica ni elimina datos existentes
 - Agrega foreign keys con `ON DELETE SET NULL` para integridad
@@ -186,6 +192,7 @@ Sin estas columnas, esas funcionalidades fallarán con errores de BD.
 ### ¿Qué pasa con los mensajes existentes?
 
 ✅ **Nada cambia** en los mensajes existentes:
+
 - Los mensajes existentes tendrán `NULL` en las nuevas columnas
 - Esto es normal y correcto
 - Los nuevos mensajes podrán usar las columnas
@@ -226,6 +233,7 @@ Pero NO hay razón para hacer esto, ya que el código las necesita.
 **NOTA**: El script de pruebas también detectó que la columna `foto` no existe en la tabla `users`.
 
 Si ves este error al listar mensajes:
+
 ```
 column users_1.foto does not exist
 ```
@@ -247,6 +255,7 @@ COMMENT ON COLUMN users.foto IS 'URL pública de la foto de perfil del usuario';
 Una vez ejecutado el SQL, tu módulo de chat tendrá:
 
 ### ✅ Características Principales
+
 - 💬 **Mensajes de texto** con emojis ilimitados
 - 📷 **Imágenes** desde galería o cámara
 - 📎 **Archivos** de cualquier tipo
@@ -259,6 +268,7 @@ Una vez ejecutado el SQL, tu módulo de chat tendrá:
 - 👥 **Typing indicators** con Presence
 
 ### 🎯 Experiencia WhatsApp-like
+
 - ✅ Respuestas citadas con preview
 - ✅ Emojis integrados (6 categorías)
 - ✅ Indicador de "escribiendo..."
@@ -275,6 +285,7 @@ Una vez ejecutado el SQL, tu módulo de chat tendrá:
 **Solución**: Estás usando la ANON_KEY en lugar de SERVICE_ROLE_KEY.
 
 En tu archivo `.env`:
+
 ```bash
 SUPABASE_SERVICE_ROLE_KEY=tu_service_role_key_aqui
 ```

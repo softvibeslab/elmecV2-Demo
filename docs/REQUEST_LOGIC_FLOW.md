@@ -49,11 +49,13 @@ if (user.rol === 'customer') {
 ```
 
 **Comportamiento**:
+
 - Solo ve solicitudes donde `usuario_id === user.id`
 - No ve solicitudes de otros clientes
 - Puede ver el agente asignado a sus solicitudes
 
 **SQL Query**:
+
 ```sql
 SELECT *,
   usuario:users(id, nombre, apellido_paterno, apellido_materno, empresa, zona),
@@ -87,6 +89,7 @@ else if (user.rol === 'agent') {
 ```
 
 **Comportamiento**:
+
 - **Consulta 1**: Solicitudes donde `agente_id === user.id`
 - **Consulta 2**: Solicitudes donde `agente_id IS NULL` (sin asignar)
 - **Filtro local**: Solo solicitudes donde `usuario.zona === user.zona`
@@ -94,6 +97,7 @@ else if (user.rol === 'agent') {
 - **Combinación**: Merge y deduplicación por ID
 
 **SQL Queries**:
+
 ```sql
 -- Consulta 1: Solicitudes asignadas
 SELECT *,
@@ -112,16 +116,17 @@ ORDER BY created_at DESC
 ```
 
 **Procesamiento en Cliente**:
+
 ```javascript
 const assignedRequests = assignedResult.data || [];
 const unassignedRequests = (unassignedResult?.data || []).filter(
-  (req) => req.usuario?.zona === user.zona
+  req => req.usuario?.zona === user.zona
 );
 
 // Combinar sin duplicados
 const allRequests = [...assignedRequests, ...unassignedRequests];
 const uniqueRequests = Array.from(
-  new Map(allRequests.map((req) => [req.id, req])).values()
+  new Map(allRequests.map(req => [req.id, req])).values()
 );
 
 // Ordenar por fecha
@@ -145,11 +150,13 @@ else {
 ```
 
 **Comportamiento**:
+
 - Sin filtros de usuario o agente
 - Visibilidad completa del sistema
 - Orden cronológico inverso
 
 **SQL Query**:
+
 ```sql
 SELECT *,
   usuario:users(id, nombre, apellido_paterno, apellido_materno, empresa, zona),
@@ -168,6 +175,7 @@ ORDER BY created_at DESC
 **Precondiciones**: Usuario autenticado con rol `customer`
 
 **Flujo**:
+
 1. Cliente navega a "Solicitudes"
 2. Toca botón "+" para crear solicitud
 3. Llena formulario (título, mensaje, tipo, prioridad)
@@ -176,6 +184,7 @@ ORDER BY created_at DESC
 6. Sistema crea solicitud con estatus `'nuevo'`
 
 **Resultado Esperado**:
+
 - Solicitud creada con `usuario_id = cliente.id`
 - `agente_id`:
   - Si cliente seleccionó agente → `agente_id = agente_seleccionado.id`
@@ -191,6 +200,7 @@ ORDER BY created_at DESC
 **Precondiciones**: Usuario autenticado con rol `agent`, zona definida
 
 **Flujo**:
+
 1. Agente navega a "Solicitudes"
 2. Sistema carga solicitudes:
    - Asignadas: Donde `agente_id = agente.id`
@@ -202,11 +212,13 @@ ORDER BY created_at DESC
    - Iniciar chat con clientes
 
 **Resultado Esperado**:
+
 - Agente ve solicitudes: `[asignadas] + [sin_asignar_misma_zona]`
 - Total = Solicitudes asignadas + Solicitudes sin asignar de su zona
 - Orden cronológico inverso
 
 **Ejemplo**:
+
 ```
 Agente: Juan Pérez (zona: "Norte")
 Solicitudes asignadas: 3
@@ -222,6 +234,7 @@ Total visible: 8 solicitudes
 **Precondiciones**: Solicitud visible (sin asignar, misma zona)
 
 **Flujo**:
+
 1. Agente toca solicitud sin asignar
 2. Toca opción "Asignar"
 3. Sistema actualiza: `agente_id = agente.id`, `estatus = 'asignado'`
@@ -229,6 +242,7 @@ Total visible: 8 solicitudes
 5. Notificación enviada al cliente
 
 **SQL Update**:
+
 ```sql
 UPDATE requests
 SET agente_id = [agente.id],
@@ -245,6 +259,7 @@ WHERE id = [request.id]
 **Precondiciones**: Usuario autenticado con rol `admin`
 
 **Flujo**:
+
 1. Admin navega a "Solicitudes"
 2. Sistema carga TODAS las solicitudes sin filtros
 3. Admin puede:
@@ -255,6 +270,7 @@ WHERE id = [request.id]
    - Generar reportes
 
 **Resultado Esperado**:
+
 - Visibilidad 100% del sistema
 - Sin restricciones de zona o agente
 - Acceso a métricas globales
@@ -340,6 +356,7 @@ interface RequestWithRelations extends Request {
 ### **Optimizaciones Implementadas**
 
 1. **Consultas Paralelas**:
+
    ```typescript
    const [assignedResult, unassignedResult] = await Promise.all([
      assignedQuery,
@@ -348,13 +365,15 @@ interface RequestWithRelations extends Request {
    ```
 
 2. **Deduplicación Eficiente**:
+
    ```typescript
    const uniqueRequests = Array.from(
-     new Map(allRequests.map((req) => [req.id, req])).values()
+     new Map(allRequests.map(req => [req.id, req])).values()
    );
    ```
 
 3. **Ordenamiento en Cliente**:
+
    ```typescript
    data = uniqueRequests.sort(
      (a, b) => new Date(b.created_at) - new Date(a.created_at)
@@ -392,11 +411,13 @@ interface RequestWithRelations extends Request {
 ### **Tipos de Errores Manejados**
 
 1. **Error de Conexión**:
+
    ```typescript
    setError(`Error al cargar las solicitudes: ${error.message}`);
    ```
 
 2. **Usuario No Autenticado**:
+
    ```typescript
    if (!user) return; // Retorno silencioso
    ```
@@ -419,15 +440,18 @@ interface RequestWithRelations extends Request {
 ### **Prueba 1: Cliente Ve Sus Solicitudes**
 
 **Preparación**:
+
 1. Crear usuario con rol `customer`
 2. Iniciar sesión con ese usuario
 
 **Pasos**:
+
 1. Navegar a "Solicitudes"
 2. Crear 3 solicitudes
 3. Verificar que solo ve sus 3 solicitudes
 
 **Resultado Esperado**:
+
 - ✅ Solo ve solicitudes donde `usuario_id = su_id`
 - ✅ No ve solicitudes de otros clientes
 
@@ -436,16 +460,19 @@ interface RequestWithRelations extends Request {
 ### **Prueba 2: Agente Ve Solicitudes Asignadas + Sin Asignar de Zona**
 
 **Preparación**:
+
 1. Crear agente con `zona = "Norte"`
 2. Crear 5 solicitudes sin asignar de zona "Norte"
 3. Crear 3 solicitudes sin asignar de zona "Sur"
 4. Asignar 2 solicitudes al agente
 
 **Pasos**:
+
 1. Iniciar sesión como agente
 2. Navegar a "Solicitudes"
 
 **Resultado Esperado**:
+
 - ✅ Ve las 2 solicitudes asignadas
 - ✅ Ve las 5 solicitudes sin asignar de zona "Norte"
 - ✅ NO ve las 3 solicitudes de zona "Sur"
@@ -456,15 +483,18 @@ interface RequestWithRelations extends Request {
 ### **Prueba 3: Agente Sin Zona Solo Ve Asignadas**
 
 **Preparación**:
+
 1. Crear agente sin `zona` definida
 2. Asignar 2 solicitudes al agente
 3. Crear 5 solicitudes sin asignar
 
 **Pasos**:
+
 1. Iniciar sesión como agente
 2. Navegar a "Solicitudes"
 
 **Resultado Esperado**:
+
 - ✅ Solo ve las 2 solicitudes asignadas
 - ✅ NO ve solicitudes sin asignar (no tiene zona para filtrar)
 - ✅ Total: 2 solicitudes
@@ -474,14 +504,17 @@ interface RequestWithRelations extends Request {
 ### **Prueba 4: Admin Ve Todo**
 
 **Preparación**:
+
 1. Crear usuario con rol `admin`
 2. Crear múltiples solicitudes de diferentes clientes y zonas
 
 **Pasos**:
+
 1. Iniciar sesión como admin
 2. Navegar a "Solicitudes"
 
 **Resultado Esperado**:
+
 - ✅ Ve TODAS las solicitudes del sistema
 - ✅ Sin restricciones de zona o cliente
 - ✅ Puede ver todos los detalles
@@ -491,16 +524,19 @@ interface RequestWithRelations extends Request {
 ### **Prueba 5: Auto-Asignación de Solicitud**
 
 **Preparación**:
+
 1. Agente con zona "Norte" iniciado
 2. Solicitud sin asignar de zona "Norte" visible
 
 **Pasos**:
+
 1. Tocar solicitud sin asignar
 2. Seleccionar "Asignar"
 3. Verificar que desaparece de lista de sin asignar
 4. Verificar que aparece en lista de asignadas
 
 **Resultado Esperado**:
+
 - ✅ `agente_id` actualizado a ID del agente
 - ✅ `estatus` cambió a `'asignado'`
 - ✅ Chat creado automáticamente
@@ -589,6 +625,7 @@ USING (
 ## 📞 **Soporte**
 
 Para issues o preguntas sobre este flujo:
+
 - Revisar logs en consola del navegador/app
 - Verificar políticas RLS en Supabase
 - Validar que los usuarios tengan `zona` definida correctamente

@@ -10,20 +10,21 @@
 ## 🎯 RESUMEN EJECUTIVO
 
 ### Resultado General
+
 ✅ **TODAS LAS PRUEBAS BACKEND PASARON EXITOSAMENTE**
 
 La suite de pruebas automatizadas se ejecutó completamente, corrigiendo 4 errores de restricciones de base de datos identificados durante la ejecución inicial. Todas las pruebas backend ahora pasan sin errores.
 
 ### Métricas Finales
 
-| Métrica | Valor | Estado |
-|---------|-------|--------|
-| **Total de Casos Ejecutados** | 120 / 213 | ✅ |
-| **Pruebas Pasadas** | 26 | ✅ |
-| **Pruebas Fallidas** | 0 | ✅ |
-| **Pruebas Omitidas** | 94 | ⚠️ |
-| **Tasa de Éxito** | 100% (26/26) | ✅ |
-| **Duración Total** | 2.94 segundos | ✅ |
+| Métrica                       | Valor         | Estado |
+| ----------------------------- | ------------- | ------ |
+| **Total de Casos Ejecutados** | 120 / 213     | ✅     |
+| **Pruebas Pasadas**           | 26            | ✅     |
+| **Pruebas Fallidas**          | 0             | ✅     |
+| **Pruebas Omitidas**          | 94            | ⚠️     |
+| **Tasa de Éxito**             | 100% (26/26)  | ✅     |
+| **Duración Total**            | 2.94 segundos | ✅     |
 
 ---
 
@@ -34,6 +35,7 @@ La suite de pruebas automatizadas se ejecutó completamente, corrigiendo 4 error
 **Resultado:** ✅ 8 pasadas, 0 fallidas, 4 omitidas
 
 #### Pruebas Pasadas (8):
+
 - ✅ **TC-AUTH-001:** Login exitoso con credenciales válidas
 - ✅ **TC-AUTH-002:** Login fallido con email inválido detectado
 - ✅ **TC-AUTH-003:** Login fallido con password incorrecta detectado
@@ -44,6 +46,7 @@ La suite de pruebas automatizadas se ejecutó completamente, corrigiendo 4 error
 - ✅ **TC-AUTH-009:** Login con password vacío rechazado
 
 #### Pruebas Omitidas (4):
+
 - ⏭️ **TC-AUTH-007:** Timeout de sesión (Requiere espera prolongada)
 - ⏭️ **TC-AUTH-010:** Registro de nuevo usuario (Evitar crear usuarios de prueba)
 - ⏭️ **TC-AUTH-011:** Recuperación de contraseña (Feature no implementada)
@@ -58,16 +61,18 @@ La suite de pruebas automatizadas se ejecutó completamente, corrigiendo 4 error
 **Resultado:** ✅ 8 pasadas, 0 fallidas, 22 omitidas
 
 #### Pruebas Pasadas (8):
+
 - ✅ **TC-REQ-001:** Crear solicitud con datos válidos
 - ✅ **TC-REQ-002:** Validar campos requeridos (rechazado correctamente)
 - ✅ **TC-REQ-006:** Ver lista de solicitudes propias (4 encontradas)
 - ✅ **TC-REQ-009:** Actualizar estado a "asignado"
 - ✅ **TC-REQ-010:** Actualizar estado a "en_proceso"
 - ✅ **TC-REQ-011:** Actualizar estado a "resuelto"
-- ✅ **TC-REQ-012:** Actualizar estado final de solicitud *(Corregido: 'cerrado' → 'resuelto')*
+- ✅ **TC-REQ-012:** Actualizar estado final de solicitud _(Corregido: 'cerrado' → 'resuelto')_
 - ✅ **TC-REQ-025:** Eliminar solicitud de prueba
 
 #### Pruebas Omitidas (22):
+
 - ⏭️ **TC-REQ-003 al TC-REQ-005:** Validaciones de longitud (Validación en frontend)
 - ⏭️ **TC-REQ-007 al TC-REQ-008:** Vistas por rol (Requieren usuarios específicos)
 - ⏭️ **TC-REQ-013 al TC-REQ-024:** Filtros y búsquedas (Pruebas de UI/frontend)
@@ -82,12 +87,14 @@ La suite de pruebas automatizadas se ejecutó completamente, corrigiendo 4 error
 **Resultado:** ✅ 4 pasadas, 0 fallidas, 21 omitidas
 
 #### Pruebas Pasadas (4):
-- ✅ **TC-CHAT-001:** Crear sala de chat *(Corregido: 'directo' → 'support')*
+
+- ✅ **TC-CHAT-001:** Crear sala de chat _(Corregido: 'directo' → 'support')_
 - ✅ **TC-CHAT-002:** Ver lista de chats activos (1 encontrado)
 - ✅ **TC-CHAT-003:** Abrir sala de chat existente
 - ✅ **TC-CHAT-004:** Enviar mensaje de texto
 
 #### Pruebas Omitidas (21):
+
 - ⏭️ **TC-CHAT-05 al TC-CHAT-25:** Funcionalidades realtime y UI (Requieren frontend)
 
 **Calidad:** 🟢 BUENA - Core del chat funcional, realtime requiere pruebas UI
@@ -99,11 +106,13 @@ La suite de pruebas automatizadas se ejecutó completamente, corrigiendo 4 error
 **Resultado:** ✅ 3 pasadas, 0 fallidas, 12 omitidas
 
 #### Pruebas Pasadas (3):
-- ✅ **TC-NOTIF-001:** Crear notificación de prueba *(Corregido: 'test' → 'system')*
+
+- ✅ **TC-NOTIF-001:** Crear notificación de prueba _(Corregido: 'test' → 'system')_
 - ✅ **TC-NOTIF-002:** Ver lista de notificaciones (1 encontrada)
-- ✅ **TC-NOTIF-005:** Marcar notificación como leída *(Corregido: removido 'read_at')*
+- ✅ **TC-NOTIF-005:** Marcar notificación como leída _(Corregido: removido 'read_at')_
 
 #### Pruebas Omitidas (12):
+
 - ⏭️ **TC-NOTIF-06 al TC-NOTIF-15:** Notificaciones push y UI (Requieren frontend)
 
 **Calidad:** 🟢 BUENA - Sistema de notificaciones in-app funcional
@@ -115,6 +124,7 @@ La suite de pruebas automatizadas se ejecutó completamente, corrigiendo 4 error
 **Resultado:** 0 pasadas, 0 fallidas, 15 omitidas
 
 #### Pruebas Omitidas (15):
+
 - ⏭️ **TC-CALC-01 al TC-CALC-15:** Cálculos y lógica (Pruebas de UI/Lógica frontend)
 
 **Nota:** La calculadora es principalmente lógica frontend y no tiene API backend para probar.
@@ -126,11 +136,13 @@ La suite de pruebas automatizadas se ejecutó completamente, corrigiendo 4 error
 **Resultado:** ✅ 3 pasadas, 0 fallidas, 9 omitidas
 
 #### Pruebas Pasadas (3):
+
 - ✅ **TC-DIR-001:** Ver lista completa de usuarios (18 encontrados)
 - ✅ **TC-DIR-002:** Filtrar por zona (0 encontrados en Norte)
 - ✅ **TC-DIR-003:** Filtrar por categoría (0 agentes de venta)
 
 #### Pruebas Omitidas (9):
+
 - ⏭️ **TC-DIR-04 al TC-DIR-12:** Búsquedas y acciones (Pruebas de UI/frontend)
 
 **Calidad:** 🟢 BUENA - API de directorio funcional, filtros operativos
@@ -142,6 +154,7 @@ La suite de pruebas automatizadas se ejecutó completamente, corrigiendo 4 error
 **Resultado:** 0 pasadas, 0 fallidas, 13 omitidas
 
 #### Pruebas Omitidas (13):
+
 - ⏭️ **TC-SETT-01 al TC-SETT-13:** Configuraciones (Todas son pruebas de UI/frontend)
 
 **Nota:** El módulo de configuración es completamente UI, sin API backend para probar.
@@ -153,7 +166,9 @@ La suite de pruebas automatizadas se ejecutó completamente, corrigiendo 4 error
 Durante la ejecución de las pruebas, se identificaron y corrigieron **4 errores de restricciones de base de datos**:
 
 ### 1. Error en TC-REQ-012: Status 'cerrado' inválido
+
 **Problema:**
+
 ```
 new row for relation "requests" violates check constraint "requests_estatus_check"
 ```
@@ -163,6 +178,7 @@ new row for relation "requests" violates check constraint "requests_estatus_chec
 **Valores Válidos:** 'nuevo', 'asignado', 'en_proceso', 'pausado', 'resuelto'
 
 **Solución Aplicada:**
+
 ```javascript
 // Antes:
 .update({ estatus: 'cerrado' })
@@ -177,7 +193,9 @@ new row for relation "requests" violates check constraint "requests_estatus_chec
 ---
 
 ### 2. Error en TC-CHAT-001: Tipo de chat 'directo' inválido
+
 **Problema:**
+
 ```
 new row for relation "chat_rooms" violates check constraint "chat_rooms_tipo_check"
 ```
@@ -187,12 +205,13 @@ new row for relation "chat_rooms" violates check constraint "chat_rooms_tipo_che
 **Valores Válidos:** 'support', 'sales', 'general'
 
 **Solución Aplicada:**
+
 ```javascript
 // Antes:
-tipo: 'directo'
+tipo: 'directo';
 
 // Después:
-tipo: 'support'
+tipo: 'support';
 ```
 
 **Archivo:** `scripts/test-all-modules.js:450`
@@ -201,7 +220,9 @@ tipo: 'support'
 ---
 
 ### 3. Error en TC-NOTIF-001: Tipo de notificación 'test' inválido
+
 **Problema:**
+
 ```
 new row for relation "notifications" violates check constraint "notifications_type_check"
 ```
@@ -211,12 +232,13 @@ new row for relation "notifications" violates check constraint "notifications_ty
 **Valores Válidos:** 'request_update', 'new_message', 'assignment', 'reminder', 'system'
 
 **Solución Aplicada:**
+
 ```javascript
 // Antes:
-type: 'test'
+type: 'test';
 
 // Después:
-type: 'system'
+type: 'system';
 ```
 
 **Archivo:** `scripts/test-all-modules.js:553`
@@ -225,7 +247,9 @@ type: 'system'
 ---
 
 ### 4. Error en TC-NOTIF-005: Columna 'read_at' no existe
+
 **Problema:**
+
 ```
 Could not find the 'read_at' column of 'notifications' in the schema cache
 ```
@@ -233,6 +257,7 @@ Could not find the 'read_at' column of 'notifications' in the schema cache
 **Causa:** La columna 'read_at' no existe en el schema actual de la tabla `notifications`.
 
 **Solución Aplicada:**
+
 ```javascript
 // Antes:
 .update({ read: true, read_at: new Date().toISOString() })
@@ -250,22 +275,22 @@ Could not find the 'read_at' column of 'notifications' in the schema cache
 
 ### Pruebas Ejecutadas vs Total
 
-| Categoría | Casos | Porcentaje |
-|-----------|-------|------------|
-| **Ejecutadas (Pasadas + Fallidas)** | 26 | 12.2% |
-| **Omitidas (UI/Frontend)** | 94 | 44.1% |
-| **No Implementadas** | 93 | 43.7% |
-| **TOTAL** | 213 | 100% |
+| Categoría                           | Casos | Porcentaje |
+| ----------------------------------- | ----- | ---------- |
+| **Ejecutadas (Pasadas + Fallidas)** | 26    | 12.2%      |
+| **Omitidas (UI/Frontend)**          | 94    | 44.1%      |
+| **No Implementadas**                | 93    | 43.7%      |
+| **TOTAL**                           | 213   | 100%       |
 
 ### Razones de Omisión
 
-| Razón | Cantidad | Porcentaje |
-|-------|----------|------------|
-| **Pruebas de UI/Frontend** | 81 | 86.2% |
-| **Requieren roles específicos** | 5 | 5.3% |
-| **Features no implementadas** | 4 | 4.3% |
-| **Requieren espera prolongada** | 2 | 2.1% |
-| **Evitar crear datos de prueba** | 2 | 2.1% |
+| Razón                            | Cantidad | Porcentaje |
+| -------------------------------- | -------- | ---------- |
+| **Pruebas de UI/Frontend**       | 81       | 86.2%      |
+| **Requieren roles específicos**  | 5        | 5.3%       |
+| **Features no implementadas**    | 4        | 4.3%       |
+| **Requieren espera prolongada**  | 2        | 2.1%       |
+| **Evitar crear datos de prueba** | 2        | 2.1%       |
 
 ### Cobertura Backend vs Frontend
 
@@ -312,11 +337,13 @@ Frontend (UI/Interacción):    94 casos pendientes ⚠️  Requieren E2E testing
 ## 🎯 RECOMENDACIONES
 
 ### Pruebas Backend (Completadas)
+
 ✅ Todas las pruebas backend están funcionando correctamente
 ✅ No se requieren acciones adicionales en el backend
 ✅ Las restricciones de base de datos están correctamente validadas
 
 ### Pruebas Frontend (Pendientes)
+
 Las siguientes pruebas requieren testing manual o automatizado con framework E2E:
 
 1. **Prioridad Alta (P0):**
@@ -337,14 +364,17 @@ Las siguientes pruebas requieren testing manual o automatizado con framework E2E
    - Features futuras (biometría, etc.)
 
 ### Configuración de E2E Testing
+
 Para automatizar las 94 pruebas de UI pendientes, se recomienda:
 
 1. **Instalar Detox o Appium:**
+
 ```bash
 npm install --save-dev detox
 ```
 
 2. **Configurar Detox para Expo:**
+
 ```javascript
 // .detoxrc.js
 module.exports = {
@@ -353,13 +383,14 @@ module.exports = {
   configurations: {
     'ios.sim.debug': {
       device: { type: 'iPhone 14' },
-      app: 'ios.debug'
-    }
-  }
+      app: 'ios.debug',
+    },
+  },
 };
 ```
 
 3. **Crear tests E2E:**
+
 ```javascript
 // e2e/requests.test.js
 describe('Módulo de Solicitudes', () => {
@@ -367,7 +398,9 @@ describe('Módulo de Solicitudes', () => {
     await element(by.id('nuevo-request-btn')).tap();
     await element(by.id('titulo-input')).typeText('ABC');
     await element(by.id('guardar-btn')).tap();
-    await expect(element(by.text('El título debe tener mínimo 5 caracteres'))).toBeVisible();
+    await expect(
+      element(by.text('El título debe tener mínimo 5 caracteres'))
+    ).toBeVisible();
   });
 });
 ```
@@ -377,6 +410,7 @@ describe('Módulo de Solicitudes', () => {
 ## 📝 REPORTE DE LOGS
 
 Los logs completos de la ejecución están disponibles en:
+
 - **Archivo:** `test-results-final.log`
 - **Ubicación:** `/root/rogervibes/elmecv3/elmecV2-Demo/`
 - **Formato:** Texto plano con colores ANSI
@@ -386,6 +420,7 @@ Los logs completos de la ejecución están disponibles en:
 ## 🏆 CONCLUSIÓN FINAL
 
 ### Estado del Proyecto
+
 **✅ TODAS LAS APIs BACKEND ESTÁN FUNCIONANDO CORRECTAMENTE**
 
 - **26 de 26 pruebas backend pasadas** (100% success rate)
@@ -402,6 +437,7 @@ Los logs completos de la ejecución están disponibles en:
 5. ⏭️ **Security Testing:** Revisar RLS policies
 
 ### Tiempo Estimado para Completar Testing Completo
+
 - **Configurar E2E:** 1-2 días
 - **Escribir 94 tests E2E:** 3-5 días
 - **Ejecutar tests manuales P0:** 1 día

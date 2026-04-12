@@ -9,6 +9,7 @@
 **Solución:**
 
 1. Verifica que los plugins estén configurados en `app.json`:
+
 ```json
 {
   "expo": {
@@ -58,6 +59,7 @@
 6. Configura las políticas de seguridad:
 
 **Política 1: Lectura pública**
+
 ```sql
 -- Nombre: Public read access
 -- Operación: SELECT
@@ -68,6 +70,7 @@ USING (bucket_id = 'request-files');
 ```
 
 **Política 2: Upload para autenticados**
+
 ```sql
 -- Nombre: Authenticated users can upload
 -- Operación: INSERT
@@ -78,6 +81,7 @@ WITH CHECK (bucket_id = 'request-files');
 ```
 
 **Política 3: Actualizar propios archivos**
+
 ```sql
 -- Nombre: Users can update own files
 -- Operación: UPDATE
@@ -89,6 +93,7 @@ WITH CHECK (bucket_id = 'request-files' AND auth.uid()::text = owner);
 ```
 
 **Política 4: Eliminar propios archivos**
+
 ```sql
 -- Nombre: Users can delete own files
 -- Operación: DELETE
@@ -134,6 +139,7 @@ const maxSize = 10 * 1024 * 1024; // Cambiar a 10MB
 **Solución:**
 
 1. Verifica la consola para errores:
+
 ```bash
 # En Expo
 npx expo start
@@ -145,6 +151,7 @@ npx expo start
    - Busca archivos recientes
 
 3. Verifica el campo `archivos` en la tabla `requests`:
+
 ```sql
 SELECT id, titulo, archivos, metadata
 FROM requests
@@ -166,6 +173,7 @@ WHERE id = 'tu-request-id';
    - Activa "Fotos" y "Cámara"
 
 3. Si persiste, limpia el cache:
+
 ```bash
 npx expo start --clear
 ```

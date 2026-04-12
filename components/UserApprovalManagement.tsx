@@ -7,15 +7,25 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { supabase, supabaseClient } from '@/lib/supabase';
 import { User } from '@/types/supabase';
-import { Check, X, Clock, User as UserIcon, Building2 } from 'lucide-react-native';
+import {
+  Check,
+  X,
+  Clock,
+  User as UserIcon,
+  Building2,
+  MapPin,
+} from 'lucide-react-native';
 
 export const UserApprovalManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'pendiente' | 'aprobado' | 'rechazado'>('pendiente');
+  const [filter, setFilter] = useState<'pendiente' | 'aprobado' | 'rechazado'>(
+    'pendiente'
+  );
   const [selectedZone, setSelectedZone] = useState<string>('Todas');
 
   const zones = ['Todas', 'Norte', 'Sur', 'Centro', 'Este', 'Oeste'];
@@ -36,7 +46,9 @@ export const UserApprovalManagement: React.FC = () => {
         query = query.eq('zona', selectedZone);
       }
 
-      const { data, error } = await query.order('created_at', { ascending: false });
+      const { data, error } = await query.order('created_at', {
+        ascending: false,
+      });
 
       if (error) throw error;
       setUsers(data || []);
@@ -48,19 +60,25 @@ export const UserApprovalManagement: React.FC = () => {
     }
   };
 
-  const handleApproval = async (userId: string, newStatus: 'aprobado' | 'rechazado') => {
+  const handleApproval = async (
+    userId: string,
+    newStatus: 'aprobado' | 'rechazado'
+  ) => {
     try {
       const { error } = await supabaseClient
         .from('users')
-        .update({ 
+        .update({
           status_aprobacion: newStatus,
-          activo: newStatus === 'aprobado'
+          activo: newStatus === 'aprobado',
         } as any)
         .eq('id', userId);
 
       if (error) throw error;
 
-      Alert.alert('Éxito', `Usuario ${newStatus === 'aprobado' ? 'aprobado' : 'rechazado'} con éxito.`);
+      Alert.alert(
+        'Éxito',
+        `Usuario ${newStatus === 'aprobado' ? 'aprobado' : 'rechazado'} con éxito.`
+      );
       loadUsers();
     } catch (error: any) {
       console.error('Error updating status:', error.message);
@@ -75,7 +93,9 @@ export const UserApprovalManagement: React.FC = () => {
           <UserIcon size={24} color="#335686" />
         </View>
         <View style={styles.details}>
-          <Text style={styles.userName}>{item.nombre} {item.apellido_paterno}</Text>
+          <Text style={styles.userName}>
+            {item.nombre} {item.apellido_paterno}
+          </Text>
           <Text style={styles.userEmail}>{item.correo_electronico}</Text>
           <View style={styles.companyContainer}>
             <Building2 size={14} color="#6b7280" />
@@ -83,18 +103,18 @@ export const UserApprovalManagement: React.FC = () => {
           </View>
         </View>
       </View>
-      
+
       {filter === 'pendiente' && (
         <View style={styles.actions}>
-          <TouchableOpacity 
-            style={[styles.actionBtn, styles.approveBtn]} 
+          <TouchableOpacity
+            style={[styles.actionBtn, styles.approveBtn]}
             onPress={() => handleApproval(item.id, 'aprobado')}
           >
             <Check size={20} color="#ffffff" />
             <Text style={styles.btnText}>Aprobar</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.actionBtn, styles.rejectBtn]} 
+          <TouchableOpacity
+            style={[styles.actionBtn, styles.rejectBtn]}
             onPress={() => handleApproval(item.id, 'rechazado')}
           >
             <X size={20} color="#ffffff" />
@@ -108,13 +128,18 @@ export const UserApprovalManagement: React.FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.filterContainer}>
-        {(['pendiente', 'aprobado', 'rechazado'] as const).map((f) => (
+        {(['pendiente', 'aprobado', 'rechazado'] as const).map(f => (
           <TouchableOpacity
             key={f}
             style={[styles.filterBtn, filter === f && styles.activeFilter]}
             onPress={() => setFilter(f)}
           >
-            <Text style={[styles.filterText, filter === f && styles.activeFilterText]}>
+            <Text
+              style={[
+                styles.filterText,
+                filter === f && styles.activeFilterText,
+              ]}
+            >
               {f.charAt(0).toUpperCase() + f.slice(1)}s
             </Text>
           </TouchableOpacity>
@@ -122,18 +147,30 @@ export const UserApprovalManagement: React.FC = () => {
       </View>
 
       <View style={styles.zoneFilterContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.zoneScrollContent}>
-          {zones.map((zone) => (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.zoneScrollContent}
+        >
+          {zones.map(zone => (
             <TouchableOpacity
               key={zone}
               style={[
                 styles.zoneChip,
-                selectedZone === zone && styles.activeZoneChip
+                selectedZone === zone && styles.activeZoneChip,
               ]}
               onPress={() => setSelectedZone(zone)}
             >
-              <MapPin size={12} color={selectedZone === zone ? '#ffffff' : '#6b7280'} />
-              <Text style={[styles.zoneText, selectedZone === zone && styles.activeZoneText]}>
+              <MapPin
+                size={12}
+                color={selectedZone === zone ? '#ffffff' : '#6b7280'}
+              />
+              <Text
+                style={[
+                  styles.zoneText,
+                  selectedZone === zone && styles.activeZoneText,
+                ]}
+              >
                 {zone}
               </Text>
             </TouchableOpacity>
@@ -146,12 +183,14 @@ export const UserApprovalManagement: React.FC = () => {
       ) : (
         <FlatList
           data={users}
-          keyExtractor={(item) => item.id}
+          keyExtractor={item => item.id}
           renderItem={renderUserItem}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Clock size={48} color="#d1d5db" />
-              <Text style={styles.emptyText}>No hay usuarios con este estado.</Text>
+              <Text style={styles.emptyText}>
+                No hay usuarios con este estado.
+              </Text>
             </View>
           }
           contentContainerStyle={styles.listContent}

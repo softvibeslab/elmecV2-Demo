@@ -1,6 +1,7 @@
 # MATRIZ DE PRUEBAS CONSOLIDADA - ELMEC MOBILE APP
 
 ## ÍNDICE
+
 1. [Resumen Ejecutivo](#resumen-ejecutivo)
 2. [Matriz por Módulo](#matriz-por-módulo)
 3. [Matriz por Tipo de Prueba](#matriz-por-tipo-de-prueba)
@@ -15,25 +16,25 @@
 
 ### Estadísticas Generales
 
-| Métrica | Valor |
-|---------|-------|
-| **Total de Casos de Prueba** | 287 |
-| **Módulos Documentados** | 5 |
-| **Pruebas Críticas** | 52 |
-| **Pruebas Alta Prioridad** | 98 |
-| **Pruebas Media Prioridad** | 87 |
-| **Pruebas Baja Prioridad** | 50 |
+| Métrica                      | Valor |
+| ---------------------------- | ----- |
+| **Total de Casos de Prueba** | 287   |
+| **Módulos Documentados**     | 5     |
+| **Pruebas Críticas**         | 52    |
+| **Pruebas Alta Prioridad**   | 98    |
+| **Pruebas Media Prioridad**  | 87    |
+| **Pruebas Baja Prioridad**   | 50    |
 
 ### Distribución por Módulo
 
-| Módulo | Funcionales | Integración | UI/UX | Seguridad | Rendimiento | **Total** |
-|--------|-------------|-------------|-------|-----------|-------------|-----------|
-| **Inicio** | 18 | 8 | 10 | 5 | 6 | **47** |
-| **Directorio** | 22 | 9 | 12 | 6 | 8 | **57** |
-| **Solicitudes** | 28 | 11 | 14 | 9 | 10 | **72** |
-| **Chat** | 20 | 8 | 11 | 6 | 7 | **52** |
-| **Perfil** | 31 | 9 | 12 | 6 | 6 | **64** |
-| **TOTAL** | **119** | **45** | **59** | **32** | **37** | **287** |
+| Módulo          | Funcionales | Integración | UI/UX  | Seguridad | Rendimiento | **Total** |
+| --------------- | ----------- | ----------- | ------ | --------- | ----------- | --------- |
+| **Inicio**      | 18          | 8           | 10     | 5         | 6           | **47**    |
+| **Directorio**  | 22          | 9           | 12     | 6         | 8           | **57**    |
+| **Solicitudes** | 28          | 11          | 14     | 9         | 10          | **72**    |
+| **Chat**        | 20          | 8           | 11     | 6         | 7           | **52**    |
+| **Perfil**      | 31          | 9           | 12     | 6         | 6           | **64**    |
+| **TOTAL**       | **119**     | **45**      | **59** | **32**    | **37**      | **287**   |
 
 ### Distribución por Tipo de Prueba
 
@@ -61,6 +62,7 @@ Baja      ██████████                      18%
 ### MÓDULO 1: INICIO (HOME)
 
 #### Resumen
+
 - **Total Pruebas**: 47
 - **Críticas**: 8
 - **Altas**: 16
@@ -69,20 +71,22 @@ Baja      ██████████                      18%
 
 #### Casos de Prueba Destacados
 
-| ID | Tipo | Caso de Prueba | Prioridad | Resultado |
-|----|------|----------------|-----------|-----------|
-| PF-INICIO-01 | Funcional | Mostrar estadísticas del dashboard | Crítica | ⬜ Pendiente |
-| PF-INICIO-05 | Funcional | Navegación a Directorio desde QuickAction | Alta | ⬜ Pendiente |
-| PI-INICIO-02 | Integración | Estadísticas reflejan datos reales de BD | Crítica | ⬜ Pendiente |
-| PS-INICIO-01 | Seguridad | Acceso sin autenticación bloqueado | Crítica | ⬜ Pendiente |
-| PR-INICIO-01 | Rendimiento | Carga inicial del dashboard < 500ms | Alta | ⬜ Pendiente |
+| ID           | Tipo        | Caso de Prueba                            | Prioridad | Resultado    |
+| ------------ | ----------- | ----------------------------------------- | --------- | ------------ |
+| PF-INICIO-01 | Funcional   | Mostrar estadísticas del dashboard        | Crítica   | ⬜ Pendiente |
+| PF-INICIO-05 | Funcional   | Navegación a Directorio desde QuickAction | Alta      | ⬜ Pendiente |
+| PI-INICIO-02 | Integración | Estadísticas reflejan datos reales de BD  | Crítica   | ⬜ Pendiente |
+| PS-INICIO-01 | Seguridad   | Acceso sin autenticación bloqueado        | Crítica   | ⬜ Pendiente |
+| PR-INICIO-01 | Rendimiento | Carga inicial del dashboard < 500ms       | Alta      | ⬜ Pendiente |
 
 #### Limitaciones Conocidas
+
 - ⚠️ **Datos Hardcodeados**: Las estadísticas son valores fijos, no dinámicos
 - ⚠️ **Actividad Reciente Mock**: Los 5 items son datos de demostración
 - ⚠️ **Sin Refresh**: Pull-to-refresh no implementado
 
 #### Archivo de Referencia
+
 📄 `docs/WIKI/01-MODULO-INICIO.md`
 
 ---
@@ -90,6 +94,7 @@ Baja      ██████████                      18%
 ### MÓDULO 2: DIRECTORIO (DIRECTORY)
 
 #### Resumen
+
 - **Total Pruebas**: 57
 - **Críticas**: 10
 - **Altas**: 22
@@ -98,22 +103,24 @@ Baja      ██████████                      18%
 
 #### Casos de Prueba Destacados
 
-| ID | Tipo | Caso de Prueba | Prioridad | Resultado |
-|----|------|----------------|-----------|-----------|
-| PF-DIR-01 | Funcional | Cargar lista completa de personal | Crítica | ⬜ Pendiente |
-| PF-DIR-03 | Funcional | Buscar por nombre/apellido | Alta | ⬜ Pendiente |
-| PF-DIR-09 | Funcional | Iniciar chat con persona | Crítica | ⬜ Pendiente |
-| PI-DIR-01 | Integración | Query a users filtra solo activos | Crítica | ⬜ Pendiente |
-| PS-DIR-02 | Seguridad | RLS policies limitan acceso a users | Crítica | ⬜ Pendiente |
-| PR-DIR-01 | Rendimiento | Lista virtualizada con 100+ usuarios | Alta | ⬜ Pendiente |
+| ID        | Tipo        | Caso de Prueba                       | Prioridad | Resultado    |
+| --------- | ----------- | ------------------------------------ | --------- | ------------ |
+| PF-DIR-01 | Funcional   | Cargar lista completa de personal    | Crítica   | ⬜ Pendiente |
+| PF-DIR-03 | Funcional   | Buscar por nombre/apellido           | Alta      | ⬜ Pendiente |
+| PF-DIR-09 | Funcional   | Iniciar chat con persona             | Crítica   | ⬜ Pendiente |
+| PI-DIR-01 | Integración | Query a users filtra solo activos    | Crítica   | ⬜ Pendiente |
+| PS-DIR-02 | Seguridad   | RLS policies limitan acceso a users  | Crítica   | ⬜ Pendiente |
+| PR-DIR-01 | Rendimiento | Lista virtualizada con 100+ usuarios | Alta      | ⬜ Pendiente |
 
 #### Limitaciones Conocidas
+
 - ⚠️ **Sin Paginación**: Carga todos los usuarios de una vez (problema con >200 usuarios)
 - ⚠️ **Búsqueda Client-Side**: No usa índices de BD, lento con muchos datos
 - ⚠️ **Indicador Online Falso**: `is_online` no se actualiza en tiempo real
 - ⚠️ **Linking no funciona en Web**: Call y WhatsApp solo mobile
 
 #### Archivo de Referencia
+
 📄 `docs/WIKI/02-MODULO-DIRECTORIO.md`
 
 ---
@@ -121,6 +128,7 @@ Baja      ██████████                      18%
 ### MÓDULO 3: SOLICITUDES (REQUESTS)
 
 #### Resumen
+
 - **Total Pruebas**: 72
 - **Críticas**: 14
 - **Altas**: 28
@@ -129,23 +137,25 @@ Baja      ██████████                      18%
 
 #### Casos de Prueba Destacados
 
-| ID | Tipo | Caso de Prueba | Prioridad | Resultado |
-|----|------|----------------|-----------|-----------|
-| PF-SOL-01 | Funcional | Cargar solicitudes según rol | Crítica | ⬜ Pendiente |
-| PF-SOL-08 | Funcional | Crear nueva solicitud con validación | Crítica | ⬜ Pendiente |
-| PF-SOL-14 | Funcional | Cambiar estatus con workflow | Alta | ⬜ Pendiente |
-| PF-SOL-20 | Funcional | Subir archivos adjuntos | Alta | ⬜ Pendiente |
-| PI-SOL-03 | Integración | Filtros de búsqueda avanzada | Alta | ⬜ Pendiente |
-| PS-SOL-01 | Seguridad | RLS policies protegen solicitudes | Crítica | ⬜ Pendiente |
-| PR-SOL-02 | Rendimiento | Lista virtualizada con 100+ requests | Alta | ⬜ Pendiente |
+| ID        | Tipo        | Caso de Prueba                       | Prioridad | Resultado    |
+| --------- | ----------- | ------------------------------------ | --------- | ------------ |
+| PF-SOL-01 | Funcional   | Cargar solicitudes según rol         | Crítica   | ⬜ Pendiente |
+| PF-SOL-08 | Funcional   | Crear nueva solicitud con validación | Crítica   | ⬜ Pendiente |
+| PF-SOL-14 | Funcional   | Cambiar estatus con workflow         | Alta      | ⬜ Pendiente |
+| PF-SOL-20 | Funcional   | Subir archivos adjuntos              | Alta      | ⬜ Pendiente |
+| PI-SOL-03 | Integración | Filtros de búsqueda avanzada         | Alta      | ⬜ Pendiente |
+| PS-SOL-01 | Seguridad   | RLS policies protegen solicitudes    | Crítica   | ⬜ Pendiente |
+| PR-SOL-02 | Rendimiento | Lista virtualizada con 100+ requests | Alta      | ⬜ Pendiente |
 
 #### Limitaciones Conocidas
+
 - 🔴 **CRÍTICO - Sin RLS Policies**: Filtrado solo en frontend, vulnerable
 - ⚠️ **Archivos No Se Suben**: URIs se almacenan pero no hay upload real a Supabase Storage
 - ⚠️ **Sin Paginación**: Carga todas las solicitudes de una vez
 - ⚠️ **Búsqueda Client-Side**: Filtros aplican en memoria, no en BD
 
 #### Archivo de Referencia
+
 📄 `docs/WIKI/03-MODULO-SOLICITUDES.md`
 
 ---
@@ -153,6 +163,7 @@ Baja      ██████████                      18%
 ### MÓDULO 4: CHAT (MESSAGING)
 
 #### Resumen
+
 - **Total Pruebas**: 52
 - **Críticas**: 9
 - **Altas**: 18
@@ -161,23 +172,25 @@ Baja      ██████████                      18%
 
 #### Casos de Prueba Destacados
 
-| ID | Tipo | Caso de Prueba | Prioridad | Resultado |
-|----|------|----------------|-----------|-----------|
-| PF-CHAT-01 | Funcional | Cargar lista de conversaciones | Crítica | ⬜ Pendiente |
-| PF-CHAT-03 | Funcional | Mostrar preview del último mensaje | Alta | ⬜ Pendiente |
-| PF-CHAT-06 | Funcional | Badge de mensajes no leídos | Alta | ⬜ Pendiente |
-| PF-CHAT-10 | Funcional | Abrir conversación al tocar item | Crítica | ⬜ Pendiente |
-| PI-CHAT-01 | Integración | Query a chat_rooms filtra participantes | Crítica | ⬜ Pendiente |
-| PI-CHAT-03 | Integración | Realtime subscription a nuevos mensajes | Alta | ⬜ Pendiente |
-| PR-CHAT-01 | Rendimiento | Lista virtualizada con 50+ chats | Alta | ⬜ Pendiente |
+| ID         | Tipo        | Caso de Prueba                          | Prioridad | Resultado    |
+| ---------- | ----------- | --------------------------------------- | --------- | ------------ |
+| PF-CHAT-01 | Funcional   | Cargar lista de conversaciones          | Crítica   | ⬜ Pendiente |
+| PF-CHAT-03 | Funcional   | Mostrar preview del último mensaje      | Alta      | ⬜ Pendiente |
+| PF-CHAT-06 | Funcional   | Badge de mensajes no leídos             | Alta      | ⬜ Pendiente |
+| PF-CHAT-10 | Funcional   | Abrir conversación al tocar item        | Crítica   | ⬜ Pendiente |
+| PI-CHAT-01 | Integración | Query a chat_rooms filtra participantes | Crítica   | ⬜ Pendiente |
+| PI-CHAT-03 | Integración | Realtime subscription a nuevos mensajes | Alta      | ⬜ Pendiente |
+| PR-CHAT-01 | Rendimiento | Lista virtualizada con 50+ chats        | Alta      | ⬜ Pendiente |
 
 #### Limitaciones Conocidas
+
 - ⚠️ **Indicador Online Falso**: Generado aleatoriamente, no refleja estado real
 - ⚠️ **Sin Realtime**: Nuevos mensajes no actualizan lista automáticamente
 - ⚠️ **Pull-to-Refresh No Funciona**: Solo muestra animación
 - ⚠️ **Badge Estático**: Contador de no leídos solo se actualiza al montar
 
 #### Archivo de Referencia
+
 📄 `docs/WIKI/04-MODULO-CHAT.md`
 
 ---
@@ -185,6 +198,7 @@ Baja      ██████████                      18%
 ### MÓDULO 5: PERFIL (PROFILE)
 
 #### Resumen
+
 - **Total Pruebas**: 64
 - **Críticas**: 11
 - **Altas**: 19
@@ -193,17 +207,18 @@ Baja      ██████████                      18%
 
 #### Casos de Prueba Destacados
 
-| ID | Tipo | Caso de Prueba | Prioridad | Resultado |
-|----|------|----------------|-----------|-----------|
-| PF-PERFIL-01 | Funcional | Mostrar información de usuario | Alta | ⬜ Pendiente |
-| PF-PERFIL-04 | Funcional | Enviar notificación demo | Alta | ⬜ Pendiente |
-| PF-PERFIL-12 | Funcional | Health Check inicial del sistema | Alta | ⬜ Pendiente |
-| PF-PERFIL-20 | Funcional | Cerrar sesión con confirmación | Crítica | ⬜ Pendiente |
-| PF-ADMIN-01 | Funcional | Acceso a dashboard admin por rol | Crítica | ⬜ Pendiente |
-| PI-PERFIL-03 | Integración | Logout limpia sesión completa | Crítica | ⬜ Pendiente |
-| PS-PERFIL-01 | Seguridad | Acceso sin autenticación bloqueado | Crítica | ⬜ Pendiente |
+| ID           | Tipo        | Caso de Prueba                     | Prioridad | Resultado    |
+| ------------ | ----------- | ---------------------------------- | --------- | ------------ |
+| PF-PERFIL-01 | Funcional   | Mostrar información de usuario     | Alta      | ⬜ Pendiente |
+| PF-PERFIL-04 | Funcional   | Enviar notificación demo           | Alta      | ⬜ Pendiente |
+| PF-PERFIL-12 | Funcional   | Health Check inicial del sistema   | Alta      | ⬜ Pendiente |
+| PF-PERFIL-20 | Funcional   | Cerrar sesión con confirmación     | Crítica   | ⬜ Pendiente |
+| PF-ADMIN-01  | Funcional   | Acceso a dashboard admin por rol   | Crítica   | ⬜ Pendiente |
+| PI-PERFIL-03 | Integración | Logout limpia sesión completa      | Crítica   | ⬜ Pendiente |
+| PS-PERFIL-01 | Seguridad   | Acceso sin autenticación bloqueado | Crítica   | ⬜ Pendiente |
 
 #### Limitaciones Conocidas
+
 - 🔴 **AdminDashboard con Datos Mock**: No refleja métricas reales de BD
 - ⚠️ **Notificaciones No Persisten**: Se pierden al recargar app
 - ⚠️ **No Se Puede Editar Perfil**: Todos los campos son read-only
@@ -211,6 +226,7 @@ Baja      ██████████                      18%
 - ⚠️ **Sin Upload de Avatar**: Solo muestra iniciales
 
 #### Archivo de Referencia
+
 📄 `docs/WIKI/05-MODULO-PERFIL.md`
 
 ---
@@ -221,23 +237,24 @@ Baja      ██████████                      18%
 
 #### Críticas (32 casos)
 
-| ID | Módulo | Caso de Prueba | Estado |
-|----|--------|----------------|--------|
-| PF-INICIO-01 | Inicio | Mostrar estadísticas del dashboard | ⬜ |
-| PF-DIR-01 | Directorio | Cargar lista completa de personal | ⬜ |
-| PF-DIR-09 | Directorio | Iniciar chat con persona | ⬜ |
-| PF-SOL-01 | Solicitudes | Cargar solicitudes según rol | ⬜ |
-| PF-SOL-08 | Solicitudes | Crear nueva solicitud con validación | ⬜ |
-| PF-SOL-13 | Solicitudes | Validación de campos obligatorios | ⬜ |
-| PF-CHAT-01 | Chat | Cargar lista de conversaciones | ⬜ |
-| PF-CHAT-10 | Chat | Abrir conversación al tocar item | ⬜ |
-| PF-PERFIL-20 | Perfil | Cerrar sesión con confirmación | ⬜ |
-| PF-ADMIN-01 | Perfil | Acceso a dashboard admin por rol | ⬜ |
-| ... | | *(22 casos adicionales)* | |
+| ID           | Módulo      | Caso de Prueba                       | Estado |
+| ------------ | ----------- | ------------------------------------ | ------ |
+| PF-INICIO-01 | Inicio      | Mostrar estadísticas del dashboard   | ⬜     |
+| PF-DIR-01    | Directorio  | Cargar lista completa de personal    | ⬜     |
+| PF-DIR-09    | Directorio  | Iniciar chat con persona             | ⬜     |
+| PF-SOL-01    | Solicitudes | Cargar solicitudes según rol         | ⬜     |
+| PF-SOL-08    | Solicitudes | Crear nueva solicitud con validación | ⬜     |
+| PF-SOL-13    | Solicitudes | Validación de campos obligatorios    | ⬜     |
+| PF-CHAT-01   | Chat        | Cargar lista de conversaciones       | ⬜     |
+| PF-CHAT-10   | Chat        | Abrir conversación al tocar item     | ⬜     |
+| PF-PERFIL-20 | Perfil      | Cerrar sesión con confirmación       | ⬜     |
+| PF-ADMIN-01  | Perfil      | Acceso a dashboard admin por rol     | ⬜     |
+| ...          |             | _(22 casos adicionales)_             |        |
 
 #### Altas (58 casos)
 
 Incluyen:
+
 - Navegaciones principales entre módulos
 - Filtros y búsquedas
 - Acciones de comunicación (call, WhatsApp, chat)
@@ -249,6 +266,7 @@ Incluyen:
 #### Medias (29 casos)
 
 Incluyen:
+
 - Filtros secundarios
 - Formateo de datos
 - Validaciones no críticas
@@ -260,25 +278,25 @@ Incluyen:
 
 #### Por Categoría
 
-| Categoría | Casos | Descripción |
-|-----------|-------|-------------|
-| **AuthContext** | 12 | Integración con sistema de autenticación |
-| **Supabase Queries** | 18 | Consultas a base de datos |
-| **Realtime Subscriptions** | 6 | Suscripciones a canales en tiempo real |
-| **Navigation** | 5 | Navegación entre pantallas y tabs |
-| **Context Integration** | 4 | Integración entre múltiples contexts |
+| Categoría                  | Casos | Descripción                              |
+| -------------------------- | ----- | ---------------------------------------- |
+| **AuthContext**            | 12    | Integración con sistema de autenticación |
+| **Supabase Queries**       | 18    | Consultas a base de datos                |
+| **Realtime Subscriptions** | 6     | Suscripciones a canales en tiempo real   |
+| **Navigation**             | 5     | Navegación entre pantallas y tabs        |
+| **Context Integration**    | 4     | Integración entre múltiples contexts     |
 
 #### Casos Críticos de Integración
 
-| ID | Caso de Prueba | Módulo | Estado |
-|----|----------------|--------|--------|
-| PI-INICIO-02 | Estadísticas reflejan datos reales de BD | Inicio | ⬜ |
-| PI-DIR-01 | Query a users filtra solo activos | Directorio | ⬜ |
-| PI-SOL-01 | Query role-based funciona correctamente | Solicitudes | ⬜ |
-| PI-CHAT-01 | Query a chat_rooms filtra participantes | Chat | ⬜ |
-| PI-PERFIL-03 | Logout limpia sesión completa | Perfil | ⬜ |
-| PI-SOL-06 | Upload a Supabase Storage funciona | Solicitudes | ⬜ |
-| PI-CHAT-03 | Realtime subscription a nuevos mensajes | Chat | ⬜ |
+| ID           | Caso de Prueba                           | Módulo      | Estado |
+| ------------ | ---------------------------------------- | ----------- | ------ |
+| PI-INICIO-02 | Estadísticas reflejan datos reales de BD | Inicio      | ⬜     |
+| PI-DIR-01    | Query a users filtra solo activos        | Directorio  | ⬜     |
+| PI-SOL-01    | Query role-based funciona correctamente  | Solicitudes | ⬜     |
+| PI-CHAT-01   | Query a chat_rooms filtra participantes  | Chat        | ⬜     |
+| PI-PERFIL-03 | Logout limpia sesión completa            | Perfil      | ⬜     |
+| PI-SOL-06    | Upload a Supabase Storage funciona       | Solicitudes | ⬜     |
+| PI-CHAT-03   | Realtime subscription a nuevos mensajes  | Chat        | ⬜     |
 
 ---
 
@@ -286,23 +304,23 @@ Incluyen:
 
 #### Por Aspecto
 
-| Aspecto | Casos | Ejemplos |
-|---------|-------|----------|
-| **Layout Responsive** | 15 | Mobile, tablet, desktop |
-| **Colores y Estilos** | 12 | Cards, badges, estados |
-| **Iconos** | 8 | Correctos según contexto |
-| **Animaciones** | 6 | Transiciones suaves |
-| **Tipografía** | 5 | Fuentes consistentes |
-| **Feedback Visual** | 13 | Touch feedback, loading states |
+| Aspecto               | Casos | Ejemplos                       |
+| --------------------- | ----- | ------------------------------ |
+| **Layout Responsive** | 15    | Mobile, tablet, desktop        |
+| **Colores y Estilos** | 12    | Cards, badges, estados         |
+| **Iconos**            | 8     | Correctos según contexto       |
+| **Animaciones**       | 6     | Transiciones suaves            |
+| **Tipografía**        | 5     | Fuentes consistentes           |
+| **Feedback Visual**   | 13    | Touch feedback, loading states |
 
 #### Casos Destacados
 
-| ID | Caso de Prueba | Descripción |
-|----|----------------|-------------|
-| PU-DIR-01 | PersonCard layout completo | Avatar, nombre, puesto, iconos |
-| PU-SOL-05 | Badge de prioridad con colores | Baja=verde, Media=amarillo, Alta=rojo, Urgente=rojo oscuro |
-| PU-CHAT-03 | Indicador online con punto verde | Círculo verde 8x8 cuando online |
-| PU-PERFIL-02 | Colores de notificaciones | Info=azul, Éxito=verde, Warning=amarillo, Error=rojo |
+| ID           | Caso de Prueba                   | Descripción                                                |
+| ------------ | -------------------------------- | ---------------------------------------------------------- |
+| PU-DIR-01    | PersonCard layout completo       | Avatar, nombre, puesto, iconos                             |
+| PU-SOL-05    | Badge de prioridad con colores   | Baja=verde, Media=amarillo, Alta=rojo, Urgente=rojo oscuro |
+| PU-CHAT-03   | Indicador online con punto verde | Círculo verde 8x8 cuando online                            |
+| PU-PERFIL-02 | Colores de notificaciones        | Info=azul, Éxito=verde, Warning=amarillo, Error=rojo       |
 
 ---
 
@@ -310,30 +328,31 @@ Incluyen:
 
 #### Por Vulnerabilidad
 
-| Vulnerabilidad | Casos | Criticidad |
-|----------------|-------|------------|
-| **Acceso sin Autenticación** | 6 | 🔴 Crítica |
-| **RLS Policies Faltantes** | 8 | 🔴 Crítica |
-| **Protección de Roles** | 5 | 🔴 Crítica |
-| **Limpieza de Sesión** | 4 | 🟠 Alta |
-| **Exposición de Secrets** | 3 | 🟠 Alta |
-| **Validación de Input** | 6 | 🟡 Media |
+| Vulnerabilidad               | Casos | Criticidad |
+| ---------------------------- | ----- | ---------- |
+| **Acceso sin Autenticación** | 6     | 🔴 Crítica |
+| **RLS Policies Faltantes**   | 8     | 🔴 Crítica |
+| **Protección de Roles**      | 5     | 🔴 Crítica |
+| **Limpieza de Sesión**       | 4     | 🟠 Alta    |
+| **Exposición de Secrets**    | 3     | 🟠 Alta    |
+| **Validación de Input**      | 6     | 🟡 Media   |
 
 #### Casos Críticos de Seguridad
 
-| ID | Caso de Prueba | Riesgo | Estado |
-|----|----------------|--------|--------|
-| PS-INICIO-01 | Acceso sin auth bloqueado | Alto | ⬜ |
-| PS-DIR-02 | RLS policies limitan acceso a users | Alto | ⬜ |
-| PS-SOL-01 | RLS policies protegen solicitudes | Crítico | ⬜ |
-| PS-SOL-02 | Usuario solo ve sus solicitudes | Alto | ⬜ |
-| PS-CHAT-01 | RLS protege mensajes privados | Crítico | ⬜ |
-| PS-PERFIL-01 | Acceso sin auth bloqueado | Alto | ⬜ |
-| PS-PERFIL-03 | AdminDashboard solo para admin | Alto | ⬜ |
+| ID           | Caso de Prueba                      | Riesgo  | Estado |
+| ------------ | ----------------------------------- | ------- | ------ |
+| PS-INICIO-01 | Acceso sin auth bloqueado           | Alto    | ⬜     |
+| PS-DIR-02    | RLS policies limitan acceso a users | Alto    | ⬜     |
+| PS-SOL-01    | RLS policies protegen solicitudes   | Crítico | ⬜     |
+| PS-SOL-02    | Usuario solo ve sus solicitudes     | Alto    | ⬜     |
+| PS-CHAT-01   | RLS protege mensajes privados       | Crítico | ⬜     |
+| PS-PERFIL-01 | Acceso sin auth bloqueado           | Alto    | ⬜     |
+| PS-PERFIL-03 | AdminDashboard solo para admin      | Alto    | ⬜     |
 
 #### Vulnerabilidades Conocidas
 
 🔴 **CRÍTICO**:
+
 ```
 Módulo Solicitudes: Sin RLS Policies
 - Filtrado solo en frontend
@@ -347,34 +366,36 @@ Módulo Solicitudes: Sin RLS Policies
 
 #### Por Métrica
 
-| Métrica | Casos | Objetivo |
-|---------|-------|----------|
-| **Tiempo de Carga** | 10 | < 500ms para pantallas |
-| **Virtualización** | 8 | FlatList para listas largas |
-| **Re-renders** | 7 | Optimizar con React.memo |
-| **Memory Leaks** | 5 | No hay fugas de memoria |
-| **Bundle Size** | 3 | < 5MB para producción |
-| **Query Performance** | 4 | < 200ms para queries |
+| Métrica               | Casos | Objetivo                    |
+| --------------------- | ----- | --------------------------- |
+| **Tiempo de Carga**   | 10    | < 500ms para pantallas      |
+| **Virtualización**    | 8     | FlatList para listas largas |
+| **Re-renders**        | 7     | Optimizar con React.memo    |
+| **Memory Leaks**      | 5     | No hay fugas de memoria     |
+| **Bundle Size**       | 3     | < 5MB para producción       |
+| **Query Performance** | 4     | < 200ms para queries        |
 
 #### Casos Críticos de Rendimiento
 
-| ID | Caso de Prueba | Objetivo | Estado |
-|----|----------------|----------|--------|
-| PR-INICIO-01 | Carga inicial dashboard | < 500ms | ⬜ |
-| PR-DIR-01 | Lista virtualizada 100+ usuarios | Scroll suave | ⬜ |
-| PR-SOL-02 | Lista virtualizada 100+ requests | Scroll suave | ⬜ |
-| PR-CHAT-01 | Lista virtualizada 50+ chats | Scroll suave | ⬜ |
-| PR-DIR-05 | Búsqueda en tiempo real | < 100ms | ⬜ |
-| PR-SOL-07 | Upload de archivos grandes | Progress bar | ⬜ |
+| ID           | Caso de Prueba                   | Objetivo     | Estado |
+| ------------ | -------------------------------- | ------------ | ------ |
+| PR-INICIO-01 | Carga inicial dashboard          | < 500ms      | ⬜     |
+| PR-DIR-01    | Lista virtualizada 100+ usuarios | Scroll suave | ⬜     |
+| PR-SOL-02    | Lista virtualizada 100+ requests | Scroll suave | ⬜     |
+| PR-CHAT-01   | Lista virtualizada 50+ chats     | Scroll suave | ⬜     |
+| PR-DIR-05    | Búsqueda en tiempo real          | < 100ms      | ⬜     |
+| PR-SOL-07    | Upload de archivos grandes       | Progress bar | ⬜     |
 
 #### Problemas de Rendimiento Conocidos
 
 ⚠️ **Sin Paginación**:
+
 - Directorio: Carga todos los usuarios
 - Solicitudes: Carga todas las requests
 - Chat: Carga todos los rooms
 
 ⚠️ **Búsqueda Client-Side**:
+
 - Filtros aplican en memoria
 - Lento con grandes datasets
 - Debería usar queries de BD con índices
@@ -388,12 +409,14 @@ Módulo Solicitudes: Sin RLS Policies
 Estas pruebas DEBEN pasar antes de cualquier release a producción.
 
 #### Autenticación y Sesión (8 casos)
+
 - Acceso sin autenticación bloqueado en todos los módulos
 - Logout limpia sesión completamente
 - Tokens y cookies removidos correctamente
 - No puede volver después de logout
 
 #### Funcionalidad Core (22 casos)
+
 - Carga de datos principales en cada módulo
 - Creación de solicitudes con validación
 - Navegación entre módulos funcional
@@ -401,12 +424,14 @@ Estas pruebas DEBEN pasar antes de cualquier release a producción.
 - Workflows de estados en solicitudes
 
 #### Seguridad (14 casos)
+
 - RLS policies implementadas y funcionando
 - Protección de datos según rol
 - Validación de permisos en backend
 - No hay exposición de secrets
 
 #### Integridad de Datos (8 casos)
+
 - Queries retornan datos correctos
 - Filtros role-based funcionan
 - Relaciones entre tablas correctas
@@ -419,30 +444,35 @@ Estas pruebas DEBEN pasar antes de cualquier release a producción.
 Deben pasar antes de release, pero tienen workarounds temporales.
 
 #### Navegación (15 casos)
+
 - QuickActions navegan correctamente
 - Tabs funcionan en todas las plataformas
 - Deep linking funciona
 - Back navigation coherente
 
 #### Búsqueda y Filtros (18 casos)
+
 - Búsqueda por texto funciona
 - Filtros por categoría/zona/tipo
 - Combinación de múltiples filtros
 - Reset de filtros
 
 #### Comunicación (12 casos)
+
 - Call button abre dialer nativo
 - WhatsApp button abre app
 - Inicio de chat crea room correctamente
 - Mensajes se envían y reciben
 
 #### UI/UX Crítica (20 casos)
+
 - Layout responsive en mobile
 - Colores de estados correctos
 - Badges con contadores precisos
 - Loading states visibles
 
 #### Rendimiento Básico (18 casos)
+
 - Listas virtualizadas
 - Carga inicial rápida
 - No hay freezes en UI
@@ -455,23 +485,27 @@ Deben pasar antes de release, pero tienen workarounds temporales.
 Mejoran la experiencia pero no bloquean release.
 
 #### UI/UX Avanzada (35 casos)
+
 - Responsive en tablet
 - Animaciones suaves
 - Micro-interactions
 - Dark mode (si aplica)
 
 #### Filtros Secundarios (15 casos)
+
 - Ordenamiento por múltiples campos
 - Búsqueda avanzada con operadores
 - Filtros personalizados guardados
 
 #### Optimizaciones (22 casos)
+
 - Caché de datos
 - Offline mode
 - Prefetching
 - Debouncing de búsquedas
 
 #### Accesibilidad (15 casos)
+
 - Screen reader labels
 - Contraste de colores
 - Font scaling
@@ -484,24 +518,28 @@ Mejoran la experiencia pero no bloquean release.
 Mejoras futuras, no esenciales para MVP.
 
 #### Features Opcionales (20 casos)
+
 - Exportar datos
 - Compartir contenido
 - Favoritos/Bookmarks
 - Historial de acciones
 
 #### Analytics (10 casos)
+
 - Tracking de eventos
 - Métricas de uso
 - Crash reporting
 - Performance monitoring
 
 #### UI Polish (15 casos)
+
 - Animaciones complejas
 - Transiciones avanzadas
 - Easter eggs
 - Temas personalizados
 
 #### Integraciones (5 casos)
+
 - Social login
 - OAuth providers
 - Third-party services
@@ -516,6 +554,7 @@ Mejoras futuras, no esenciales para MVP.
 **Objetivo**: Garantizar funcionalidad core y seguridad básica
 
 #### Día 1-3: Setup y Autenticación
+
 ```
 □ Setup de entorno de pruebas
   □ Base de datos de testing poblada
@@ -534,6 +573,7 @@ Mejoras futuras, no esenciales para MVP.
 ```
 
 #### Día 4-7: Funcionalidad Core por Módulo
+
 ```
 □ Inicio (5 casos críticos)
   □ PF-INICIO-01: Mostrar dashboard
@@ -566,6 +606,7 @@ Mejoras futuras, no esenciales para MVP.
 ```
 
 #### Día 8-10: Integridad de Datos
+
 ```
 □ Queries y Relaciones (8 casos)
   □ Verificar foreign keys
@@ -583,6 +624,7 @@ Mejoras futuras, no esenciales para MVP.
 **Objetivo**: Funcionalidad completa y UX básica
 
 #### Día 11-15: Navegación y Búsqueda
+
 ```
 □ Navegación (15 casos)
   □ Todas las QuickActions
@@ -598,6 +640,7 @@ Mejoras futuras, no esenciales para MVP.
 ```
 
 #### Día 16-18: Comunicación
+
 ```
 □ Features de Comunicación (12 casos)
   □ Call button (mobile)
@@ -607,6 +650,7 @@ Mejoras futuras, no esenciales para MVP.
 ```
 
 #### Día 19-20: UI/UX y Rendimiento
+
 ```
 □ UI/UX Crítica (20 casos)
   □ Layout responsive mobile
@@ -628,6 +672,7 @@ Mejoras futuras, no esenciales para MVP.
 **Objetivo**: Pulir experiencia de usuario
 
 #### Día 21-25: UI/UX Avanzada
+
 ```
 □ Responsive en múltiples dispositivos (15 casos)
 □ Animaciones y transiciones (10 casos)
@@ -635,6 +680,7 @@ Mejoras futuras, no esenciales para MVP.
 ```
 
 #### Día 26-28: Optimizaciones
+
 ```
 □ Caché y offline (8 casos)
 □ Prefetching (6 casos)
@@ -642,6 +688,7 @@ Mejoras futuras, no esenciales para MVP.
 ```
 
 #### Día 29-30: Accesibilidad
+
 ```
 □ Screen readers (7 casos)
 □ Contraste y fonts (8 casos)
@@ -662,6 +709,7 @@ Features opcionales y polish avanzado según tiempo disponible.
 ### Criterios Obligatorios para Producción
 
 #### 1. Seguridad
+
 - ✅ Todas las pruebas de seguridad críticas pasan
 - ✅ RLS policies implementadas en todas las tablas
 - ✅ No hay exposición de secrets en logs o código
@@ -669,6 +717,7 @@ Features opcionales y polish avanzado según tiempo disponible.
 - ✅ Tokens y sesiones limpian correctamente en logout
 
 #### 2. Funcionalidad Core
+
 - ✅ Todas las navegaciones principales funcionan
 - ✅ CRUD completo de solicitudes con validación
 - ✅ Directorio carga y filtra correctamente
@@ -676,18 +725,21 @@ Features opcionales y polish avanzado según tiempo disponible.
 - ✅ Perfil muestra datos del usuario
 
 #### 3. Integridad de Datos
+
 - ✅ Queries role-based retornan datos correctos
 - ✅ Relaciones entre tablas funcionan
 - ✅ No hay data leaks entre usuarios
 - ✅ Updates y deletes respetan cascadas
 
 #### 4. Rendimiento Básico
+
 - ✅ Carga inicial < 2 segundos
 - ✅ Listas de 100+ items usan virtualización
 - ✅ No hay memory leaks detectados
 - ✅ App no crashea en uso normal
 
 #### 5. Compatibilidad
+
 - ✅ Funciona en iOS (última versión + 1 anterior)
 - ✅ Funciona en Android (última versión + 1 anterior)
 - ✅ Funciona en navegadores modernos (Chrome, Safari, Firefox)
@@ -698,18 +750,21 @@ Features opcionales y polish avanzado según tiempo disponible.
 ### Criterios Recomendados (No Bloqueantes)
 
 #### 1. UX Avanzada
+
 - ⭐ Animaciones suaves en transiciones
 - ⭐ Feedback visual en todas las interacciones
 - ⭐ Loading states informativos
 - ⭐ Error messages claros
 
 #### 2. Rendimiento Óptimo
+
 - ⭐ Carga inicial < 500ms
 - ⭐ Búsquedas responden en < 100ms
 - ⭐ Re-renders optimizados
 - ⭐ Bundle size < 5MB
 
 #### 3. Accesibilidad
+
 - ⭐ Screen reader compatible
 - ⭐ Contraste WCAG AA
 - ⭐ Font scaling soportado
@@ -725,23 +780,26 @@ Features opcionales y polish avanzado según tiempo disponible.
 # Reporte de Testing - [FECHA]
 
 ## Resumen Ejecutivo
+
 - **Casos Ejecutados**: X / Y
 - **Casos Pasados**: X (XX%)
 - **Casos Fallados**: X (XX%)
 - **Casos Bloqueados**: X (XX%)
 
 ## Progreso por Módulo
-| Módulo | Ejecutados | Pasados | Fallados | % Completado |
-|--------|------------|---------|----------|--------------|
-| Inicio | X/Y | X | X | XX% |
-| Directorio | X/Y | X | X | XX% |
-| Solicitudes | X/Y | X | X | XX% |
-| Chat | X/Y | X | X | XX% |
-| Perfil | X/Y | X | X | XX% |
+
+| Módulo      | Ejecutados | Pasados | Fallados | % Completado |
+| ----------- | ---------- | ------- | -------- | ------------ |
+| Inicio      | X/Y        | X       | X        | XX%          |
+| Directorio  | X/Y        | X       | X        | XX%          |
+| Solicitudes | X/Y        | X       | X        | XX%          |
+| Chat        | X/Y        | X       | X        | XX%          |
+| Perfil      | X/Y        | X       | X        | XX%          |
 
 ## Bugs Encontrados
 
 ### Críticos
+
 1. [BUG-001] Descripción breve
    - **Módulo**: Solicitudes
    - **Caso de Prueba**: PF-SOL-01
@@ -752,16 +810,20 @@ Features opcionales y polish avanzado según tiempo disponible.
    - **Asignado a**: Developer Name
 
 ### Altos
+
 ...
 
 ### Medios
+
 ...
 
 ## Observaciones
+
 - Observación 1
 - Observación 2
 
 ## Plan para Mañana
+
 - Ejecutar casos X, Y, Z
 - Re-test de bugs corregidos
 ```
@@ -774,6 +836,7 @@ Features opcionales y polish avanzado según tiempo disponible.
 # Reporte Semanal de Testing - Semana [X]
 
 ## Resumen
+
 - **Total Casos Planificados**: X
 - **Total Casos Ejecutados**: X (XX%)
 - **Casos Pasados**: X (XX%)
@@ -782,32 +845,38 @@ Features opcionales y polish avanzado según tiempo disponible.
 - **Bugs Corregidos**: X
 
 ## Progreso General
+
 \`\`\`
-Casos Ejecutados  ████████████████████  80%
-Casos Pasados     ███████████████       75%
-Cobertura         ████████████████████  80%
+Casos Ejecutados ████████████████████ 80%
+Casos Pasados ███████████████ 75%
+Cobertura ████████████████████ 80%
 \`\`\`
 
 ## Estado por Fase
+
 - ✅ **Fase 1 - Críticas**: 100% completada
 - 🔄 **Fase 2 - Altas**: 65% en progreso
 - ⬜ **Fase 3 - Medias**: Pendiente
 - ⬜ **Fase 4 - Bajas**: Pendiente
 
 ## Top 5 Bugs Críticos
+
 1. [BUG-001] RLS policies no implementadas en requests
 2. [BUG-002] Upload de archivos falla en iOS
 3. ...
 
 ## Blockers
+
 - Blocker 1: Descripción y owner
 - Blocker 2: Descripción y owner
 
 ## Riesgos
+
 - Riesgo 1: Descripción y mitigación
 - Riesgo 2: Descripción y mitigación
 
 ## Próxima Semana
+
 - Completar Fase 2
 - Iniciar Fase 3
 - Re-test de bugs críticos
@@ -823,6 +892,7 @@ Cobertura         ████████████████████  
 ## Resumen Ejecutivo
 
 ### Cobertura de Pruebas
+
 - **Total Casos de Prueba**: 287
 - **Casos Ejecutados**: X (XX%)
 - **Casos Pasados**: X (XX%)
@@ -830,40 +900,44 @@ Cobertura         ████████████████████  
 - **Casos No Ejecutados**: X (XX%)
 
 ### Distribución de Resultados
+
 \`\`\`
-Pasados      ████████████████████████  85%
-Fallados     ████                       5%
-Bloqueados   ██                         2%
-No Ejecut.   ████                       8%
+Pasados ████████████████████████ 85%
+Fallados ████ 5%
+Bloqueados ██ 2%
+No Ejecut. ████ 8%
 \`\`\`
 
 ## Estado por Módulo
 
-| Módulo | Total | Pasados | Fallados | % Éxito |
-|--------|-------|---------|----------|---------|
-| Inicio | 47 | 42 | 5 | 89% |
-| Directorio | 57 | 51 | 6 | 89% |
-| Solicitudes | 72 | 63 | 9 | 88% |
-| Chat | 52 | 47 | 5 | 90% |
-| Perfil | 64 | 58 | 6 | 91% |
-| **TOTAL** | **287** | **261** | **26** | **89%** |
+| Módulo      | Total   | Pasados | Fallados | % Éxito |
+| ----------- | ------- | ------- | -------- | ------- |
+| Inicio      | 47      | 42      | 5        | 89%     |
+| Directorio  | 57      | 51      | 6        | 89%     |
+| Solicitudes | 72      | 63      | 9        | 88%     |
+| Chat        | 52      | 47      | 5        | 90%     |
+| Perfil      | 64      | 58      | 6        | 91%     |
+| **TOTAL**   | **287** | **261** | **26**   | **89%** |
 
 ## Bugs Reportados
 
 ### Por Severidad
+
 - **Críticos**: X (X abiertos)
 - **Altos**: X (X abiertos)
 - **Medios**: X (X abiertos)
 - **Bajos**: X (X abiertos)
 
 ### Top 10 Bugs Pendientes
+
 1. [BUG-XXX] Descripción - Crítico
 2. [BUG-XXX] Descripción - Alto
-...
+   ...
 
 ## Cumplimiento de Criterios de Aceptación
 
 ### Criterios Obligatorios
+
 - ✅ Seguridad: 100% completado
 - ✅ Funcionalidad Core: 95% completado
 - ✅ Integridad de Datos: 98% completado
@@ -871,6 +945,7 @@ No Ejecut.   ████                       8%
 - ✅ Compatibilidad: 100% completado
 
 ### Criterios Recomendados
+
 - ⭐ UX Avanzada: 80% completado
 - ⭐ Rendimiento Óptimo: 75% completado
 - ⭐ Accesibilidad: 60% completado
@@ -878,6 +953,7 @@ No Ejecut.   ████                       8%
 ## Limitaciones Conocidas
 
 ### No Resueltas (Documentadas)
+
 1. AdminDashboard con datos mock
 2. Notificaciones no persisten
 3. Sin edición de perfil
@@ -886,16 +962,19 @@ No Ejecut.   ████                       8%
 ## Recomendaciones
 
 ### Pre-Producción (Crítico)
+
 1. Implementar RLS policies en tabla requests
 2. Corregir upload de archivos en iOS
 3. ...
 
 ### Post-Producción (Alta Prioridad)
+
 1. Conectar AdminDashboard a datos reales
 2. Implementar persistencia de notificaciones
 3. ...
 
 ### Mejoras Futuras (Media/Baja)
+
 1. Agregar paginación en listas
 2. Implementar búsqueda server-side
 3. ...
@@ -903,17 +982,20 @@ No Ejecut.   ████                       8%
 ## Conclusión
 
 ### Recomendación de Release
+
 - ✅ **APTO PARA PRODUCCIÓN** (con limitaciones documentadas)
 - ⚠️ **REQUIERE CAMBIOS MENORES** antes de release
 - ❌ **NO APTO** para producción
 
 ### Justificación
+
 [Explicar decisión basada en resultados]
 
 ## Aprobaciones
-- **QA Lead**: ________________ Fecha: ______
-- **Tech Lead**: ________________ Fecha: ______
-- **Product Owner**: ________________ Fecha: ______
+
+- **QA Lead**: **\*\***\_\_\_\_**\*\*** Fecha: **\_\_**
+- **Tech Lead**: **\*\***\_\_\_\_**\*\*** Fecha: **\_\_**
+- **Product Owner**: **\*\***\_\_\_\_**\*\*** Fecha: **\_\_**
 ```
 
 ---
@@ -987,17 +1069,20 @@ npm run test:report
 ### Anexo C: Herramientas Recomendadas
 
 #### Testing Frameworks
+
 - **Jest**: Unit & Integration tests
 - **React Native Testing Library**: Component tests
 - **Detox**: E2E tests (mobile)
 - **Playwright**: E2E tests (web)
 
 #### Performance
+
 - **Lighthouse**: Web performance
 - **Flipper**: React Native debugging
 - **React DevTools Profiler**: Re-renders
 
 #### Monitoring
+
 - **Sentry**: Crash reporting
 - **LogRocket**: Session replay
 - **Firebase Analytics**: Usage metrics

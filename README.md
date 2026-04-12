@@ -13,6 +13,7 @@ ElmecV2 es una aplicación móvil multiplataforma desarrollada con React Native 
 ## ✨ Características Principales
 
 ### 👤 Para Usuarios
+
 - **Autenticación Segura**: Login y registro con validación robusta
 - **Gestión de Solicitudes**: Crear, editar y hacer seguimiento de solicitudes
 - **Calculadora Integrada**: Herramienta de cálculo incorporada
@@ -20,12 +21,14 @@ ElmecV2 es una aplicación móvil multiplataforma desarrollada con React Native 
 - **Notificaciones**: Actualizaciones en tiempo real del estado de solicitudes
 
 ### 👨‍💼 Para Administradores
+
 - **Dashboard Completo**: Visualización de estadísticas y métricas
 - **Gestión de Usuarios**: Administración de cuentas y permisos
 - **Análisis de Datos**: Gráficos y reportes detallados
 - **Monitoreo del Sistema**: Seguimiento de errores y rendimiento
 
 ### 🔧 Características Técnicas
+
 - **Multiplataforma**: Compatible con iOS, Android y Web
 - **Offline First**: Funcionalidad básica sin conexión
 - **Performance Optimizada**: Lazy loading, memoización y FlatList
@@ -35,6 +38,7 @@ ElmecV2 es una aplicación móvil multiplataforma desarrollada con React Native 
 ## 🚀 Tecnologías Utilizadas
 
 ### Frontend
+
 - **React Native 0.74** - Framework principal
 - **Expo 51** - Plataforma de desarrollo
 - **TypeScript** - Tipado estático
@@ -43,12 +47,14 @@ ElmecV2 es una aplicación móvil multiplataforma desarrollada con React Native 
 - **TanStack Query** - Gestión de estado del servidor
 
 ### Backend
+
 - **Supabase** - Backend as a Service
 - **PostgreSQL** - Base de datos
 - **Row Level Security** - Seguridad a nivel de fila
 - **Real-time subscriptions** - Actualizaciones en tiempo real
 
 ### DevOps & Deployment
+
 - **Netlify** - Hosting y deployment
 - **GitHub Actions** - CI/CD
 - **ESLint & Prettier** - Calidad de código
@@ -64,18 +70,21 @@ Antes de comenzar, asegúrate de tener instalado:
 - **Git**
 
 ### Para desarrollo móvil:
+
 - **Expo Go** app en tu dispositivo móvil
 - O un emulador de Android/iOS configurado
 
 ## 🛠️ Instalación y Configuración
 
 ### 1. Clonar el repositorio
+
 ```bash
 git clone https://github.com/tu-usuario/elmecV2-Demo.git
 cd elmecV2-Demo
 ```
 
 ### 2. Instalar dependencias
+
 ```bash
 npm install
 ```
@@ -111,6 +120,7 @@ EAS_PROJECT_ID=tu_eas_project_id
 ## 🏃‍♂️ Ejecución del Proyecto
 
 ### Desarrollo
+
 ```bash
 # Iniciar el servidor de desarrollo
 npm start
@@ -126,6 +136,7 @@ npm run ios
 ```
 
 ### Producción
+
 ```bash
 # Build para producción
 npm run build:production
@@ -177,33 +188,36 @@ npm run format
 
 ## 📊 Scripts Disponibles
 
-| Script | Descripción |
-|--------|-------------|
-| `npm start` | Inicia el servidor de desarrollo |
-| `npm run web` | Ejecuta la versión web |
-| `npm run android` | Ejecuta en Android |
-| `npm run ios` | Ejecuta en iOS |
-| `npm run build:production` | Build optimizado para producción |
-| `npm run deploy` | Deploy a producción en Netlify |
-| `npm run deploy:preview` | Deploy de preview |
-| `npm run lint` | Ejecuta ESLint |
-| `npm run lint:fix` | Corrige errores de linting automáticamente |
-| `npm run format` | Formatea el código con Prettier |
-| `npm test` | Ejecuta los tests |
+| Script                     | Descripción                                |
+| -------------------------- | ------------------------------------------ |
+| `npm start`                | Inicia el servidor de desarrollo           |
+| `npm run web`              | Ejecuta la versión web                     |
+| `npm run android`          | Ejecuta en Android                         |
+| `npm run ios`              | Ejecuta en iOS                             |
+| `npm run build:production` | Build optimizado para producción           |
+| `npm run deploy`           | Deploy a producción en Netlify             |
+| `npm run deploy:preview`   | Deploy de preview                          |
+| `npm run lint`             | Ejecuta ESLint                             |
+| `npm run lint:fix`         | Corrige errores de linting automáticamente |
+| `npm run format`           | Formatea el código con Prettier            |
+| `npm test`                 | Ejecuta los tests                          |
 
 ## 🔐 Seguridad
 
 ### Autenticación
+
 - JWT tokens para autenticación
 - Refresh tokens para sesiones persistentes
 - Logout automático por inactividad
 
 ### Base de Datos
+
 - Row Level Security (RLS) habilitado
 - Políticas de acceso granulares
 - Validación de datos en el servidor
 
 ### Variables de Entorno
+
 - Todas las claves sensibles en variables de entorno
 - Diferentes configuraciones por entorno
 - Nunca commitear archivos `.env`
@@ -211,6 +225,7 @@ npm run format
 ## 🚀 Deployment
 
 ### Netlify (Web)
+
 La aplicación se despliega automáticamente en Netlify:
 
 1. **Automático**: Push a `main` despliega a producción
@@ -218,6 +233,7 @@ La aplicación se despliega automáticamente en Netlify:
 3. **Preview**: `npm run deploy:preview`
 
 ### Mobile (Expo)
+
 Para deployment móvil:
 
 ```bash
@@ -231,12 +247,14 @@ eas submit --platform all
 ## 📈 Monitoreo y Logging
 
 ### Sistema de Errores
+
 - Logging automático de errores
 - Categorización por severidad
 - Queue local para errores offline
 - Integración con servicios externos (preparado para Sentry)
 
 ### Performance
+
 - Métricas de rendimiento automáticas
 - Logging de acciones de usuario
 - Monitoreo de llamadas API
@@ -244,6 +262,7 @@ eas submit --platform all
 ## 🤝 Contribución
 
 ### Workflow de Desarrollo
+
 1. Fork el proyecto
 2. Crea una rama feature (`git checkout -b feature/nueva-funcionalidad`)
 3. Commit tus cambios (`git commit -m 'Agregar nueva funcionalidad'`)
@@ -251,6 +270,7 @@ eas submit --platform all
 5. Abre un Pull Request
 
 ### Estándares de Código
+
 - Seguir las reglas de ESLint configuradas
 - Usar TypeScript para todo el código nuevo
 - Escribir tests para nuevas funcionalidades
@@ -258,6 +278,7 @@ eas submit --platform all
 - Usar commits semánticos
 
 ### Code Review
+
 - Todos los PRs requieren revisión
 - Tests deben pasar
 - Linting debe estar limpio
@@ -266,6 +287,7 @@ eas submit --platform all
 ## 📝 Changelog
 
 ### v2.0.0 (Actual)
+
 - ✨ Nuevo sistema de gestión de solicitudes
 - 🔧 Migración a Expo 51 y React Native 0.74
 - 🎨 Rediseño completo de la interfaz
@@ -283,11 +305,13 @@ eas submit --platform all
 ## 📞 Soporte
 
 ### Documentación
+
 - [Expo Documentation](https://docs.expo.dev/)
 - [React Native Documentation](https://reactnative.dev/docs/getting-started)
 - [Supabase Documentation](https://supabase.com/docs)
 
 ### Contacto
+
 - **Email**: soporte@elmec.com
 - **Issues**: [GitHub Issues](https://github.com/tu-usuario/elmecV2-Demo/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/tu-usuario/elmecV2-Demo/discussions)
@@ -300,4 +324,4 @@ Este proyecto está bajo la Licencia MIT. Ver el archivo [LICENSE](LICENSE) para
 
 **Desarrollado con ❤️ por el equipo de ElmecV2**
 
-*¿Encontraste un bug o tienes una sugerencia? [Abre un issue](https://github.com/tu-usuario/elmecV2-Demo/issues/new) y ayúdanos a mejorar.*
+_¿Encontraste un bug o tienes una sugerencia? [Abre un issue](https://github.com/tu-usuario/elmecV2-Demo/issues/new) y ayúdanos a mejorar._

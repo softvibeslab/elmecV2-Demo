@@ -17,8 +17,9 @@ import { Eye, EyeOff, ArrowLeft, Mail, Lock } from 'lucide-react-native';
 import { withErrorHandling } from '@/utils/errorHandler';
 
 export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  // Datos demo pre-cargados para pruebas rápidas
+  const [email, setEmail] = useState('c.rosales@elmec.com.mx');
+  const [password, setPassword] = useState('abc321');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
@@ -43,21 +44,26 @@ export default function Login() {
       }
     } catch (error: any) {
       console.error('Login error:', error);
-      
+
       // Handle specific error types
       let errorMessage = 'Error desconocido. Intenta de nuevo.';
-      
-      if (error.message?.includes('Invalid login credentials') || 
-          error.code === 'invalid_credentials') {
-        errorMessage = 'Email o contraseña incorrectos. Verifica tus credenciales.';
+
+      if (
+        error.message?.includes('Invalid login credentials') ||
+        error.code === 'invalid_credentials'
+      ) {
+        errorMessage =
+          'Email o contraseña incorrectos. Verifica tus credenciales.';
       } else if (error.message?.includes('Email not confirmed')) {
         errorMessage = 'Debes confirmar tu email antes de iniciar sesión.';
       } else if (error.message?.includes('network') || !navigator.onLine) {
-        errorMessage = 'Error de conexión. Verifica tu internet e intenta de nuevo.';
+        errorMessage =
+          'Error de conexión. Verifica tu internet e intenta de nuevo.';
       } else if (error.message?.includes('User not found')) {
-        errorMessage = 'No existe una cuenta con este email. Verifica el email o regístrate.';
+        errorMessage =
+          'No existe una cuenta con este email. Verifica el email o regístrate.';
       }
-      
+
       Alert.alert('Error de Inicio de Sesión', errorMessage);
     } finally {
       setLoading(false);
@@ -121,26 +127,21 @@ export default function Login() {
           </View>
 
           <TouchableOpacity
-          style={[
-            styles.loginButton,
-            loading && styles.loginButtonDisabled
-          ]}
-          onPress={handleLogin}
-          disabled={loading}
-        >
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color="#FFFFFF" />
-              <Text style={[styles.loginButtonText, { marginLeft: 8 }]}>
-                Iniciando sesión...
-              </Text>
-            </View>
-          ) : (
-            <Text style={styles.loginButtonText}>
-              Iniciar Sesión
-            </Text>
-          )}
-        </TouchableOpacity>
+            style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+            onPress={handleLogin}
+            disabled={loading}
+          >
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color="#FFFFFF" />
+                <Text style={[styles.loginButtonText, { marginLeft: 8 }]}>
+                  Iniciando sesión...
+                </Text>
+              </View>
+            ) : (
+              <Text style={styles.loginButtonText}>Iniciar Sesión</Text>
+            )}
+          </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.forgotPasswordButton}

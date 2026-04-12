@@ -1,21 +1,26 @@
 # Fotos de Vendedores ELMEC
 
 ## Ubicación
+
 Las fotos de los vendedores deben colocarse en esta carpeta: `assets/images/vendors/`
 
 ## Fuente de las Fotos
+
 Las fotos están disponibles en Google Drive:
 https://drive.google.com/drive/folders/1WOi5J9gcRSCnmIQoWVntFLR29HTwmcMX?usp=sharing
 
 ## Instrucciones para Agregar Fotos
 
 ### 1. Descargar las fotos del Google Drive
+
 - Acceder al link compartido arriba
 - Descargar todas las fotos de vendedores
 - Las fotos deben estar en formato JPG o PNG
 
 ### 2. Nombrar las Fotos
+
 Las fotos deben nombrarse según el email del vendedor (sin @elmec.com.mx):
+
 ```
 Ejemplos:
 - i.pineda.jpg          -> para i.pineda@elmec.com.mx
@@ -25,11 +30,13 @@ Ejemplos:
 ```
 
 ### 3. Optimizar las Fotos
+
 - Tamaño recomendado: 300x300 píxeles o 400x400 píxeles
 - Formato: JPG (calidad 80-90%)
 - Mantener peso del archivo bajo (< 100KB por foto)
 
 ### 4. Colocar en la Carpeta
+
 Copiar todos los archivos a: `assets/images/vendors/`
 
 ## Lista de Vendedores Activos
@@ -70,19 +77,24 @@ const getVendorPhoto = (person: User) => {
 ```
 
 ### Para Agregar una Nueva Foto:
+
 1. Colocar el archivo en `assets/images/vendors/{username}.jpg`
 2. Descomentar la línea correspondiente en el mapa `vendorPhotos` en `app/(tabs)/directory.tsx`
 3. Reiniciar el servidor de desarrollo
 
 ## Foto por Defecto
+
 Si no existe una foto para un vendedor, el sistema mostrará:
+
 - Avatar con las iniciales del nombre
 - Color de fondo basado en el rol (Agente, Vendedor, Soporte)
 
 ## Estado Actual
+
 ✅ **Sistema Listo**: El código está preparado y funcional
 
 ## Próximos Pasos
+
 1. ✅ Sistema preparado para recibir fotos - **Completado**
 2. ⏳ Descargar fotos del Google Drive
 3. ⏳ Optimizar y renombrar fotos según el formato {username}.jpg
@@ -91,6 +103,7 @@ Si no existe una foto para un vendedor, el sistema mostrará:
 6. ⏳ Verificar que se muestren correctamente en la app
 
 ## Notas Técnicas
+
 - El sistema funciona con avatares de iniciales si no hay foto disponible
 - Las fotos se cargan usando el mapa estático `vendorPhotos`
 - Esto mejora el rendimiento y evita problemas con require dinámicos

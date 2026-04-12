@@ -79,16 +79,19 @@ export const AdminDashboard: React.FC = () => {
     }, 1000);
   }, [selectedPeriod]);
 
-  const requestsChartData: ChartData[] = useMemo(() => [
-    { label: 'Resueltas', value: stats.resolvedRequests, color: '#10b981' },
-    {
-      label: 'En proceso',
-      value:
-        stats.totalRequests - stats.resolvedRequests - stats.pendingRequests,
-      color: '#3b82f6',
-    },
-    { label: 'Pendientes', value: stats.pendingRequests, color: '#f59e0b' },
-  ], [stats.resolvedRequests, stats.totalRequests, stats.pendingRequests]);
+  const requestsChartData: ChartData[] = useMemo(
+    () => [
+      { label: 'Resueltas', value: stats.resolvedRequests, color: '#10b981' },
+      {
+        label: 'En proceso',
+        value:
+          stats.totalRequests - stats.resolvedRequests - stats.pendingRequests,
+        color: '#3b82f6',
+      },
+      { label: 'Pendientes', value: stats.pendingRequests, color: '#f59e0b' },
+    ],
+    [stats.resolvedRequests, stats.totalRequests, stats.pendingRequests]
+  );
 
   const StatCard: React.FC<{
     title: string;
@@ -101,7 +104,10 @@ export const AdminDashboard: React.FC = () => {
     <View style={styles.statCard}>
       <View style={styles.statHeader}>
         <View style={[styles.statIcon, { backgroundColor: `${color}15` }]}>
-          {React.cloneElement(icon as React.ReactElement, { size: 24, color } as any)}
+          {React.cloneElement(
+            icon as React.ReactElement,
+            { size: 24, color } as any
+          )}
         </View>
         {trend && (
           <View
@@ -134,32 +140,37 @@ export const AdminDashboard: React.FC = () => {
     </View>
   ));
 
-  const SimpleChart: React.FC<{ data: ChartData[] }> = React.memo(({ data }) => {
-    const maxValue = useMemo(() => Math.max(...data.map(d => d.value)), [data]);
-    
-    return (
-      <View style={styles.chartContainer}>
-        <Text style={styles.chartTitle}>Distribución de Solicitudes</Text>
-        <View style={styles.chartBars}>
-          {data.map((item, index) => (
-            <View key={index} style={styles.chartBarContainer}>
-              <View
-                style={[
-                  styles.chartBar,
-                  {
-                    backgroundColor: item.color,
-                    height: (item.value / maxValue) * 100,
-                  },
-                ]}
-              />
-              <Text style={styles.chartBarLabel}>{item.label}</Text>
-              <Text style={styles.chartBarValue}>{item.value}</Text>
-            </View>
-          ))}
+  const SimpleChart: React.FC<{ data: ChartData[] }> = React.memo(
+    ({ data }) => {
+      const maxValue = useMemo(
+        () => Math.max(...data.map(d => d.value)),
+        [data]
+      );
+
+      return (
+        <View style={styles.chartContainer}>
+          <Text style={styles.chartTitle}>Distribución de Solicitudes</Text>
+          <View style={styles.chartBars}>
+            {data.map((item, index) => (
+              <View key={index} style={styles.chartBarContainer}>
+                <View
+                  style={[
+                    styles.chartBar,
+                    {
+                      backgroundColor: item.color,
+                      height: (item.value / maxValue) * 100,
+                    },
+                  ]}
+                />
+                <Text style={styles.chartBarLabel}>{item.label}</Text>
+                <Text style={styles.chartBarValue}>{item.value}</Text>
+              </View>
+            ))}
+          </View>
         </View>
-      </View>
-    );
-  });
+      );
+    }
+  );
 
   if (user?.rol !== 'admin') {
     return (
@@ -180,8 +191,8 @@ export const AdminDashboard: React.FC = () => {
       <View style={styles.header}>
         <View style={styles.headerTitleContainer}>
           {showApprovals && (
-            <TouchableOpacity 
-              style={styles.backButton} 
+            <TouchableOpacity
+              style={styles.backButton}
               onPress={() => setShowApprovals(false)}
             >
               <ChevronLeft size={24} color="#335686" />
@@ -189,15 +200,19 @@ export const AdminDashboard: React.FC = () => {
           )}
           <View>
             <Text style={styles.title}>
-              {showApprovals ? 'Aprobación de Clientes' : 'Panel de Administración'}
+              {showApprovals
+                ? 'Aprobación de Clientes'
+                : 'Panel de Administración'}
             </Text>
             <Text style={styles.subtitle}>
-              {showApprovals ? 'Gestiona los nuevos registros' : `Dashboard ejecutivo - ELMEC`}
+              {showApprovals
+                ? 'Gestiona los nuevos registros'
+                : `Dashboard ejecutivo - ELMEC`}
             </Text>
           </View>
         </View>
         {!showApprovals && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.approvalHeaderBtn}
             onPress={() => setShowApprovals(true)}
           >
@@ -308,7 +323,10 @@ export const AdminDashboard: React.FC = () => {
                   <View style={styles.metricContent}>
                     <Text style={styles.metricLabel}>Usuarios Activos</Text>
                     <Text style={styles.metricValue}>
-                      {((stats.activeUsers / stats.totalUsers) * 100).toFixed(1)}%
+                      {((stats.activeUsers / stats.totalUsers) * 100).toFixed(
+                        1
+                      )}
+                      %
                     </Text>
                   </View>
                 </View>
@@ -320,7 +338,7 @@ export const AdminDashboard: React.FC = () => {
           <View style={styles.quickActions}>
             <Text style={styles.quickActionsTitle}>Acciones Rápidas</Text>
             <View style={styles.actionButtons}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.actionButton}
                 onPress={() => setShowApprovals(true)}
               >
