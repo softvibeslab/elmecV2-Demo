@@ -55,7 +55,6 @@ import {
   Download,
   Play,
   Pause,
-  Volume2,
   MessageSquare,
   UserPlus,
   Users,
@@ -63,7 +62,7 @@ import {
 import AddZoneMembers from '@/components/AddZoneMembers';
 import { supabase } from '@/lib/supabase';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 // Comprehensive emoji data
 const emojiCategories = {
@@ -333,7 +332,6 @@ export default function ChatRoom() {
     null
   );
   const [isTyping, setIsTyping] = useState(false);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [imageViewerVisible, setImageViewerVisible] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [imageViewerImages, setImageViewerImages] = useState<{ uri: string }[]>(
@@ -418,23 +416,19 @@ export default function ChatRoom() {
     const hideEvent =
       Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
-    const showSubscription = Keyboard.addListener(showEvent, event => {
-      if (Platform.OS === 'android') {
-        setKeyboardHeight(Math.max(event.endCoordinates.height - insets.bottom, 0));
-      }
-
-      scrollToBottom();
+    const showSubscription = Keyboard.addListener(showEvent, () => {
+      scrollToBottom(false);
     });
 
     const hideSubscription = Keyboard.addListener(hideEvent, () => {
-      setKeyboardHeight(0);
+      setShowAttachmentMenu(false);
     });
 
     return () => {
       showSubscription.remove();
       hideSubscription.remove();
     };
-  }, [insets.bottom, scrollToBottom]);
+  }, [scrollToBottom]);
 
   // Cleanup audio on unmount
   useEffect(() => {
@@ -1064,12 +1058,6 @@ export default function ChatRoom() {
     const showAvatar =
       !isOwnMessage &&
       (index === 0 || roomMessages[index - 1]?.sender_id !== message.sender_id);
-    const showTimestamp =
-      index === roomMessages.length - 1 ||
-      roomMessages[index + 1]?.sender_id !== message.sender_id ||
-      new Date(roomMessages[index + 1]?.created_at).getTime() -
-        new Date(message.created_at).getTime() >
-        300000; // 5 minutes
 
     const replyMessage = message.reply_to
       ? roomMessages.find(m => m.id === message.reply_to)
@@ -1218,7 +1206,10 @@ export default function ChatRoom() {
                       },
                     ]}
                   >
-                    {getAudioDurationLabel(message.id, message.audio_duration || 0)}
+                    {getAudioDurationLabel(
+                      message.id,
+                      message.audio_duration || 0
+                    )}
                   </Text>
                 </View>
               )}
@@ -1366,8 +1357,6 @@ export default function ChatRoom() {
       </SafeAreaView>
     );
   }
-
-  const androidKeyboardOffset = Platform.OS === 'android' ? keyboardHeight : 0;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -1527,17 +1516,15 @@ export default function ChatRoom() {
         <FlatList
           ref={scrollViewRef}
           style={styles.messagesContainer}
-          contentContainerStyle={[
-            styles.messagesContentContainer,
-            androidKeyboardOffset > 0 && {
-              paddingBottom: 24 + androidKeyboardOffset,
-            },
-          ]}
+          contentContainerStyle={styles.messagesContentContainer}
           data={roomMessages}
           keyExtractor={item => item.id}
           renderItem={({ item, index }) => renderMessage(item, index)}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+          keyboardShouldPersistTaps="always"
+          keyboardDismissMode={
+            Platform.OS === 'ios' ? 'interactive' : 'on-drag'
+          }
           removeClippedSubviews={true}
           maxToRenderPerBatch={10}
           windowSize={10}
@@ -1769,9 +1756,6 @@ export default function ChatRoom() {
             </TouchableOpacity>
           )}
         </View>
-        {Platform.OS === 'android' && androidKeyboardOffset > 0 && (
-          <View style={{ height: androidKeyboardOffset }} />
-        )}
 
         {/* Message Actions Modal */}
         {showMessageActions && selectedMessage && (
