@@ -16,7 +16,7 @@ import { useNotifications } from '@/contexts/NotificationContext';
 import { useChat } from '@/contexts/ChatContext';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { supabase, supabaseClient } from '@/lib/supabase';
-import { Request, User } from '@/types/supabase';
+import { Request } from '@/types/supabase';
 
 // Tipos extendidos para las consultas con joins
 interface RequestWithRelations extends Request {
@@ -41,6 +41,21 @@ interface RequestAttachment {
   name: string;
   type: string;
   size: number;
+}
+
+interface AgentOption {
+  id: string;
+  nombre: string;
+  apellido_paterno: string;
+  apellido_materno: string;
+  categoria?: string;
+  zona?: string;
+  correo_electronico?: string;
+  email?: string;
+  is_online?: boolean;
+  last_login?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 import {
   Plus,
@@ -71,7 +86,7 @@ export default function Requests() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [agents, setAgents] = useState<User[]>([]);
+  const [agents, setAgents] = useState<AgentOption[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<
     Array<{
       uri: string;
@@ -107,6 +122,71 @@ export default function Requests() {
   const { sendDemoNotification, sendNotificationToUser } = useNotifications();
   const { createChatRoom } = useChat();
   const router = useRouter();
+
+  const getUserIdentityEmail = (
+    person?: {
+      correo_electronico?: string;
+      email?: string;
+    } | null
+  ) => {
+    return (
+      person?.correo_electronico?.trim().toLowerCase() ||
+      person?.email?.trim().toLowerCase() ||
+      null
+    );
+  };
+
+  const getUserResolutionScore = (
+    person?: {
+      is_online?: boolean;
+      last_login?: string;
+      updated_at?: string;
+      created_at?: string;
+    } | null
+  ) => {
+    const safeParse = (value?: string) => {
+      const parsed = value ? Date.parse(value) : 0;
+      return Number.isNaN(parsed) ? 0 : parsed;
+    };
+
+    return (
+      (person?.is_online ? 1_000_000_000_000_000 : 0) +
+      safeParse(person?.last_login) +
+      safeParse(person?.updated_at) +
+      safeParse(person?.created_at)
+    );
+  };
+
+  const getPreferredUserRecord = <T extends AgentOption>(records: T[]) => {
+    return records.reduce((best, current) => {
+      if (!best) return current;
+
+      return getUserResolutionScore(current) > getUserResolutionScore(best)
+        ? current
+        : best;
+    });
+  };
+
+  const normalizeAgentOptions = (rawAgents: AgentOption[]) => {
+    const groupedAgents = rawAgents.reduce<Map<string, AgentOption[]>>(
+      (acc, agent) => {
+        const identityKey = getUserIdentityEmail(agent) || agent.id;
+        const currentGroup = acc.get(identityKey) || [];
+        currentGroup.push(agent);
+        acc.set(identityKey, currentGroup);
+        return acc;
+      },
+      new Map()
+    );
+
+    return Array.from(groupedAgents.values())
+      .map(group => getPreferredUserRecord(group))
+      .sort((a, b) =>
+        getAgentFullName(a).localeCompare(getAgentFullName(b), 'es', {
+          sensitivity: 'base',
+        })
+      );
+  };
 
   const loadRequests = useCallback(async () => {
     if (!user) return;
@@ -146,11 +226,49 @@ export default function Requests() {
           agente:users!requests_agente_id_fkey(id, nombre, apellido_paterno, apellido_materno, categoria, zona)
         `;
 
+        let assignableAgentIds = [user.id];
+        const currentUserIdentity = getUserIdentityEmail(user);
+
+        if (currentUserIdentity) {
+          const { data: aliasAgentsRaw, error: aliasAgentsError } =
+            await supabase
+              .from('users')
+              .select(
+                'id, correo_electronico, email, is_online, last_login, created_at, updated_at'
+              )
+              .eq('rol', 'agent')
+              .eq('activo', true);
+
+          if (aliasAgentsError) {
+            console.error(
+              'Error loading agent aliases for requests:',
+              aliasAgentsError
+            );
+          } else if (aliasAgentsRaw) {
+            const aliasAgents = aliasAgentsRaw as Array<{
+              id: string;
+              correo_electronico?: string;
+              email?: string;
+            }>;
+
+            assignableAgentIds = Array.from(
+              new Set([
+                user.id,
+                ...aliasAgents
+                  .filter(
+                    agent => getUserIdentityEmail(agent) === currentUserIdentity
+                  )
+                  .map(agent => agent.id),
+              ])
+            );
+          }
+        }
+
         // Consulta 1: Solicitudes asignadas al agente
         const assignedQuery = supabase
           .from('requests')
           .select(baseQuery)
-          .eq('agente_id', user.id);
+          .in('agente_id', assignableAgentIds);
 
         // Consulta 2: Solicitudes sin asignar de su zona
         let unassignedQuery: any = null;
@@ -228,7 +346,7 @@ export default function Requests() {
       let query = supabase
         .from('users')
         .select(
-          'id, nombre, apellido_paterno, apellido_materno, categoria, zona'
+          'id, nombre, apellido_paterno, apellido_materno, categoria, zona, correo_electronico, email, is_online, last_login, created_at, updated_at'
         )
         .eq('rol', 'agent')
         .eq('activo', true)
@@ -246,7 +364,7 @@ export default function Requests() {
         return;
       }
 
-      setAgents(data || []);
+      setAgents(normalizeAgentOptions((data as AgentOption[]) || []));
     } catch (error) {
       console.error('Error loading agents:', error);
     }
@@ -421,7 +539,7 @@ export default function Requests() {
     return parts.join(' ').trim() || 'Usuario desconocido';
   };
 
-  const getAgentFullName = (agent: User) => {
+  const getAgentFullName = (agent: AgentOption) => {
     const parts = [
       agent.nombre,
       agent.apellido_paterno,
@@ -469,7 +587,10 @@ export default function Requests() {
         url: file.url || request.archivos?.[index] || '',
         name:
           file.name ||
-          getAttachmentNameFromUrl(file.url || request.archivos?.[index] || '', index),
+          getAttachmentNameFromUrl(
+            file.url || request.archivos?.[index] || '',
+            index
+          ),
         type: file.type || '',
         size: file.size || 0,
       }));
@@ -855,7 +976,12 @@ export default function Requests() {
           'Solicitud creada',
           `Tu solicitud "${data.titulo}" ha sido enviada correctamente`,
           'success',
-          { requestId: data.id }
+          {
+            requestId: data.id,
+            request_id: data.id,
+            action: 'request_created',
+            notification_event_key: `request_created:${data.id}`,
+          }
         );
       } catch (notifError) {
         console.error('Error sending user notification:', notifError);
@@ -870,8 +996,12 @@ export default function Requests() {
             data.agente_id,
             'Nueva solicitud asignada',
             `Se te ha asignado la solicitud "${data.titulo}"`,
-            'info',
-            { requestId: data.id, type: 'assignment' }
+            'assignment',
+            {
+              requestId: data.id,
+              request_id: data.id,
+              titulo: data.titulo,
+            }
           );
 
           // 2. CREAR CHAT AUTOMÁTICO entre solicitante y agente
@@ -897,17 +1027,6 @@ export default function Requests() {
           );
 
           console.log('✅ Chat creado automáticamente:', chatRoomId);
-
-          // Enviar mensaje inicial del sistema
-          if (chatRoomId) {
-            // El chat se creó, notificar al usuario
-            await sendDemoNotification(
-              'Chat creado',
-              `Se ha creado un chat con ${agenteName} para tu solicitud`,
-              'success',
-              { chatRoomId, requestId: data.id }
-            );
-          }
         } catch (notifError) {
           console.error(
             'Error creating chat or sending notification:',
@@ -1029,32 +1148,6 @@ export default function Requests() {
             : req
         )
       );
-
-      // Enviar notificación al usuario propietario de la solicitud (en tiempo real)
-      if (currentRequest && currentRequest.usuario_id) {
-        // Notificar al cliente que su solicitud cambió de estado
-        try {
-          await sendNotificationToUser(
-            currentRequest.usuario_id,
-            'Solicitud actualizada',
-            `Tu solicitud "${currentRequest.titulo}" cambió a: ${getStatusText(newStatus)}`,
-            'info',
-            { requestId, newStatus }
-          );
-        } catch (notifError) {
-          console.error('Error sending notification to customer:', notifError);
-        }
-      }
-
-      // También mostrar notificación local al agente
-      if (currentRequest) {
-        await sendDemoNotification(
-          'Estado actualizado',
-          `La solicitud "${currentRequest.titulo}" cambió a: ${getStatusText(newStatus)}`,
-          'success',
-          { requestId }
-        );
-      }
     } catch (error) {
       console.error('Error updating request status:', error);
     }
@@ -1889,7 +1982,8 @@ export default function Requests() {
                             styles.requestDetailStatusText,
                             {
                               color: getStatusColor(
-                                selectedRequestStatus || statusChangeRequest.estatus
+                                selectedRequestStatus ||
+                                  statusChangeRequest.estatus
                               ),
                             },
                           ]}
@@ -2003,32 +2097,37 @@ export default function Requests() {
                       <View style={styles.requestDetailAttachmentsList}>
                         {selectedRequestAttachments.map(
                           (attachment: RequestAttachment, index: number) => (
-                          <TouchableOpacity
-                            key={`${attachment.url}-${index}`}
-                            style={styles.requestDetailAttachmentItem}
-                            onPress={() =>
-                              attachment.url &&
-                              handleOpenRequestAttachment(attachment.url)
-                            }
-                          >
-                            <View style={styles.requestDetailAttachmentIcon}>
-                              <Paperclip size={16} color="#1e40af" />
-                            </View>
-                            <View style={styles.requestDetailAttachmentInfo}>
+                            <TouchableOpacity
+                              key={`${attachment.url}-${index}`}
+                              style={styles.requestDetailAttachmentItem}
+                              onPress={() =>
+                                attachment.url &&
+                                handleOpenRequestAttachment(attachment.url)
+                              }
+                            >
+                              <View style={styles.requestDetailAttachmentIcon}>
+                                <Paperclip size={16} color="#1e40af" />
+                              </View>
+                              <View style={styles.requestDetailAttachmentInfo}>
+                                <Text
+                                  style={styles.requestDetailAttachmentName}
+                                  numberOfLines={1}
+                                >
+                                  {attachment.name}
+                                </Text>
+                                <Text
+                                  style={styles.requestDetailAttachmentMeta}
+                                >
+                                  {formatFileSize(attachment.size) ||
+                                    'Archivo adjunto'}
+                                </Text>
+                              </View>
                               <Text
-                                style={styles.requestDetailAttachmentName}
-                                numberOfLines={1}
+                                style={styles.requestDetailAttachmentAction}
                               >
-                                {attachment.name}
+                                Ver
                               </Text>
-                              <Text style={styles.requestDetailAttachmentMeta}>
-                                {formatFileSize(attachment.size) || 'Archivo adjunto'}
-                              </Text>
-                            </View>
-                            <Text style={styles.requestDetailAttachmentAction}>
-                              Ver
-                            </Text>
-                          </TouchableOpacity>
+                            </TouchableOpacity>
                           )
                         )}
                       </View>
@@ -2048,7 +2147,8 @@ export default function Requests() {
                         </Text>
                         {statusChangeRequest.rating && (
                           <Text style={styles.ratingText}>
-                            Calificación: {'⭐'.repeat(statusChangeRequest.rating)} (
+                            Calificación:{' '}
+                            {'⭐'.repeat(statusChangeRequest.rating)} (
                             {statusChangeRequest.rating}/5)
                           </Text>
                         )}
@@ -2058,7 +2158,10 @@ export default function Requests() {
 
                 <View style={styles.statusModalButtons}>
                   <TouchableOpacity
-                    style={[styles.statusModalBtn, styles.statusModalBtnSecondary]}
+                    style={[
+                      styles.statusModalBtn,
+                      styles.statusModalBtnSecondary,
+                    ]}
                     onPress={() => handleStartChat(statusChangeRequest)}
                   >
                     <MessageCircle size={18} color="#1e40af" />
@@ -2708,11 +2811,13 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   statusModalScroll: {
-    flexGrow: 0,
+    flex: 1,
+    minHeight: 0,
   },
   statusModalScrollContent: {
     padding: 24,
     gap: 16,
+    paddingBottom: 12,
   },
   requestDetailSummaryCard: {
     backgroundColor: '#f8fafc',
@@ -2871,6 +2976,7 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingHorizontal: 24,
     paddingTop: 8,
+    paddingBottom: 4,
   },
   statusModalBtn: {
     flexDirection: 'row',

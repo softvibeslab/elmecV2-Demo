@@ -7,7 +7,7 @@ import React, {
   useCallback,
 } from 'react';
 import * as Notifications from 'expo-notifications';
-import { Platform } from 'react-native';
+import { AppState, AppStateStatus, Platform } from 'react-native';
 import { supabase, supabaseClient } from '@/lib/supabase';
 import { useAuth } from './AuthContext';
 
@@ -28,44 +28,133 @@ export interface InAppNotification {
   id: string;
   title: string;
   body: string;
-  type: 'info' | 'success' | 'warning' | 'error';
+  type: NotificationKind;
   timestamp: string;
   data?: any;
   read: boolean;
 }
 
+export type NotificationKind =
+  | 'info'
+  | 'success'
+  | 'warning'
+  | 'error'
+  | 'new_message'
+  | 'request_update'
+  | 'assignment';
+
+/* eslint-disable no-unused-vars */
 interface NotificationContextType {
   expoPushToken: string | null;
   notification: Notifications.Notification | null;
   inAppNotifications: InAppNotification[];
   unreadCount: number;
-  sendDemoNotification: (
+  sendDemoNotification(
     title: string,
     body: string,
-    type?: InAppNotification['type'],
+    type?: NotificationKind,
     data?: any
-  ) => Promise<void>;
-  sendLocalNotification: (
-    title: string,
-    body: string,
-    data?: any
-  ) => Promise<void>;
-  sendNotificationToUser: (
+  ): Promise<void>;
+  sendLocalNotification(title: string, body: string, data?: any): Promise<void>;
+  sendNotificationToUser(
     userId: string,
     title: string,
     body: string,
-    type?: InAppNotification['type'],
+    type?: NotificationKind,
     data?: any
-  ) => Promise<void>;
-  markNotificationAsRead: (id: string) => void;
+  ): Promise<void>;
+  markNotificationAsRead(id: string): void;
   markAllAsRead: () => void;
   clearNotifications: () => void;
   registerForPushNotifications: () => Promise<string | null>;
 }
+/* eslint-enable no-unused-vars */
 
 const NotificationContext = createContext<NotificationContextType | undefined>(
   undefined
 );
+
+const NOTIFICATION_DEDUPE_WINDOW_MS = 15000;
+const MAX_IN_APP_NOTIFICATIONS = 50;
+
+const getNotificationData = (data?: any): Record<string, any> => {
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    return data;
+  }
+
+  return {};
+};
+
+const getNotificationEventKey = ({
+  title,
+  body,
+  type,
+  data,
+  userId,
+}: {
+  title: string;
+  body: string;
+  type: string;
+  data?: any;
+  userId?: string;
+}) => {
+  const normalizedData = getNotificationData(data);
+  const normalizedType = normalizedData.type || type;
+
+  if (normalizedData.notification_event_key) {
+    return String(normalizedData.notification_event_key);
+  }
+
+  const requestId =
+    normalizedData.requestId ||
+    normalizedData.request_id ||
+    normalizedData.data?.requestId ||
+    normalizedData.data?.request_id;
+  const requestStatus = normalizedData.newStatus || normalizedData.new_status;
+  const chatRoomId =
+    normalizedData.chatRoomId ||
+    normalizedData.chat_room_id ||
+    normalizedData.roomId ||
+    normalizedData.room_id;
+  const messageId = normalizedData.messageId || normalizedData.message_id;
+  const senderId = normalizedData.sender_id || normalizedData.senderId;
+
+  if (normalizedType === 'new_message') {
+    if (messageId) {
+      return `new_message:${messageId}`;
+    }
+
+    if (chatRoomId && senderId) {
+      return `new_message:${chatRoomId}:${senderId}:${body}`;
+    }
+  }
+
+  if (normalizedType === 'request_update' && requestId) {
+    return `request_update:${requestId}:${requestStatus || body}`;
+  }
+
+  if (normalizedType === 'assignment' && requestId) {
+    return `assignment:${userId || 'unknown'}:${requestId}`;
+  }
+
+  if (requestId && normalizedData.action === 'request_created') {
+    return `request_created:${requestId}`;
+  }
+
+  if (chatRoomId && normalizedData.action === 'chat_created') {
+    return `chat_created:${chatRoomId}`;
+  }
+
+  if (chatRoomId && title) {
+    return `${type}:${chatRoomId}:${title}`;
+  }
+
+  if (requestId && title) {
+    return `${type}:${requestId}:${title}`;
+  }
+
+  return `${type}:${title}:${body}`;
+};
 
 export const useNotifications = () => {
   const context = useContext(NotificationContext);
@@ -83,6 +172,17 @@ const sendWebNotification = (title: string, body: string) => {
     'Notification' in window &&
     Notification.permission === 'granted'
   ) {
+    const isDocumentVisible =
+      typeof document !== 'undefined' && document.visibilityState === 'visible';
+    const hasDocumentFocus =
+      typeof document !== 'undefined' &&
+      typeof document.hasFocus === 'function' &&
+      document.hasFocus();
+
+    if (isDocumentVisible && hasDocumentFocus) {
+      return;
+    }
+
     new Notification(title, {
       body,
       icon: '/assets/images/icon.png',
@@ -104,151 +204,127 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
   const notificationListener = useRef<Notifications.Subscription | null>(null);
   const responseListener = useRef<Notifications.Subscription | null>(null);
   const realtimeSubscription = useRef<any>(null);
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  const processedNotificationIds = useRef<Set<string>>(new Set());
+  const recentNotificationKeys = useRef<Map<string, number>>(new Map());
+  const recentOutboundNotificationKeys = useRef<Map<string, number>>(new Map());
 
   const unreadCount = inAppNotifications.filter(n => !n.read).length;
 
-  // Cargar notificaciones existentes de la base de datos
-  const loadNotificationsFromDB = useCallback(async () => {
-    if (!user?.id) return;
+  const pruneExpiredNotificationKeys = useCallback(
+    (store: Map<string, number>) => {
+      const now = Date.now();
 
-    try {
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (error) {
-        console.error('Error loading notifications:', error);
-        return;
-      }
-
-      if (data) {
-        const dbNotifications: InAppNotification[] = data.map((n: any) => ({
-          id: n.id,
-          title: n.title,
-          body: n.body,
-          type: n.type || 'info',
-          timestamp: n.created_at,
-          data: n.data,
-          read: n.read || false,
-        }));
-        setInAppNotifications(dbNotifications);
-      }
-    } catch (error) {
-      console.error('Error loading notifications:', error);
-    }
-  }, [user?.id]);
-
-  // Suscribirse a notificaciones en tiempo real
-  useEffect(() => {
-    if (!user?.id) return;
-
-    // Cargar notificaciones existentes
-    loadNotificationsFromDB();
-
-    // Suscribirse a nuevas notificaciones en tiempo real
-    realtimeSubscription.current = supabase
-      .channel(`notifications:${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload: any) => {
-          console.log('Nueva notificación recibida:', payload);
-          const newNotif = payload.new;
-          const notification: InAppNotification = {
-            id: newNotif.id,
-            title: newNotif.title,
-            body: newNotif.body,
-            type: newNotif.type || 'info',
-            timestamp: newNotif.created_at,
-            data: newNotif.data,
-            read: false,
-          };
-
-          setInAppNotifications(prev => [notification, ...prev]);
-
-          // También enviar notificación del sistema
-          if (Platform.OS === 'web') {
-            sendWebNotification(newNotif.title, newNotif.body);
-          } else {
-            Notifications.scheduleNotificationAsync({
-              content: {
-                title: newNotif.title,
-                body: newNotif.body,
-                data: newNotif.data,
-                sound: true,
-              },
-              trigger: null,
-            }).catch(console.error);
-          }
+      store.forEach((timestamp, key) => {
+        if (now - timestamp > NOTIFICATION_DEDUPE_WINDOW_MS) {
+          store.delete(key);
         }
-      )
-      .subscribe();
+      });
+    },
+    []
+  );
 
-    return () => {
-      if (realtimeSubscription.current) {
-        supabase.removeChannel(realtimeSubscription.current);
+  const appendNotification = useCallback(
+    async (
+      nextNotification: InAppNotification,
+      options?: { triggerSystemNotification?: boolean }
+    ) => {
+      const normalizedData = getNotificationData(nextNotification.data);
+      const eventKey = getNotificationEventKey({
+        title: nextNotification.title,
+        body: nextNotification.body,
+        type: nextNotification.type,
+        data: normalizedData,
+        userId: user?.id,
+      });
+      const createdAtMs = Date.parse(nextNotification.timestamp);
+      const notificationTimestamp = Number.isNaN(createdAtMs)
+        ? Date.now()
+        : createdAtMs;
+
+      pruneExpiredNotificationKeys(recentNotificationKeys.current);
+
+      if (
+        nextNotification.id &&
+        processedNotificationIds.current.has(nextNotification.id)
+      ) {
+        return false;
       }
-    };
-  }, [user?.id, loadNotificationsFromDB]);
 
-  useEffect(() => {
-    // Solo configurar notificaciones en móviles
-    if (Platform.OS !== 'web') {
-      const setupNotifications = async () => {
-        const token = await registerForPushNotifications();
-        setExpoPushToken(token);
+      const lastEventTimestamp = recentNotificationKeys.current.get(eventKey);
+      if (
+        lastEventTimestamp &&
+        notificationTimestamp - lastEventTimestamp <
+          NOTIFICATION_DEDUPE_WINDOW_MS
+      ) {
+        return false;
+      }
+
+      if (nextNotification.id) {
+        processedNotificationIds.current.add(nextNotification.id);
+      }
+      recentNotificationKeys.current.set(eventKey, notificationTimestamp);
+
+      const notificationWithKey: InAppNotification = {
+        ...nextNotification,
+        data: {
+          ...normalizedData,
+          notification_event_key: eventKey,
+        },
       };
 
-      setupNotifications();
-
-      // Escuchar notificaciones entrantes
-      notificationListener.current =
-        Notifications.addNotificationReceivedListener(notification => {
-          console.log('Notificación recibida en primer plano:', notification);
-          setNotification(notification);
-
-          // Opcional: Mostrar un toast o alerta personalizada
-        });
-
-      // Escuchar respuestas (clics)
-      responseListener.current =
-        Notifications.addNotificationResponseReceivedListener(response => {
-          console.log('El usuario interactuó con la notificación:', response);
-
-          // Aquí se puede manejar la navegación profunda (deep linking)
-          const data = response.notification.request.content.data;
-          if (data?.roomId) {
-            // Ejemplo: router.push(`/chat/${data.roomId}`);
+      setInAppNotifications(prev => {
+        const nextItems = prev.filter(existing => {
+          if (existing.id === notificationWithKey.id) {
+            return false;
           }
-        });
-    } else {
-      // Solicitar permisos en web
-      requestWebNotificationPermission();
-    }
 
-    return () => {
-      if (Platform.OS !== 'web') {
-        if (notificationListener.current) {
-          Notifications.removeNotificationSubscription(
-            notificationListener.current
+          return (
+            getNotificationEventKey({
+              title: existing.title,
+              body: existing.body,
+              type: existing.type,
+              data: existing.data,
+              userId: user?.id,
+            }) !== eventKey
           );
-        }
-        if (responseListener.current) {
-          Notifications.removeNotificationSubscription(
-            responseListener.current
-          );
-        }
+        });
+
+        return [notificationWithKey, ...nextItems].slice(
+          0,
+          MAX_IN_APP_NOTIFICATIONS
+        );
+      });
+
+      if (!options?.triggerSystemNotification) {
+        return true;
       }
-    };
-  }, [user?.id]); // Re-ejecutar cuando el usuario cambia para asegurar que el token se guarde
+
+      if (Platform.OS === 'web') {
+        sendWebNotification(
+          notificationWithKey.title,
+          notificationWithKey.body
+        );
+        return true;
+      }
+
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: notificationWithKey.title,
+          body: notificationWithKey.body,
+          data: {
+            ...notificationWithKey.data,
+            app_state: appStateRef.current,
+          },
+          sound: true,
+        },
+        trigger: null,
+      }).catch(console.error);
+
+      return true;
+    },
+    [pruneExpiredNotificationKeys, user?.id]
+  );
 
   const requestWebNotificationPermission = async () => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -280,7 +356,6 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
         return null;
       }
 
-      // Try to get push token
       const token = (
         await Notifications.getExpoPushTokenAsync({
           projectId:
@@ -290,7 +365,6 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       ).data;
       console.log('Expo push token:', token);
 
-      // Guardar token en Supabase si el usuario está autenticado
       if (user?.id) {
         try {
           const { error } = await supabaseClient
@@ -315,66 +389,269 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const loadNotificationsFromDB = useCallback(async () => {
+    if (!user?.id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(MAX_IN_APP_NOTIFICATIONS);
+
+      if (error) {
+        console.error('Error loading notifications:', error);
+        return;
+      }
+
+      if (data) {
+        processedNotificationIds.current.clear();
+        recentNotificationKeys.current.clear();
+
+        const seenIds = new Set<string>();
+        const seenEventKeys = new Set<string>();
+        const dbNotifications: InAppNotification[] = [];
+
+        data.forEach((n: any) => {
+          const dbNotification: InAppNotification = {
+            id: n.id,
+            title: n.title,
+            body: n.body,
+            type: n.type || 'info',
+            timestamp: n.created_at,
+            data: n.data,
+            read: n.read || false,
+          };
+          const eventKey = getNotificationEventKey({
+            title: dbNotification.title,
+            body: dbNotification.body,
+            type: dbNotification.type,
+            data: dbNotification.data,
+            userId: user.id,
+          });
+          const createdAtMs = Date.parse(dbNotification.timestamp);
+
+          if (seenIds.has(dbNotification.id) || seenEventKeys.has(eventKey)) {
+            return;
+          }
+
+          seenIds.add(dbNotification.id);
+          seenEventKeys.add(eventKey);
+          processedNotificationIds.current.add(dbNotification.id);
+          recentNotificationKeys.current.set(
+            eventKey,
+            Number.isNaN(createdAtMs) ? Date.now() : createdAtMs
+          );
+
+          dbNotifications.push({
+            ...dbNotification,
+            data: {
+              ...getNotificationData(dbNotification.data),
+              notification_event_key: eventKey,
+            },
+          });
+        });
+
+        setInAppNotifications(dbNotifications);
+      }
+    } catch (error) {
+      console.error('Error loading notifications:', error);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    const appStateSubscription = AppState.addEventListener(
+      'change',
+      (nextAppState: AppStateStatus) => {
+        appStateRef.current = nextAppState;
+      }
+    );
+
+    return () => {
+      appStateSubscription.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (user?.id) return;
+
+    processedNotificationIds.current.clear();
+    recentNotificationKeys.current.clear();
+    recentOutboundNotificationKeys.current.clear();
+    setInAppNotifications([]);
+    setNotification(null);
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    if (realtimeSubscription.current) {
+      supabase.removeChannel(realtimeSubscription.current);
+      realtimeSubscription.current = null;
+    }
+
+    loadNotificationsFromDB();
+
+    realtimeSubscription.current = supabase
+      .channel(`notifications:${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        async (payload: any) => {
+          console.log('Nueva notificación recibida:', payload);
+          const newNotif = payload.new;
+
+          await appendNotification(
+            {
+              id: newNotif.id,
+              title: newNotif.title,
+              body: newNotif.body,
+              type: newNotif.type || 'info',
+              timestamp: newNotif.created_at,
+              data: newNotif.data,
+              read: newNotif.read || false,
+            },
+            { triggerSystemNotification: true }
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      if (realtimeSubscription.current) {
+        supabase.removeChannel(realtimeSubscription.current);
+        realtimeSubscription.current = null;
+      }
+    };
+  }, [appendNotification, user?.id, loadNotificationsFromDB]);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web') {
+      const setupNotifications = async () => {
+        const token = await registerForPushNotifications();
+        setExpoPushToken(token);
+      };
+
+      setupNotifications();
+
+      notificationListener.current =
+        Notifications.addNotificationReceivedListener(nextNotification => {
+          console.log(
+            'Notificación recibida en primer plano:',
+            nextNotification
+          );
+          setNotification(nextNotification);
+        });
+
+      responseListener.current =
+        Notifications.addNotificationResponseReceivedListener(response => {
+          console.log('El usuario interactuó con la notificación:', response);
+
+          const data = response.notification.request.content.data;
+          if (data?.roomId) {
+            // Ejemplo: router.push(`/chat/${data.roomId}`);
+          }
+        });
+    } else {
+      requestWebNotificationPermission();
+    }
+
+    return () => {
+      if (Platform.OS !== 'web') {
+        if (notificationListener.current) {
+          Notifications.removeNotificationSubscription(
+            notificationListener.current
+          );
+        }
+        if (responseListener.current) {
+          Notifications.removeNotificationSubscription(
+            responseListener.current
+          );
+        }
+      }
+    };
+  }, [user?.id]);
+
   const sendDemoNotification = useCallback(
     async (
       title: string,
       body: string,
-      type: InAppNotification['type'] = 'info',
+      type: NotificationKind = 'info',
       data?: any
     ) => {
-      const newNotification: InAppNotification = {
-        id: Date.now().toString(),
+      const normalizedData = getNotificationData(data);
+      const eventKey = getNotificationEventKey({
+        title,
+        body,
+        type,
+        data: normalizedData,
+        userId: user?.id,
+      });
+
+      await appendNotification({
+        id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         title,
         body,
         type,
         timestamp: new Date().toISOString(),
-        data,
+        data: {
+          ...normalizedData,
+          notification_event_key: eventKey,
+        },
         read: false,
-      };
-
-      setInAppNotifications(prev => [newNotification, ...prev]);
-
-      // Also send web notification if on web platform
-      if (Platform.OS === 'web') {
-        sendWebNotification(title, body);
-      } else {
-        // Send native notification on mobile
-        try {
-          await Notifications.scheduleNotificationAsync({
-            content: {
-              title,
-              body,
-              data,
-              sound: true,
-            },
-            trigger: null, // Send immediately
-          });
-        } catch (error) {
-          console.log('Error sending native notification:', error);
-        }
-      }
+      });
     },
-    []
+    [appendNotification, user?.id]
   );
 
-  const sendLocalNotification = async (
-    title: string,
-    body: string,
-    data?: any
-  ) => {
-    // For demo purposes, always create an in-app notification
-    await sendDemoNotification(title, body, 'info', data);
-  };
+  const sendLocalNotification = useCallback(
+    async (title: string, body: string, data?: any) => {
+      await sendDemoNotification(title, body, 'info', data);
+    },
+    [sendDemoNotification]
+  );
 
-  // Enviar notificación a otro usuario (se guarda en la base de datos)
   const sendNotificationToUser = useCallback(
     async (
       userId: string,
       title: string,
       body: string,
-      type: InAppNotification['type'] = 'info',
+      type: NotificationKind = 'info',
       data?: any
     ) => {
+      const normalizedData = getNotificationData(data);
+      const eventKey = getNotificationEventKey({
+        title,
+        body,
+        type,
+        data: normalizedData,
+        userId,
+      });
+      const outboundEventKey = `${userId}:${eventKey}`;
+
+      pruneExpiredNotificationKeys(recentOutboundNotificationKeys.current);
+
+      const lastSentAt =
+        recentOutboundNotificationKeys.current.get(outboundEventKey);
+      if (
+        lastSentAt &&
+        Date.now() - lastSentAt < NOTIFICATION_DEDUPE_WINDOW_MS
+      ) {
+        console.log(
+          `Notificación duplicada evitada para usuario ${userId}:`,
+          eventKey
+        );
+        return;
+      }
+
+      recentOutboundNotificationKeys.current.set(outboundEventKey, Date.now());
+
       try {
         const { error } = await supabaseClient.from('notifications').insert({
           user_id: userId,
@@ -382,50 +659,62 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
           body,
           type,
           priority:
-            type === 'error' ? 'high' : type === 'warning' ? 'medium' : 'low',
-          data: data || {},
+            type === 'error' || type === 'assignment' || type === 'new_message'
+              ? 'high'
+              : type === 'warning' || type === 'request_update'
+                ? 'medium'
+                : 'low',
+          data: {
+            ...normalizedData,
+            notification_event_key: eventKey,
+          },
           read: false,
         } as any);
 
         if (error) {
+          recentOutboundNotificationKeys.current.delete(outboundEventKey);
           console.error('Error sending notification to user:', error);
         } else {
           console.log(`Notificación enviada a usuario ${userId}:`, title);
         }
       } catch (error) {
+        recentOutboundNotificationKeys.current.delete(outboundEventKey);
         console.error('Error sending notification to user:', error);
       }
     },
-    []
+    [pruneExpiredNotificationKeys]
   );
 
-  const markNotificationAsRead = useCallback(async (id: string) => {
-    // Actualizar estado local
+  const markNotificationAsRead = useCallback((id: string) => {
     setInAppNotifications(prev =>
-      prev.map(notification =>
-        notification.id === id ? { ...notification, read: true } : notification
+      prev.map(existing =>
+        existing.id === id ? { ...existing, read: true } : existing
       )
     );
 
-    // Actualizar en la base de datos
-    try {
-      await supabaseClient
-        .from('notifications')
-        .update({ read: true } as any)
-        .eq('id', id);
-    } catch (error) {
-      console.error('Error marking notification as read in DB:', error);
-    }
+    void (async () => {
+      try {
+        const { error } = await supabaseClient
+          .from('notifications')
+          .update({ read: true } as any)
+          .eq('id', id);
+
+        if (error) {
+          console.error('Error marking notification as read in DB:', error);
+        }
+      } catch (error) {
+        console.error('Error marking notification as read in DB:', error);
+      }
+    })();
   }, []);
 
   const markAllAsRead = useCallback(async () => {
     if (!user?.id) return;
 
     setInAppNotifications(prev =>
-      prev.map(notification => ({ ...notification, read: true }))
+      prev.map(existing => ({ ...existing, read: true }))
     );
 
-    // Actualizar todas en la base de datos
     try {
       await supabaseClient
         .from('notifications')
@@ -437,9 +726,11 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [user?.id]);
 
-  const clearNotifications = () => {
+  const clearNotifications = useCallback(() => {
+    processedNotificationIds.current.clear();
+    recentNotificationKeys.current.clear();
     setInAppNotifications([]);
-  };
+  }, []);
 
   return (
     <NotificationContext.Provider

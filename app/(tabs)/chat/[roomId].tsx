@@ -21,6 +21,7 @@ import {
   Dimensions,
   Animated,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import {
   SafeAreaView,
@@ -288,6 +289,7 @@ export default function ChatRoom() {
     messages,
     sendMessage,
     getChatRoom,
+    ensureChatRoomLoaded,
     markMessagesAsRead,
     sendTypingIndicator,
     loadMoreMessages,
@@ -337,6 +339,8 @@ export default function ChatRoom() {
   const [imageViewerImages, setImageViewerImages] = useState<{ uri: string }[]>(
     []
   );
+  const [isResolvingRoom, setIsResolvingRoom] = useState(true);
+  const [hasTriedResolvingRoom, setHasTriedResolvingRoom] = useState(false);
 
   const chatRoom = getChatRoom(roomId!);
   const rawRoomMessages = messages[roomId!] || [];
@@ -374,6 +378,39 @@ export default function ChatRoom() {
       return ((seed * (index + 5)) % 18) + 6;
     });
   }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    if (!roomId) {
+      setIsResolvingRoom(false);
+      setHasTriedResolvingRoom(true);
+      return;
+    }
+
+    if (chatRoom) {
+      setIsResolvingRoom(false);
+      setHasTriedResolvingRoom(true);
+      return;
+    }
+
+    setIsResolvingRoom(true);
+
+    void ensureChatRoomLoaded(roomId)
+      .catch(error => {
+        console.error('Error resolving chat room from route:', error);
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsResolvingRoom(false);
+          setHasTriedResolvingRoom(true);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [chatRoom, ensureChatRoomLoaded, roomId]);
 
   useEffect(() => {
     if (roomId) {
@@ -1342,6 +1379,17 @@ export default function ChatRoom() {
   };
 
   if (!chatRoom) {
+    if (isResolvingRoom || !hasTriedResolvingRoom) {
+      return (
+        <SafeAreaView style={styles.container}>
+          <View style={styles.errorContainer}>
+            <ActivityIndicator size="large" color="#1e40af" />
+            <Text style={styles.loadingRoomText}>Cargando chat...</Text>
+          </View>
+        </SafeAreaView>
+      );
+    }
+
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
@@ -1955,6 +2003,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: 'Inter-SemiBold',
     color: '#ef4444',
+    textAlign: 'center',
+  },
+  loadingRoomText: {
+    fontSize: 18,
+    fontFamily: 'Inter-SemiBold',
+    color: '#1e40af',
     textAlign: 'center',
   },
   backToChatsButton: {

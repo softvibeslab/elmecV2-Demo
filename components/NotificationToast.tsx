@@ -6,6 +6,7 @@ import {
   Animated,
   TouchableOpacity,
   Dimensions,
+  Platform,
 } from 'react-native';
 import {
   useNotifications,
@@ -20,10 +21,17 @@ import {
 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
+const SYSTEM_HANDLED_NOTIFICATION_TYPES = [
+  'new_message',
+  'request_update',
+  'assignment',
+];
 
 interface NotificationToastProps {
   notification: InAppNotification;
-  onDismiss: (id: string) => void;
+  /* eslint-disable no-unused-vars */
+  onDismiss: (id: string, options?: { markAsRead?: boolean }) => void;
+  /* eslint-enable no-unused-vars */
 }
 
 export const NotificationToast: React.FC<NotificationToastProps> = ({
@@ -50,13 +58,13 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({
 
     // Auto dismiss after 5 seconds
     const timer = setTimeout(() => {
-      handleDismiss();
+      handleDismiss(false);
     }, 5000);
 
     return () => clearTimeout(timer);
   }, []);
 
-  const handleDismiss = () => {
+  const handleDismiss = (markAsRead = true) => {
     Animated.parallel([
       Animated.timing(slideAnim, {
         toValue: -width,
@@ -69,7 +77,7 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({
         useNativeDriver: true,
       }),
     ]).start(() => {
-      onDismiss(notification.id);
+      onDismiss(notification.id, { markAsRead });
     });
   };
 
@@ -130,7 +138,10 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({
           <Text style={styles.title}>{notification.title}</Text>
           <Text style={styles.body}>{notification.body}</Text>
         </View>
-        <TouchableOpacity onPress={handleDismiss} style={styles.closeButton}>
+        <TouchableOpacity
+          onPress={() => handleDismiss(true)}
+          style={styles.closeButton}
+        >
           <X size={20} color="#6b7280" />
         </TouchableOpacity>
       </View>
@@ -145,16 +156,27 @@ export const NotificationManager: React.FC = () => {
   >([]);
 
   useEffect(() => {
-    // Show only the last 3 unread notifications
     const unreadNotifications = inAppNotifications
       .filter(n => !n.read)
+      .filter(
+        n =>
+          Platform.OS === 'web' ||
+          !SYSTEM_HANDLED_NOTIFICATION_TYPES.includes(n.type)
+      )
       .slice(0, 3);
 
     setVisibleNotifications(unreadNotifications);
   }, [inAppNotifications]);
 
-  const handleDismiss = (id: string) => {
-    markNotificationAsRead(id);
+  const handleDismiss = (
+    id: string,
+    options?: {
+      markAsRead?: boolean;
+    }
+  ) => {
+    if (options?.markAsRead) {
+      markNotificationAsRead(id);
+    }
     setVisibleNotifications(prev => prev.filter(n => n.id !== id));
   };
 

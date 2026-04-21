@@ -11,6 +11,9 @@
     "extra": {
       "eas": {
         "projectId": "96c91e46-dc10-43b5-9cd9-4d91217fd50c"
+      },
+      "router": {
+        "origin": "https://your-app.netlify.app/"
       }
     },
     "ios": {

@@ -10,16 +10,21 @@ import {
   Calculator,
   User,
   MessageCircle,
-  Package,
 } from 'lucide-react-native';
 import { View, Text, StyleSheet } from 'react-native';
 
 export default function TabLayout() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { getUnreadCount } = useChat();
   const { unreadCount: notificationUnreadCount } = useNotifications();
   const router = useRouter();
   const unreadCount = getUnreadCount();
+  const chatTabEnabledByRole = {
+    customer: false,
+    agent: false,
+    admin: false,
+  } as const;
+  const isChatTabVisible = user?.rol ? chatTabEnabledByRole[user.rol] : false;
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -78,6 +83,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="chat"
         options={{
+          href: isChatTabVisible ? undefined : null,
           title: 'Chat',
           tabBarIcon: ({ size, color }) => (
             <View style={styles.chatIconContainer}>

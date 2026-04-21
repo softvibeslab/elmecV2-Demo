@@ -79,6 +79,7 @@ interface ChatContextType {
     requestId?: string,
     metadata?: Record<string, any>
   ) => Promise<string>;
+  ensureChatRoomLoaded: (roomId: string) => Promise<ChatRoom | null>;
   getChatRoom: (roomId: string) => ChatRoom | undefined;
   // Chat grupal
   createGroupChat: (
@@ -118,6 +119,65 @@ interface ChatContextType {
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
+const getUserIdentityEmail = (
+  person?:
+    | Partial<Pick<User, 'correo_electronico' | 'email'>>
+    | null
+    | undefined
+) => {
+  return (
+    person?.correo_electronico?.trim().toLowerCase() ||
+    person?.email?.trim().toLowerCase() ||
+    null
+  );
+};
+
+const getUserResolutionScore = (
+  person?:
+    | Partial<
+        Pick<User, 'is_online' | 'last_login' | 'updated_at' | 'created_at'>
+      >
+    | null
+    | undefined
+) => {
+  const safeParse = (value?: string) => {
+    const parsed = value ? Date.parse(value) : 0;
+    return Number.isNaN(parsed) ? 0 : parsed;
+  };
+
+  return (
+    (person?.is_online ? 1_000_000_000_000_000 : 0) +
+    safeParse(person?.last_login) +
+    safeParse(person?.updated_at) +
+    safeParse(person?.created_at)
+  );
+};
+
+const getPreferredUserRecord = <
+  T extends Partial<
+    Pick<
+      User,
+      | 'id'
+      | 'is_online'
+      | 'last_login'
+      | 'updated_at'
+      | 'created_at'
+      | 'correo_electronico'
+      | 'email'
+    >
+  >,
+>(
+  records: T[]
+) => {
+  return records.reduce((best, current) => {
+    if (!best) return current;
+
+    return getUserResolutionScore(current) > getUserResolutionScore(best)
+      ? current
+      : best;
+  });
+};
+
 export const useChat = () => {
   const context = useContext(ChatContext);
   if (!context) {
@@ -151,7 +211,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
   >('disconnected');
   const [pendingMessages, setPendingMessages] = useState<PendingMessage[]>([]);
   const reconnectAttempts = useRef(0);
-  const reconnectTimer = useRef<NodeJS.Timeout | null>(null);
+  const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const messageQueue = useRef<PendingMessage[]>([]);
   const isProcessingQueue = useRef(false);
 
@@ -354,7 +414,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => {
       subscription.remove();
     };
-  }, [user, setupPresence, updateLastSeen]);
+  }, [user]);
 
   const loadChatRooms = async () => {
     if (!session?.user) {
@@ -371,10 +431,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         .select(
           `
           *,
-          requests!chat_rooms_request_id_fkey(titulo, estatus, metadata)
+          requests!chat_rooms_request_id_fkey(id, titulo, estatus, agente_id, usuario_id, metadata)
         `
         )
-        .contains('participants', [session.user.id])
         .eq('is_active', true)
         .order('updated_at', { ascending: false });
 
@@ -385,10 +444,76 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         return;
       }
 
-      setChatRooms(data || []);
+      let relatedUserIds = new Set<string>([session.user.id]);
+      const currentUserIdentity = getUserIdentityEmail(user);
+
+      if (currentUserIdentity) {
+        const { data: aliasUsersRaw, error: aliasUsersError } = await supabase
+          .from('users')
+          .select('id, correo_electronico, email')
+          .eq('activo', true);
+
+        if (aliasUsersError) {
+          console.error(
+            'Error loading user aliases for chats:',
+            aliasUsersError
+          );
+        } else {
+          const aliasUsers = (aliasUsersRaw || []) as Array<{
+            id: string;
+            correo_electronico?: string;
+            email?: string;
+          }>;
+
+          relatedUserIds = new Set([
+            session.user.id,
+            ...aliasUsers
+              .filter(
+                aliasUser =>
+                  getUserIdentityEmail(aliasUser) === currentUserIdentity
+              )
+              .map(aliasUser => aliasUser.id),
+          ]);
+        }
+      }
+
+      const visibleRooms = ((data || []) as ChatRoom[]).filter(room => {
+        const requestInfo = (room as any).requests;
+
+        if (user?.rol === 'admin') {
+          return true;
+        }
+
+        if (
+          room.participants?.some(participantId =>
+            relatedUserIds.has(participantId)
+          )
+        ) {
+          return true;
+        }
+
+        if (
+          user?.rol === 'agent' &&
+          requestInfo?.agente_id &&
+          relatedUserIds.has(requestInfo.agente_id)
+        ) {
+          return true;
+        }
+
+        if (
+          requestInfo?.usuario_id &&
+          relatedUserIds.has(requestInfo.usuario_id)
+        ) {
+          return true;
+        }
+
+        return false;
+      });
+
+      setChatRooms(visibleRooms);
 
       // Load messages for each room (limit to prevent infinite loading)
-      const roomPromises = (data || []).slice(0, 10).map(async (room: any) => {
+      const roomPromises = visibleRooms.slice(0, 10).map(async (room: any) => {
         try {
           await loadRoomMessages(room.id);
           // Only setup realtime if we have a valid, non-expired session
@@ -449,6 +574,58 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const ensureChatRoomLoaded = async (
+    roomId: string
+  ): Promise<ChatRoom | null> => {
+    const existingRoom = chatRooms.find(room => room.id === roomId);
+
+    if (existingRoom) {
+      if (!messages[roomId]) {
+        await loadRoomMessages(roomId);
+      }
+      setupRealtimeSubscription(roomId);
+      return existingRoom;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('chat_rooms')
+        .select(
+          `
+          *,
+          requests!chat_rooms_request_id_fkey(id, titulo, estatus, agente_id, usuario_id, metadata)
+        `
+        )
+        .eq('id', roomId)
+        .eq('is_active', true)
+        .single();
+
+      if (error || !data) {
+        console.error('Error ensuring chat room is loaded:', error);
+        return null;
+      }
+
+      const resolvedRoom = data as ChatRoom;
+
+      setChatRooms(prev => {
+        const alreadyExists = prev.some(room => room.id === resolvedRoom.id);
+        if (alreadyExists) {
+          return prev.map(room =>
+            room.id === resolvedRoom.id ? resolvedRoom : room
+          );
+        }
+        return [resolvedRoom, ...prev];
+      });
+
+      await loadRoomMessages(roomId);
+      setupRealtimeSubscription(roomId);
+      return resolvedRoom;
+    } catch (error) {
+      console.error('Error ensuring chat room is loaded:', error);
+      return null;
+    }
+  };
+
   const setupRealtimeSubscription = (roomId: string) => {
     if (realtimeChannels[roomId]) return; // Already subscribed
 
@@ -483,16 +660,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
             ...prev,
             [roomId]: [...(prev[roomId] || []), messageWithUser],
           }));
-
-          // Send notification if message is from another user
-          if (newMessage.sender_id !== user?.id) {
-            await sendDemoNotification(
-              `💬 ${newMessage.sender_name}`,
-              getMessagePreview(newMessage),
-              'info',
-              { roomId, messageId: newMessage.id }
-            );
-          }
 
           // Update chat room's updated_at
           setChatRooms(prev =>
@@ -579,13 +746,27 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
               await loadRoomMessages(newRoom.id);
               setupRealtimeSubscription(newRoom.id);
 
-              // Notify user about new chat
-              await sendDemoNotification(
-                'Nuevo chat',
-                'Se ha creado una nueva conversación',
-                'info',
-                { roomId: newRoom.id }
-              );
+              const roomMetadata =
+                newRoom.metadata && typeof newRoom.metadata === 'object'
+                  ? (newRoom.metadata as Record<string, any>)
+                  : {};
+              const roomCreatorId = roomMetadata.created_by;
+              const shouldNotifyAboutNewChat =
+                !newRoom.request_id && roomCreatorId !== session.user.id;
+
+              if (shouldNotifyAboutNewChat) {
+                await sendDemoNotification(
+                  'Nuevo chat',
+                  'Se ha creado una nueva conversación',
+                  'info',
+                  {
+                    roomId: newRoom.id,
+                    chatRoomId: newRoom.id,
+                    action: 'chat_created',
+                    notification_event_key: `chat_created:${newRoom.id}`,
+                  }
+                );
+              }
             }
           }
         }
@@ -614,23 +795,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
       ...prev,
       chat_rooms_global: chatRoomsChannel,
     }));
-  };
-
-  const getMessagePreview = (message: Message): string => {
-    switch (message.type) {
-      case 'image':
-        return '📷 Imagen';
-      case 'audio':
-        return '🎵 Audio';
-      case 'file':
-        return `📎 ${message.file_name || 'Archivo'}`;
-      case 'system':
-        return '🔔 Mensaje del sistema';
-      default:
-        return message.message.length > 50
-          ? message.message.substring(0, 50) + '...'
-          : message.message;
-    }
   };
 
   const sendMessage = async (
@@ -902,16 +1066,26 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
       // Validate participant exists
       const { data: participantDataRaw, error: participantError } =
         await supabase
-        .from('users')
-        .select('id, nombre, apellido_paterno, apellido_materno, activo')
-        .eq('id', participantId)
-        .single();
-      const participantData = participantDataRaw as
-        | Pick<
-            User,
-            'id' | 'nombre' | 'apellido_paterno' | 'apellido_materno' | 'activo'
-          >
-        | null;
+          .from('users')
+          .select(
+            'id, nombre, apellido_paterno, apellido_materno, activo, correo_electronico, email, is_online, last_login, created_at, updated_at'
+          )
+          .eq('id', participantId)
+          .single();
+      const participantData = participantDataRaw as Pick<
+        User,
+        | 'id'
+        | 'nombre'
+        | 'apellido_paterno'
+        | 'apellido_materno'
+        | 'activo'
+        | 'correo_electronico'
+        | 'email'
+        | 'is_online'
+        | 'last_login'
+        | 'created_at'
+        | 'updated_at'
+      > | null;
 
       if (participantError || !participantData) {
         console.error('Participant not found:', participantError);
@@ -920,7 +1094,37 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         );
       }
 
-      if (!participantData.activo) {
+      let resolvedParticipantData = participantData;
+      let resolvedParticipantId = participantId;
+      const participantIdentity = getUserIdentityEmail(participantData);
+
+      if (participantIdentity) {
+        const { data: candidateProfiles, error: candidateProfilesError } =
+          await supabase
+            .from('users')
+            .select(
+              'id, nombre, apellido_paterno, apellido_materno, activo, correo_electronico, email, is_online, last_login, created_at, updated_at'
+            )
+            .eq('activo', true);
+
+        if (candidateProfilesError) {
+          console.error(
+            'Error resolving canonical participant profile:',
+            candidateProfilesError
+          );
+        } else {
+          const matchingProfiles = (candidateProfiles || []).filter(
+            profile => getUserIdentityEmail(profile) === participantIdentity
+          ) as (typeof participantData)[];
+
+          if (matchingProfiles.length > 0) {
+            resolvedParticipantData = getPreferredUserRecord(matchingProfiles);
+            resolvedParticipantId = resolvedParticipantData.id;
+          }
+        }
+      }
+
+      if (!resolvedParticipantData.activo) {
         throw new Error('El usuario destinatario no está activo');
       }
 
@@ -941,7 +1145,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         const participants = room.participants || [];
         return (
           participants.includes(user.id) &&
-          participants.includes(participantId) &&
+          participants.includes(resolvedParticipantId) &&
           participants.length === 2 &&
           (requestId ? room.request_id === requestId : !room.request_id)
         );
@@ -949,6 +1153,12 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (existingRoom) {
         console.log('Found existing chat room:', existingRoom.id);
+        setChatRooms(prev => {
+          if (prev.some(room => room.id === existingRoom.id)) {
+            return prev;
+          }
+          return [existingRoom, ...prev];
+        });
         // Load messages for existing room if not already loaded
         if (!messages[existingRoom.id]) {
           await loadRoomMessages(existingRoom.id);
@@ -984,9 +1194,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
       const otherUserName =
         participantName ||
         [
-          participantData.nombre,
-          participantData.apellido_paterno,
-          participantData.apellido_materno,
+          resolvedParticipantData.nombre,
+          resolvedParticipantData.apellido_paterno,
+          resolvedParticipantData.apellido_materno,
         ]
           .filter(Boolean)
           .join(' ')
@@ -998,12 +1208,12 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         .from('chat_rooms')
         .insert({
           tipo: requestId ? 'support' : 'general',
-          participants: [user.id, participantId],
+          participants: [user.id, resolvedParticipantId],
           request_id: requestId || null,
           is_active: true,
           metadata: {
             participant_names: [currentUserName, otherUserName],
-            participant_ids: [user.id, participantId],
+            participant_ids: [user.id, resolvedParticipantId],
             created_by: user.id,
             created_at: new Date().toISOString(),
             ...(metadata || {}),
@@ -2024,6 +2234,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         retryFailedMessage,
         // Chat rooms
         createChatRoom,
+        ensureChatRoomLoaded,
         getChatRoom,
         // Chat grupal
         createGroupChat,
