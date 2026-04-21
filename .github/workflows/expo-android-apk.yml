@@ -1,0 +1,77 @@
+name: Expo Android APK
+
+on:
+  push:
+    branches:
+      - fix/qa-21042026-softvibeslab-build
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: expo-android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-apk:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate Expo token
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "Missing EXPO_TOKEN secret in GitHub Actions."
+            exit 1
+          fi
+
+      - name: Setup Expo and EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Trigger EAS APK build
+        id: eas_build
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          eas build --platform android --profile preview --non-interactive --json --no-wait | tee build-output.json
+          BUILD_ID=$(jq -r '.id // empty' build-output.json)
+          BUILD_URL=$(jq -r '.buildDetailsPageUrl // empty' build-output.json)
+          if [ -z "$BUILD_ID" ] || [ -z "$BUILD_URL" ]; then
+            echo "Unable to parse EAS build metadata."
+            cat build-output.json
+            exit 1
+          fi
+          echo "build_id=$BUILD_ID" >> "$GITHUB_OUTPUT"
+          echo "build_url=$BUILD_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Upload build metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: eas-build-metadata
+          path: build-output.json
+          retention-days: 7
+
+      - name: Write summary
+        run: |
+          echo "## Expo Android APK" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Build ID: \`${{ steps.eas_build.outputs.build_id }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Build URL: ${{ steps.eas_build.outputs.build_url }}" >> "$GITHUB_STEP_SUMMARY"
