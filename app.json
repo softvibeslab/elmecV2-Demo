@@ -9,11 +9,11 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "extra": {
-      "eas": {
-        "projectId": "59ad0848-d5ed-4925-9593-42ba464bf396"
-      },
       "router": {
         "origin": "https://your-app.netlify.app/"
+      },
+      "eas": {
+        "projectId": "96c91e46-dc10-43b5-9cd9-4d91217fd50c"
       }
     },
     "ios": {
