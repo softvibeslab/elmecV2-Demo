@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Database } from '@/types/supabase';
 
 const supabaseUrl =
@@ -9,6 +10,7 @@ const supabaseAnonKey =
 // Cliente principal de Supabase con tipos
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
+    storage: AsyncStorage,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
@@ -18,6 +20,7 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
 // Cliente sin tipos estrictos para operaciones problemáticas
 export const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
+    storage: AsyncStorage,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,

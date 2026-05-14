@@ -341,6 +341,7 @@ export default function ChatRoom() {
   );
   const [isResolvingRoom, setIsResolvingRoom] = useState(true);
   const [hasTriedResolvingRoom, setHasTriedResolvingRoom] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   const chatRoom = getChatRoom(roomId!);
   const rawRoomMessages = messages[roomId!] || [];
@@ -355,11 +356,14 @@ export default function ChatRoom() {
     });
   }, [rawRoomMessages]);
   const roomTypingUsers = typingUsers[roomId!] || [];
+  const lastMessageId = roomMessages[roomMessages.length - 1]?.id || null;
 
   const scrollToBottom = useCallback((animated = true) => {
-    setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated });
-    }, 100);
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated });
+      }, 80);
+    });
   }, []);
 
   const stopRecordingTimer = useCallback(() => {
@@ -419,9 +423,10 @@ export default function ChatRoom() {
   }, [roomId, markMessagesAsRead]);
 
   useEffect(() => {
-    // Scroll to bottom when new messages arrive
-    scrollToBottom();
-  }, [roomMessages, scrollToBottom]);
+    if (lastMessageId) {
+      scrollToBottom();
+    }
+  }, [lastMessageId, scrollToBottom]);
 
   useEffect(() => {
     if (!isRecording) {
@@ -453,11 +458,13 @@ export default function ChatRoom() {
     const hideEvent =
       Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
-    const showSubscription = Keyboard.addListener(showEvent, () => {
+    const showSubscription = Keyboard.addListener(showEvent, event => {
+      setKeyboardHeight(event.endCoordinates?.height || 0);
       scrollToBottom(false);
     });
 
     const hideSubscription = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
       setShowAttachmentMenu(false);
     });
 
@@ -1577,15 +1584,11 @@ export default function ChatRoom() {
           maxToRenderPerBatch={10}
           windowSize={10}
           initialNumToRender={15}
-          getItemLayout={(data, index) => ({
-            length: 80, // Altura estimada del mensaje
-            offset: 80 * index,
-            index,
-          })}
           onScrollBeginDrag={() => {
             setShowEmojiPicker(false);
             setShowAttachmentMenu(false);
           }}
+          onLayout={() => scrollToBottom(false)}
           ListHeaderComponent={
             <TouchableOpacity
               style={styles.loadMoreButton}
@@ -1727,6 +1730,10 @@ export default function ChatRoom() {
             styles.inputContainer,
             Platform.OS === 'ios' && {
               paddingBottom: Math.max(insets.bottom, 16),
+            },
+            Platform.OS === 'android' && {
+              paddingBottom:
+                keyboardHeight > 0 ? 12 : Math.max(insets.bottom, 12),
             },
           ]}
         >
@@ -2027,6 +2034,7 @@ const styles = StyleSheet.create({
   },
   messagesContentContainer: {
     padding: 16,
+    paddingBottom: 24,
   },
   loadMoreButton: {
     alignItems: 'center',

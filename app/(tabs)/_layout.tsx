@@ -1,4 +1,4 @@
-import { Tabs, useRouter } from 'expo-router';
+import { Tabs, useRouter, useSegments } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/contexts/ChatContext';
 import { useNotifications } from '@/contexts/NotificationContext';
@@ -18,6 +18,7 @@ export default function TabLayout() {
   const { getUnreadCount } = useChat();
   const { unreadCount: notificationUnreadCount } = useNotifications();
   const router = useRouter();
+  const segments = useSegments() as string[];
   const unreadCount = getUnreadCount();
   const chatTabEnabledByRole = {
     customer: false,
@@ -25,6 +26,8 @@ export default function TabLayout() {
     admin: false,
   } as const;
   const isChatTabVisible = user?.rol ? chatTabEnabledByRole[user.rol] : false;
+  const isChatRoomScreen =
+    segments.includes('chat') && segments[segments.length - 1] !== 'chat';
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -40,6 +43,7 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: '#1e40af',
         tabBarInactiveTintColor: '#6b7280',
         tabBarStyle: {
@@ -49,6 +53,7 @@ export default function TabLayout() {
           paddingBottom: 8,
           paddingTop: 8,
           height: 88,
+          display: isChatRoomScreen ? 'none' : 'flex',
         },
         tabBarLabelStyle: {
           fontSize: 12,

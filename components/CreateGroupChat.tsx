@@ -19,12 +19,12 @@ import {
   Camera,
   UserPlus,
   MapPin,
-  AlertTriangle,
 } from 'lucide-react-native';
 import { useChat } from '@/contexts/ChatContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { User } from '@/types/supabase';
+import { isSameZone } from '@/utils/zone';
 
 interface CreateGroupChatProps {
   visible: boolean;
@@ -74,26 +74,19 @@ export default function CreateGroupChat({
         .single();
 
       if (error) throw error;
-      setUserZona(data?.zona || null);
+      const currentUserData = data as { zona?: string } | null;
+      const currentZona = currentUserData?.zona || null;
+      setUserZona(currentZona);
 
-      // Luego cargar usuarios de la misma zona
-      if (data?.zona) {
-        loadUsers(data.zona);
-      } else {
-        setLoadingUsers(false);
-        Alert.alert(
-          'Sin zona asignada',
-          'Tu usuario no tiene una zona asignada. Contacta al administrador para poder crear grupos.'
-        );
-      }
+      loadUsers(currentZona);
     } catch (error) {
       console.error('Error loading user zona:', error);
+      loadUsers(null);
       setLoadingUsers(false);
     }
   };
 
-  // REGLA DE NEGOCIO: Solo cargar usuarios de la MISMA zona
-  const loadUsers = async (zona: string) => {
+  const loadUsers = async (zona: string | null) => {
     setLoadingUsers(true);
     try {
       const { data, error } = await supabase
@@ -102,12 +95,18 @@ export default function CreateGroupChat({
           'id, nombre, apellido_paterno, apellido_materno, foto, rol, is_online, empresa, zona'
         )
         .eq('activo', true)
-        .eq('zona', zona) // OBLIGATORIO: misma zona
         .neq('id', user?.id)
         .order('nombre', { ascending: true });
 
       if (error) throw error;
-      setUsers(data || []);
+      const loadedUsers = (data || []) as User[];
+      const zoneUsers = zona
+        ? loadedUsers.filter(candidate =>
+            isSameZone((candidate as any).zona, zona)
+          )
+        : [];
+
+      setUsers(zoneUsers);
     } catch (error) {
       console.error('Error loading users:', error);
     } finally {
@@ -141,6 +140,11 @@ export default function CreateGroupChat({
   };
 
   const handleNext = () => {
+    if (!userZona) {
+      alert('Tu usuario necesita una zona asignada para crear grupos');
+      return;
+    }
+
     if (selectedUsers.length < 2) {
       alert('Selecciona al menos 2 participantes');
       return;
@@ -149,6 +153,14 @@ export default function CreateGroupChat({
   };
 
   const handleCreateGroup = async () => {
+    if (!userZona) {
+      Alert.alert(
+        'Zona requerida',
+        'Tu usuario necesita una zona asignada para crear grupos.'
+      );
+      return;
+    }
+
     if (!groupName.trim()) {
       alert('Ingresa un nombre para el grupo');
       return;
@@ -159,14 +171,6 @@ export default function CreateGroupChat({
       return;
     }
 
-    if (!userZona) {
-      Alert.alert(
-        'Error',
-        'No tienes una zona asignada. No puedes crear grupos.'
-      );
-      return;
-    }
-
     setLoading(true);
     try {
       const participantIds = selectedUsers.map(u => u.id);
@@ -174,7 +178,7 @@ export default function CreateGroupChat({
         groupName.trim(),
         participantIds,
         groupDescription.trim() || undefined,
-        { zona: userZona } // Incluir zona en metadata
+        userZona ? { zona: userZona } : undefined
       );
 
       onGroupCreated(roomId);
@@ -304,22 +308,18 @@ export default function CreateGroupChat({
               </View>
             )}
 
-            {/* Indicador de zona - REGLA DE NEGOCIO */}
+            {/* Indicador de zona */}
             <View style={styles.zonaIndicator}>
               <MapPin size={16} color="#1e40af" />
               <Text style={styles.zonaIndicatorText}>
                 {userZona ? (
                   <>
-                    Solo usuarios de zona:{' '}
-                    <Text style={styles.zonaName}>{userZona}</Text>
+                    Tu zona: <Text style={styles.zonaName}>{userZona}</Text>
                   </>
                 ) : (
-                  <Text style={styles.zonaWarning}>⚠️ Sin zona asignada</Text>
+                  <Text style={styles.zonaWarning}>Sin zona asignada</Text>
                 )}
               </Text>
-              <View style={styles.zonaLockBadge}>
-                <Text style={styles.zonaLockText}>🔒</Text>
-              </View>
             </View>
 
             {/* Search */}
@@ -327,7 +327,7 @@ export default function CreateGroupChat({
               <Search size={20} color="#6b7280" style={styles.searchIcon} />
               <TextInput
                 style={styles.searchInput}
-                placeholder="Buscar contactos de tu zona..."
+                placeholder="Buscar contactos..."
                 placeholderTextColor="#9ca3af"
                 value={searchQuery}
                 onChangeText={setSearchQuery}
@@ -339,29 +339,19 @@ export default function CreateGroupChat({
               style={styles.userList}
               showsVerticalScrollIndicator={false}
             >
-              {!userZona ? (
-                <View style={styles.emptyContainer}>
-                  <AlertTriangle size={48} color="#f59e0b" />
-                  <Text style={styles.emptyText}>No tienes zona asignada</Text>
-                  <Text style={styles.emptySubtext}>
-                    Contacta al administrador para que te asigne una zona
-                  </Text>
-                </View>
-              ) : loadingUsers ? (
+              {loadingUsers ? (
                 <View style={styles.loadingContainer}>
                   <ActivityIndicator size="large" color="#1e40af" />
-                  <Text style={styles.loadingText}>
-                    Cargando contactos de tu zona...
-                  </Text>
+                  <Text style={styles.loadingText}>Cargando contactos...</Text>
                 </View>
               ) : filteredUsers.length === 0 ? (
                 <View style={styles.emptyContainer}>
                   <Users size={48} color="#d1d5db" />
                   <Text style={styles.emptyText}>
-                    No hay más contactos en tu zona
+                    No hay contactos disponibles en tu zona
                   </Text>
                   <Text style={styles.emptySubtext}>
-                    Solo puedes agregar personas de la zona {userZona}
+                    Ajusta la búsqueda o solicita que asignen zona a tu usuario
                   </Text>
                 </View>
               ) : (

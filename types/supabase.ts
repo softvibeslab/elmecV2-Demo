@@ -32,6 +32,7 @@ export interface Request {
   estatus:
     | 'nuevo'
     | 'asignado'
+    | 'sin_atender'
     | 'en_proceso'
     | 'pausado'
     | 'resuelto'
@@ -180,6 +181,7 @@ export interface Database {
       request_status:
         | 'nuevo'
         | 'asignado'
+        | 'sin_atender'
         | 'en_proceso'
         | 'pausado'
         | 'resuelto'

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -22,11 +22,9 @@ import {
   UsersRound,
   Wifi,
   WifiOff,
-  Building2,
 } from 'lucide-react-native';
 import { ChatRoom } from '@/types/supabase';
 import CreateGroupChat from '@/components/CreateGroupChat';
-import InternalChats from '@/components/InternalChats';
 
 // Tipo extendido para ChatRoom con información de request
 interface ChatRoomWithRequest extends ChatRoom {
@@ -40,7 +38,6 @@ export default function ChatList() {
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
-  const [showInternalChats, setShowInternalChats] = useState(false);
   const {
     chatRooms,
     messages,
@@ -54,9 +51,6 @@ export default function ChatList() {
   const { user } = useAuth();
   const router = useRouter();
 
-  // Solo agentes y admins pueden ver chats internos
-  const canSeeInternalChats = user?.rol === 'agent' || user?.rol === 'admin';
-
   // Separar chats grupales de 1:1
   const groupChats = chatRooms.filter(room => room.is_group);
   const directChats = chatRooms.filter(room => !room.is_group);
@@ -64,19 +58,6 @@ export default function ChatList() {
   const handleGroupCreated = (roomId: string) => {
     router.push(`/chat/${roomId}`);
   };
-
-  const handleInternalChatSelected = (roomId: string) => {
-    router.push(`/chat/${roomId}`);
-  };
-
-  // Log online users for debugging (can be removed in production)
-  useEffect(() => {
-    console.log(
-      'Chat list - Online users updated:',
-      onlineUsers?.length || 0,
-      onlineUsers
-    );
-  }, [onlineUsers]);
 
   const getOtherParticipantName = (room: any) => {
     if (!room.metadata?.participant_names || !user) return 'Chat';
@@ -257,15 +238,6 @@ export default function ChatList() {
         onGroupCreated={handleGroupCreated}
       />
 
-      {/* Modal para chats internos (solo agentes/admin) */}
-      {canSeeInternalChats && (
-        <InternalChats
-          visible={showInternalChats}
-          onClose={() => setShowInternalChats(false)}
-          onChatSelected={handleInternalChatSelected}
-        />
-      )}
-
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <View>
@@ -300,15 +272,6 @@ export default function ChatList() {
             </Text>
           </View>
           <View style={styles.headerButtons}>
-            {/* Boton chats internos (solo agentes/admin) */}
-            {canSeeInternalChats && (
-              <TouchableOpacity
-                style={styles.internalChatsButton}
-                onPress={() => setShowInternalChats(true)}
-              >
-                <Building2 size={20} color="#1e40af" />
-              </TouchableOpacity>
-            )}
             {/* Boton crear grupo */}
             <TouchableOpacity
               style={styles.createGroupButton}

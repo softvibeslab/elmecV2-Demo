@@ -47,8 +47,10 @@ export default function ImageViewer({
   }, [Platform.OS]);
 
   if (Platform.OS !== 'web' && nativeViewer && visible) {
+    const NativeViewer = nativeViewer;
+
     return (
-      <nativeViewer
+      <NativeViewer
         images={images}
         imageIndex={imageIndex}
         visible={visible}

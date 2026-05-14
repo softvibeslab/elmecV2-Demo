@@ -4,7 +4,7 @@
     "slug": "elmec",
     "version": "1.0.3",
     "orientation": "portrait",
-    "icon": "./assets/images/branding/logo.png",
+    "icon": "./assets/images/branding/logo-square.png",
     "scheme": "elmec",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -17,7 +17,18 @@
       }
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.elmec.mfr",
+      "buildNumber": "1",
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "NSCameraUsageDescription": "La app necesita acceso a tu cámara para tomar fotos y adjuntarlas a las solicitudes.",
+        "NSPhotoLibraryUsageDescription": "La app necesita acceso a tus fotos para adjuntar imágenes a las solicitudes.",
+        "NSMicrophoneUsageDescription": "La app necesita acceso al micrófono para enviar mensajes de audio en el chat.",
+        "NSDocumentsFolderUsageDescription": "La app necesita acceso a documentos para adjuntar archivos a las solicitudes."
+      }
     },
     "web": {
       "bundler": "metro",
@@ -49,7 +60,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/branding/logo.png",
+          "icon": "./assets/images/branding/logo-square.png",
           "color": "#ffffff",
           "defaultChannel": "default",
           "sounds": []
@@ -61,7 +72,7 @@
     },
     "android": {
       "package": "com.elmec.mfr",
-      "minSdkVersion": 24,
+      "versionCode": 2,
       "permissions": [
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.VIBRATE",
@@ -69,7 +80,7 @@
         "android.permission.RECORD_AUDIO"
       ],
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/branding/logo.png",
+        "foregroundImage": "./assets/images/branding/logo-square.png",
         "backgroundColor": "#ffffff"
       }
     },

@@ -12,6 +12,7 @@ import { useAuth } from './AuthContext';
 import { useNotifications } from './NotificationContext';
 import { ChatRoom, Message, User, ChatRoomMember } from '@/types/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
+import { isSameZone } from '@/utils/zone';
 
 // Constantes para reintentos y reconexión
 const MAX_RETRY_ATTEMPTS = 3;
@@ -216,7 +217,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
   const isProcessingQueue = useRef(false);
 
   const { user, session } = useAuth();
-  const { sendDemoNotification } = useNotifications();
+  const { sendDemoNotification, sendNotificationToUser } = useNotifications();
 
   // Generar ID único para mensajes del cliente (para deduplicación)
   const generateClientMessageId = useCallback(() => {
@@ -393,6 +394,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         console.log('App returned to foreground - reconnecting presence');
         // Re-establish presence tracking
         setupPresence();
+        loadChatRooms();
         updateLastSeen();
       }
 
@@ -557,7 +559,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         )
         .eq('chat_room_id', roomId)
         .eq('is_deleted', false)
-        .order('created_at', { ascending: true })
+        .order('created_at', { ascending: false })
         .limit(limit);
 
       if (error) {
@@ -567,7 +569,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
 
       setMessages(prev => ({
         ...prev,
-        [roomId]: data || [],
+        [roomId]: [...((data || []) as ChatMessage[])].reverse(),
       }));
     } catch (error) {
       console.error('Error loading messages:', error);
@@ -641,6 +643,21 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         },
         async payload => {
           const newMessage = payload.new as Message;
+
+          if (newMessage.sender_id === user?.id) {
+            setChatRooms(prev =>
+              prev.map(room =>
+                room.id === roomId
+                  ? {
+                      ...room,
+                      updated_at: newMessage.created_at,
+                      last_message: newMessage,
+                    }
+                  : room
+              )
+            );
+            return;
+          }
 
           // Get user info for the message
           const { data: userData } = await supabase
@@ -782,11 +799,15 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
           const updatedRoom = payload.new as ChatRoom;
 
           // Update room in state
-          setChatRooms(prev =>
-            prev.map(room =>
+          setChatRooms(prev => {
+            if (updatedRoom.is_active === false) {
+              return prev.filter(room => room.id !== updatedRoom.id);
+            }
+
+            return prev.map(room =>
               room.id === updatedRoom.id ? { ...room, ...updatedRoom } : room
-            )
-          );
+            );
+          });
         }
       )
       .subscribe();
@@ -910,13 +931,23 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
 
       console.log('Message sent successfully:', data.id);
 
-      // Transición automática a 'en_proceso' cuando inicia una conversación real en chat
-      if (room.request_id && messageType !== 'system') {
+      // Transición automática a 'en_proceso' cuando el agente inicia la atención en chat.
+      const isAgentStartingRequest =
+        user.rol === 'agent' || user.rol === 'admin';
+      if (
+        room.request_id &&
+        messageType !== 'system' &&
+        isAgentStartingRequest
+      ) {
         // Tipado seguro para el estatus
         const requestInfo = (room as any).requests;
         const currentStatus = requestInfo?.estatus;
 
-        if (currentStatus === 'nuevo' || currentStatus === 'asignado') {
+        if (
+          currentStatus === 'nuevo' ||
+          currentStatus === 'sin_atender' ||
+          currentStatus === 'asignado'
+        ) {
           const previousStatus = currentStatus;
           console.log(
             `🚀 Transición automática: ${previousStatus} -> en_proceso para request ${room.request_id}`
@@ -937,7 +968,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
                       from: previousStatus,
                       to: 'en_proceso',
                       timestamp: now,
-                      reason: 'Iniciada conversación en chat',
+                      reason: 'Primer mensaje del agente en chat',
                     },
                   ],
                 },
@@ -990,6 +1021,47 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
                 : msg
             ) || [],
         }));
+      }
+
+      if (messageType !== 'system') {
+        const recipients = (room.participants || []).filter(
+          participantId => participantId !== user.id
+        );
+        const notificationTitle = room.is_group
+          ? room.name || 'Nuevo mensaje de grupo'
+          : `Nuevo mensaje de ${user.nombre || 'ELMEC'}`;
+        const notificationBody =
+          messageType === 'text'
+            ? message.trim()
+            : messageType === 'image'
+              ? 'Imagen enviada'
+              : messageType === 'audio'
+                ? 'Audio enviado'
+                : messageType === 'file'
+                  ? fileName || 'Archivo enviado'
+                  : 'Nuevo mensaje';
+
+        await Promise.allSettled(
+          recipients.map(recipientId =>
+            sendNotificationToUser(
+              recipientId,
+              notificationTitle,
+              notificationBody,
+              'new_message',
+              {
+                roomId,
+                chatRoomId: roomId,
+                messageId: data.id,
+                message_id: data.id,
+                senderId: user.id,
+                sender_id: user.id,
+                requestId: room.request_id || undefined,
+                request_id: room.request_id || undefined,
+                target: 'chat',
+              }
+            )
+          )
+        );
       }
 
       // Update chat room's last message and timestamp
@@ -1128,8 +1200,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         throw new Error('El usuario destinatario no está activo');
       }
 
-      // Check if chat room already exists between these participants
-      // Use proper array comparison for PostgreSQL
       const { data: existingRoomsRaw, error: searchError } = await supabase
         .from('chat_rooms')
         .select('*')
@@ -1140,16 +1210,23 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         console.error('Error searching for existing rooms:', searchError);
       }
 
-      // Filter rooms that contain both participants
-      const existingRoom = existingRooms.find(room => {
-        const participants = room.participants || [];
-        return (
-          participants.includes(user.id) &&
-          participants.includes(resolvedParticipantId) &&
-          participants.length === 2 &&
-          (requestId ? room.request_id === requestId : !room.request_id)
-        );
-      });
+      const existingRequestRoom = requestId
+        ? existingRooms.find(room => room.request_id === requestId)
+        : undefined;
+
+      const existingDirectRoom = !requestId
+        ? existingRooms.find(room => {
+            const participants = room.participants || [];
+            return (
+              participants.includes(user.id) &&
+              participants.includes(resolvedParticipantId) &&
+              participants.length === 2 &&
+              !room.request_id
+            );
+          })
+        : undefined;
+
+      const existingRoom = existingRequestRoom || existingDirectRoom;
 
       if (existingRoom) {
         console.log('Found existing chat room:', existingRoom.id);
@@ -1628,6 +1705,40 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         );
       }
 
+      const groupZone = metadata?.zona || (user as any).zona || null;
+
+      if (!isInternalChat && !groupZone) {
+        throw new Error(
+          'Tu usuario necesita una zona asignada para crear grupos.'
+        );
+      }
+
+      if (!isInternalChat && uniqueParticipants.length > 0) {
+        const { data: participantProfiles, error: participantZoneError } =
+          await supabase
+            .from('users')
+            .select('id, zona')
+            .in('id', uniqueParticipants);
+
+        if (participantZoneError) {
+          console.error(
+            'Error verificando zonas de participantes:',
+            participantZoneError
+          );
+          throw new Error('No se pudo verificar la zona de los participantes.');
+        }
+
+        const outOfZoneParticipants = (participantProfiles || []).filter(
+          participant => !isSameZone((participant as any).zona, groupZone)
+        );
+
+        if (outOfZoneParticipants.length > 0) {
+          throw new Error(
+            'Solo puedes agregar usuarios de tu misma zona al grupo.'
+          );
+        }
+      }
+
       // =========================================================================
       // CONSTRUIR OBJETO PARA INSERT - Solo campos básicos primero
       // =========================================================================
@@ -1639,7 +1750,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         metadata: {
           participant_count: allParticipants.length,
           created_at: new Date().toISOString(),
-          zona: metadata?.zona || (user as any).zona || null,
+          zona: groupZone,
           area: metadata?.area || null,
           isInternal: isInternalChat,
           created_by_name:
@@ -1813,24 +1924,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
       throw new Error('Solo los administradores pueden agregar participantes');
     }
 
-    // REGLA DE NEGOCIO: Validar que los nuevos participantes sean de la misma zona
-    const groupZona = room.metadata?.zona;
-    if (groupZona) {
-      // Verificar zona de los nuevos participantes
-      const { data: usersData } = await supabaseClient
-        .from('users')
-        .select('id, zona')
-        .in('id', participantIds);
-
-      const invalidZoneUsers =
-        usersData?.filter(u => u.zona !== groupZona) || [];
-      if (invalidZoneUsers.length > 0) {
-        throw new Error(
-          `Solo puedes agregar usuarios de la zona ${groupZona}. ${invalidZoneUsers.length} usuario(s) son de otra zona.`
-        );
-      }
-    }
-
     try {
       // Filtrar participantes que ya están en el grupo
       const currentParticipants = room.participants || [];
@@ -1844,13 +1937,50 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         );
       }
 
+      const roomMetadata =
+        room.metadata && typeof room.metadata === 'object'
+          ? (room.metadata as Record<string, any>)
+          : {};
+      const groupZone = roomMetadata.zona || (user as any).zona || null;
+
+      if (!groupZone) {
+        throw new Error(
+          'Este grupo necesita una zona definida para agregar participantes.'
+        );
+      }
+
+      const { data: participantProfiles, error: participantZoneError } =
+        await supabase
+          .from('users')
+          .select('id, zona')
+          .in('id', newParticipants);
+
+      if (participantZoneError) {
+        console.error(
+          'Error verificando zonas de participantes:',
+          participantZoneError
+        );
+        throw new Error('No se pudo verificar la zona de los participantes.');
+      }
+
+      const outOfZoneParticipants = (participantProfiles || []).filter(
+        participant => !isSameZone((participant as any).zona, groupZone)
+      );
+
+      if (outOfZoneParticipants.length > 0) {
+        throw new Error(
+          'Solo puedes agregar usuarios de la misma zona al grupo.'
+        );
+      }
+
       // Actualizar chat_rooms
       const { error } = await supabaseClient
         .from('chat_rooms')
         .update({
           participants: [...currentParticipants, ...newParticipants],
           metadata: {
-            ...room.metadata,
+            ...roomMetadata,
+            zona: groupZone,
             participant_count:
               currentParticipants.length + newParticipants.length,
           },

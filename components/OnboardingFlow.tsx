@@ -67,12 +67,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   const [evidenceModalVisible, setEvidenceModalVisible] = useState(false);
 
   // Get user tier
-  const userTier =
-    user?.rol === 'admin'
-      ? 'admin'
-      : user?.rol === 'supervisor'
-        ? 'supervisor'
-        : 'basic';
+  const userTier = user?.rol === 'admin' ? 'admin' : 'basic';
 
   // Get appropriate template
   const template = onboardingTemplates.find(t => t.tier === userTier);
@@ -203,11 +198,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
 
         <Text style={styles.welcomeTitle}>
           Bienvenido al Onboarding{' '}
-          {userTier === 'basic'
-            ? 'Básico'
-            : userTier === 'supervisor'
-              ? 'de Supervisor'
-              : 'de Administrador'}
+          {userTier === 'basic' ? 'Básico' : 'de Administrador'}
         </Text>
 
         <Text style={styles.welcomeDescription}>
@@ -412,12 +403,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
 
         <Text style={styles.completionDescription}>
           Has completado exitosamente el proceso de onboarding{' '}
-          {userTier === 'basic'
-            ? 'básico'
-            : userTier === 'supervisor'
-              ? 'de supervisor'
-              : 'de administrador'}
-          .
+          {userTier === 'basic' ? 'básico' : 'de administrador'}.
         </Text>
 
         <View style={styles.completionStats}>

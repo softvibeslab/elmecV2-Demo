@@ -9,6 +9,7 @@ import {
   Alert,
   Modal,
   Linking,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
@@ -76,6 +77,9 @@ import {
 import { ActivityIndicator } from 'react-native';
 import { FileUploadComponent } from '@/components/FileUploadComponent';
 import { uploadMultipleFiles, UploadResult } from '@/utils/fileUpload';
+import { isSameZone } from '@/utils/zone';
+
+const { height: screenHeight } = Dimensions.get('window');
 
 export default function Requests() {
   const [requests, setRequests] = useState<RequestWithRelations[]>([]);
@@ -120,8 +124,23 @@ export default function Requests() {
 
   const { user } = useAuth();
   const { sendDemoNotification, sendNotificationToUser } = useNotifications();
-  const { createChatRoom } = useChat();
+  const { createChatRoom, markMessagesAsRead, chatRooms } = useChat();
   const router = useRouter();
+
+  const statusFilterOptions = [
+    { key: 'nuevo', label: 'Nuevo', color: '#f59e0b' },
+    { key: 'sin_atender', label: 'Sin atender', color: '#ef4444' },
+    { key: 'en_proceso', label: 'En progreso', color: '#22c55e' },
+    { key: 'terminado', label: 'Terminado', color: '#3b82f6' },
+  ];
+
+  const statusDisplayOrder = statusFilterOptions.reduce(
+    (acc, option, index) => {
+      acc[option.key] = index;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
 
   const getUserIdentityEmail = (
     person?: {
@@ -288,7 +307,8 @@ export default function Requests() {
 
         const assignedRequests = assignedResult.data || [];
         const unassignedRequests = (unassignedResult?.data || []).filter(
-          (req: RequestWithRelations) => req.usuario?.zona === user.zona
+          (req: RequestWithRelations) =>
+            isSameZone(req.usuario?.zona, user.zona)
         );
 
         // Combinar y eliminar duplicados (usando Set para IDs únicos)
@@ -330,7 +350,8 @@ export default function Requests() {
         return;
       }
 
-      setRequests(data || []);
+      const requestsWithSlaStatus = await applyRequestSlaStatus(data || []);
+      setRequests(sortRequestsForDisplay(requestsWithSlaStatus));
     } catch (error) {
       console.error('Error loading requests:', error);
       setError(
@@ -343,7 +364,7 @@ export default function Requests() {
 
   const loadAgents = useCallback(async () => {
     try {
-      let query = supabase
+      const { data, error } = await supabase
         .from('users')
         .select(
           'id, nombre, apellido_paterno, apellido_materno, categoria, zona, correo_electronico, email, is_online, last_login, created_at, updated_at'
@@ -352,19 +373,20 @@ export default function Requests() {
         .eq('activo', true)
         .order('nombre', { ascending: true });
 
-      // Si el usuario es cliente, filtrar agentes por su misma zona
-      if (user?.rol === 'customer' && user?.zona) {
-        query = query.eq('zona', user.zona);
-      }
-
-      const { data, error } = await query;
-
       if (error) {
         console.error('Error loading agents:', error);
         return;
       }
 
-      setAgents(normalizeAgentOptions((data as AgentOption[]) || []));
+      const normalizedAgents = normalizeAgentOptions(
+        (data as AgentOption[]) || []
+      );
+      const zoneAgents =
+        user?.rol === 'customer' && user?.zona
+          ? normalizedAgents.filter(agent => isSameZone(agent.zona, user.zona))
+          : normalizedAgents;
+
+      setAgents(zoneAgents);
     } catch (error) {
       console.error('Error loading agents:', error);
     }
@@ -386,25 +408,23 @@ export default function Requests() {
   );
 
   useEffect(() => {
-    setFilteredRequests(requests);
+    setFilteredRequests(sortRequestsForDisplay(requests));
   }, [requests]);
 
   // Sistema de semáforo:
   // ROJO: Sin atender (solicitud que excedió tiempos de respuesta)
   // AMARILLO: Nueva (recién creada)
-  // VERDE: En proceso (siendo atendida)
+  // VERDE: En progreso (siendo atendida)
   // AZUL: Terminada (resuelta o cerrada)
   const getStatusIcon = (status: string) => {
-    switch (status) {
+    switch (normalizeStatusForDisplay(status)) {
       case 'sin_atender':
         return <Circle size={16} color="#ef4444" fill="#ef4444" />;
       case 'nuevo':
         return <Circle size={16} color="#f59e0b" fill="#f59e0b" />;
-      case 'asignado':
       case 'en_proceso':
         return <Circle size={16} color="#22c55e" fill="#22c55e" />;
-      case 'resuelto':
-      case 'cerrado':
+      case 'terminado':
         return <Circle size={16} color="#3b82f6" fill="#3b82f6" />;
       default:
         return <Circle size={16} color="#6b7280" fill="#6b7280" />;
@@ -412,35 +432,29 @@ export default function Requests() {
   };
 
   const getStatusText = (status: string) => {
-    switch (status) {
+    switch (normalizeStatusForDisplay(status)) {
       case 'sin_atender':
         return 'Sin atender';
       case 'nuevo':
-        return 'Nueva';
-      case 'asignado':
-        return 'Asignado';
+        return 'Nuevo';
       case 'en_proceso':
-        return 'En proceso';
-      case 'resuelto':
-        return 'Terminada';
-      case 'cerrado':
-        return 'Terminada';
+        return 'En progreso';
+      case 'terminado':
+        return 'Terminado';
       default:
         return 'Desconocido';
     }
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (normalizeStatusForDisplay(status)) {
       case 'sin_atender':
         return '#ef4444'; // Rojo
       case 'nuevo':
         return '#f59e0b'; // Amarillo
-      case 'asignado':
       case 'en_proceso':
         return '#22c55e'; // Verde
-      case 'resuelto':
-      case 'cerrado':
+      case 'terminado':
         return '#3b82f6'; // Azul
       default:
         return '#6b7280';
@@ -475,32 +489,144 @@ export default function Requests() {
     }
   };
 
-  // Verifica si una solicitud debe marcarse como "sin atender"
-  const checkRequestExpiration = (request: RequestWithRelations): string => {
-    const now = new Date();
-    const createdAt = new Date(request.created_at);
-    const updatedAt = new Date(request.updated_at);
-    const daysSinceCreation = Math.floor(
-      (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24)
-    );
-    const daysSinceUpdate = Math.floor(
-      (now.getTime() - updatedAt.getTime()) / (1000 * 60 * 60 * 24)
-    );
+  const getRequestStatusHistory = (request: RequestWithRelations) => {
+    const history = request.metadata?.status_history;
+    return Array.isArray(history) ? history : [];
+  };
 
-    // Si es nueva y han pasado más de 3 días sin cambiar a en_proceso
-    if (request.estatus === 'nuevo' && daysSinceCreation > 3) {
-      return 'sin_atender';
+  const getStatusReferenceDate = (
+    request: RequestWithRelations,
+    status: string
+  ) => {
+    const statusHistory = getRequestStatusHistory(request);
+    const matchingEntry = [...statusHistory]
+      .reverse()
+      .find(entry => entry?.to === status && entry?.timestamp);
+    const referenceValue =
+      matchingEntry?.timestamp ||
+      (status === 'nuevo' ? request.created_at : request.updated_at);
+    const parsedDate = new Date(referenceValue);
+
+    return Number.isNaN(parsedDate.getTime())
+      ? new Date(request.created_at)
+      : parsedDate;
+  };
+
+  const getStaleStatus = (request: RequestWithRelations): string | null => {
+    if (['resuelto', 'cerrado', 'terminado'].includes(request.estatus)) {
+      return null;
     }
 
-    // Si está en proceso y han pasado más de 5 días sin terminar
+    const now = new Date();
+    const daysSince = (date: Date) =>
+      Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+
     if (
-      (request.estatus === 'asignado' || request.estatus === 'en_proceso') &&
-      daysSinceUpdate > 5
+      request.estatus === 'nuevo' &&
+      daysSince(getStatusReferenceDate(request, 'nuevo')) >= 3
     ) {
       return 'sin_atender';
     }
 
-    return request.estatus;
+    if (
+      (request.estatus === 'asignado' || request.estatus === 'en_proceso') &&
+      daysSince(getStatusReferenceDate(request, request.estatus)) >= 5
+    ) {
+      return 'sin_atender';
+    }
+
+    return null;
+  };
+
+  const applyRequestSlaStatus = async (items: RequestWithRelations[]) => {
+    const staleRequests = items.filter(
+      request => request.estatus !== 'sin_atender' && getStaleStatus(request)
+    );
+
+    if (staleRequests.length === 0) {
+      return items;
+    }
+
+    const now = new Date().toISOString();
+    const updatedRequests = await Promise.all(
+      staleRequests.map(async request => {
+        const updatedMetadata = {
+          ...(request.metadata || {}),
+          status_history: [
+            ...getRequestStatusHistory(request),
+            {
+              from: request.estatus,
+              to: 'sin_atender',
+              timestamp: now,
+              reason: 'Cambio automático por SLA sin atención',
+            },
+          ],
+        };
+
+        const { error } = await supabaseClient
+          .from('requests')
+          .update({
+            estatus: 'sin_atender',
+            updated_at: now,
+            metadata: updatedMetadata,
+          } as any)
+          .eq('id', request.id);
+
+        if (error) {
+          console.error('Error applying SLA status:', error);
+          return request;
+        }
+
+        return {
+          ...request,
+          estatus: 'sin_atender' as any,
+          updated_at: now,
+          metadata: updatedMetadata,
+        };
+      })
+    );
+
+    const updatedById = new Map(
+      updatedRequests.map(request => [request.id, request])
+    );
+
+    return items.map(request => updatedById.get(request.id) || request);
+  };
+
+  // Verifica si una solicitud debe mostrarse como "sin atender"
+  const checkRequestExpiration = (request: RequestWithRelations): string => {
+    const staleStatus = getStaleStatus(request);
+
+    if (staleStatus) {
+      return staleStatus;
+    }
+
+    return normalizeStatusForDisplay(request.estatus);
+  };
+
+  const normalizeStatusForDisplay = (status: string) => {
+    if (status === 'asignado') return 'en_proceso';
+    if (status === 'resuelto' || status === 'cerrado') return 'terminado';
+    return status;
+  };
+
+  const getDisplayStatus = (request: RequestWithRelations) =>
+    checkRequestExpiration(request);
+
+  const sortRequestsForDisplay = (items: RequestWithRelations[]) => {
+    return [...items].sort((a, b) => {
+      const aStatus = getDisplayStatus(a);
+      const bStatus = getDisplayStatus(b);
+      const statusDiff =
+        (statusDisplayOrder[aStatus] ?? 99) -
+        (statusDisplayOrder[bStatus] ?? 99);
+
+      if (statusDiff !== 0) return statusDiff;
+
+      return (
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+    });
   };
 
   const getPriorityColor = (priority: string) => {
@@ -578,30 +704,53 @@ export default function Requests() {
   const getRequestAttachments = (
     request: RequestWithRelations
   ): RequestAttachment[] => {
-    const metadataFiles = Array.isArray(request.metadata?.files)
-      ? request.metadata.files
-      : [];
+    const metadata = request.metadata || {};
+    const metadataFiles = [
+      ...(Array.isArray(metadata.files) ? metadata.files : []),
+      ...(Array.isArray(metadata.attachments) ? metadata.attachments : []),
+      ...(Array.isArray(metadata.archivos) ? metadata.archivos : []),
+    ];
+    const rawFileUrls = Array.isArray(request.archivos) ? request.archivos : [];
+    const attachments = new Map<string, RequestAttachment>();
 
-    if (metadataFiles.length > 0) {
-      return metadataFiles.map((file: any, index: number) => ({
-        url: file.url || request.archivos?.[index] || '',
+    metadataFiles.forEach((file: any, index: number) => {
+      const fallbackUrl = rawFileUrls[index] || '';
+      const url =
+        typeof file === 'string'
+          ? file
+          : file?.url || file?.file_url || file?.publicUrl || fallbackUrl;
+
+      if (!url) return;
+
+      attachments.set(url, {
+        url,
         name:
-          file.name ||
-          getAttachmentNameFromUrl(
-            file.url || request.archivos?.[index] || '',
-            index
-          ),
-        type: file.type || '',
-        size: file.size || 0,
-      }));
-    }
+          typeof file === 'string'
+            ? getAttachmentNameFromUrl(file, index)
+            : file?.name ||
+              file?.file_name ||
+              getAttachmentNameFromUrl(url, index),
+        type:
+          typeof file === 'string' ? '' : file?.type || file?.mimeType || '',
+        size:
+          typeof file === 'string'
+            ? 0
+            : Number(file?.size || file?.file_size || 0),
+      });
+    });
 
-    return (request.archivos || []).map((url, index) => ({
-      url,
-      name: getAttachmentNameFromUrl(url, index),
-      type: '',
-      size: 0,
-    }));
+    rawFileUrls.forEach((url, index) => {
+      if (!url || attachments.has(url)) return;
+
+      attachments.set(url, {
+        url,
+        name: getAttachmentNameFromUrl(url, index),
+        type: '',
+        size: 0,
+      });
+    });
+
+    return Array.from(attachments.values());
   };
 
   const handleOpenRequestAttachment = async (attachmentUrl: string) => {
@@ -1097,7 +1246,7 @@ export default function Requests() {
       ) {
         Alert.alert(
           'Transición inválida',
-          'No se puede cambiar el estado de una solicitud ya resuelta a menos que se reabra (En proceso).'
+          'No se puede cambiar el estado de una solicitud ya terminada a menos que se reabra (En progreso).'
         );
         return;
       }
@@ -1135,6 +1284,43 @@ export default function Requests() {
         return;
       }
 
+      if (['resuelto', 'cerrado', 'terminado'].includes(newStatus)) {
+        const { data: relatedChats } = await supabase
+          .from('chat_rooms')
+          .select('id, metadata')
+          .eq('request_id', requestId);
+
+        const chatUpdates = (
+          (relatedChats || []) as Array<{
+            id: string;
+            metadata?: any;
+          }>
+        ).map(chat =>
+          supabaseClient
+            .from('chat_rooms')
+            .update({
+              is_active: false,
+              metadata: {
+                ...(chat.metadata || {}),
+                finalized_at: now,
+                finalized_by: user?.id,
+                finalized_reason: `Solicitud marcada como ${newStatus}`,
+              },
+              updated_at: now,
+            } as any)
+            .eq('id', chat.id)
+        );
+
+        const chatResults = await Promise.allSettled(chatUpdates);
+        const chatError = chatResults.find(
+          result => result.status === 'rejected' || result.value?.error
+        );
+
+        if (chatError) {
+          console.error('Error finalizing related chat:', chatError);
+        }
+      }
+
       // Actualizar la lista local
       setRequests(prev =>
         prev.map(req =>
@@ -1153,11 +1339,10 @@ export default function Requests() {
     }
   };
 
-  // Eliminar solicitud terminada (solo disponible para solicitudes con estatus resuelto/cerrado)
   const handleDeleteRequest = async (requestId: string, titulo: string) => {
     Alert.alert(
       'Eliminar solicitud',
-      `¿Estás seguro de que deseas eliminar la solicitud "${titulo}"?\n\nEsta acción no se puede deshacer.`,
+      `¿Estás seguro de que deseas eliminar la solicitud "${titulo}" y sus chats relacionados?\n\nEsta acción no se puede deshacer.`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -1165,6 +1350,15 @@ export default function Requests() {
           style: 'destructive',
           onPress: async () => {
             try {
+              const { error: chatError } = await supabaseClient
+                .from('chat_rooms')
+                .delete()
+                .eq('request_id', requestId);
+
+              if (chatError) {
+                console.error('Error deleting related chats:', chatError);
+              }
+
               const { error } = await supabaseClient
                 .from('requests')
                 .delete()
@@ -1178,7 +1372,11 @@ export default function Requests() {
 
               // Eliminar de la lista local
               setRequests(prev => prev.filter(req => req.id !== requestId));
-              Alert.alert('Éxito', 'Solicitud eliminada correctamente');
+              setStatusChangeRequest(null);
+              Alert.alert(
+                'Éxito',
+                'Solicitud y chats relacionados eliminados correctamente'
+              );
             } catch (error) {
               console.error('Error deleting request:', error);
               Alert.alert('Error', 'No se pudo eliminar la solicitud');
@@ -1205,7 +1403,9 @@ export default function Requests() {
 
     // Filtrar por estado
     if (filters.status.length > 0) {
-      filtered = filtered.filter(req => filters.status.includes(req.estatus));
+      filtered = filtered.filter(req =>
+        filters.status.includes(getDisplayStatus(req))
+      );
     }
 
     // Filtrar por prioridad
@@ -1215,11 +1415,11 @@ export default function Requests() {
       );
     }
 
-    setFilteredRequests(filtered);
+    setFilteredRequests(sortRequestsForDisplay(filtered));
   };
 
   const handleClearSearch = () => {
-    setFilteredRequests(requests);
+    setFilteredRequests(sortRequestsForDisplay(requests));
   };
 
   // Apply inline filters (status, agent, client) for agent/admin view
@@ -1228,7 +1428,7 @@ export default function Requests() {
 
     if (activeStatusFilters.length > 0) {
       filtered = filtered.filter(req =>
-        activeStatusFilters.includes(req.estatus)
+        activeStatusFilters.includes(getDisplayStatus(req))
       );
     }
 
@@ -1240,14 +1440,13 @@ export default function Requests() {
       filtered = filtered.filter(req => req.usuario_id === activeClientFilter);
     }
 
-    setFilteredRequests(filtered);
+    setFilteredRequests(sortRequestsForDisplay(filtered));
   }, [requests, activeStatusFilters, activeAgentFilter, activeClientFilter]);
 
   useEffect(() => {
-    if (user?.rol === 'agent' || user?.rol === 'admin') {
-      applyInlineFilters();
-    }
+    applyInlineFilters();
   }, [
+    user?.rol,
     activeStatusFilters,
     activeAgentFilter,
     activeClientFilter,
@@ -1332,10 +1531,10 @@ export default function Requests() {
   const selectedRequestAttachments = statusChangeRequest
     ? getRequestAttachments(statusChangeRequest)
     : [];
-  const canResolveSelectedRequest =
+  const canFinishSelectedRequest =
     !!statusChangeRequest &&
     (user?.rol === 'agent' || user?.rol === 'admin') &&
-    !['resuelto', 'cerrado'].includes(statusChangeRequest.estatus);
+    !['resuelto', 'cerrado', 'terminado'].includes(statusChangeRequest.estatus);
 
   const handleStartChat = async (request: RequestWithRelations) => {
     try {
@@ -1433,70 +1632,61 @@ export default function Requests() {
               {user?.rol === 'customer' ? '' : ' asignadas'}
             </Text>
           </View>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => setShowNewRequestModal(true)}
-          >
-            <Plus size={24} color="#ffffff" />
-          </TouchableOpacity>
+          {user?.rol && ['customer', 'admin'].includes(user.rol) && (
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => setShowNewRequestModal(true)}
+            >
+              <Plus size={24} color="#ffffff" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
-      {/* Filtros inline - Solo para agentes y admins */}
-      {(user?.rol === 'agent' || user?.rol === 'admin') && (
-        <View style={styles.filterSection}>
-          {/* Filtro por estatus (semáforo) */}
-          <View style={styles.filterRow}>
-            <Text style={styles.filterLabel}>Estatus:</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.filterScroll}
-            >
-              {[
-                { key: 'sin_atender', label: 'Sin atender', color: '#ef4444' },
-                { key: 'nuevo', label: 'Nueva', color: '#f59e0b' },
-                { key: 'en_proceso', label: 'En proceso', color: '#22c55e' },
-                { key: 'asignado', label: 'Asignado', color: '#22c55e' },
-                { key: 'resuelto', label: 'Terminada', color: '#3b82f6' },
-                { key: 'cerrado', label: 'Cerrada', color: '#3b82f6' },
-              ].map(s => (
-                <TouchableOpacity
-                  key={s.key}
+      {/* Filtros inline por rol */}
+      <View style={styles.filterSection}>
+        {/* Filtro por estatus */}
+        <View style={styles.filterRow}>
+          <Text style={styles.filterLabel}>Estatus:</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.filterScroll}
+          >
+            {statusFilterOptions.map(s => (
+              <TouchableOpacity
+                key={s.key}
+                style={[
+                  styles.filterChip,
+                  activeStatusFilters.includes(s.key) && {
+                    backgroundColor: s.color,
+                    borderColor: s.color,
+                  },
+                ]}
+                onPress={() => toggleStatusFilter(s.key)}
+              >
+                <Circle
+                  size={10}
+                  color={activeStatusFilters.includes(s.key) ? '#fff' : s.color}
+                  fill={activeStatusFilters.includes(s.key) ? '#fff' : s.color}
+                />
+                <Text
                   style={[
-                    styles.filterChip,
-                    activeStatusFilters.includes(s.key) && {
-                      backgroundColor: s.color,
-                      borderColor: s.color,
-                    },
+                    styles.filterChipText,
+                    activeStatusFilters.includes(s.key) &&
+                      styles.filterChipTextActive,
                   ]}
-                  onPress={() => toggleStatusFilter(s.key)}
                 >
-                  <Circle
-                    size={10}
-                    color={
-                      activeStatusFilters.includes(s.key) ? '#fff' : s.color
-                    }
-                    fill={
-                      activeStatusFilters.includes(s.key) ? '#fff' : s.color
-                    }
-                  />
-                  <Text
-                    style={[
-                      styles.filterChipText,
-                      activeStatusFilters.includes(s.key) &&
-                        styles.filterChipTextActive,
-                    ]}
-                  >
-                    {s.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
+                  {s.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
 
-          {/* Filtro por agente */}
-          {agents.length > 0 && (
+        {/* Cliente: filtra por agente. Admin conserva ambos filtros. */}
+        {(user?.rol === 'customer' || user?.rol === 'admin') &&
+          agents.length > 0 && (
             <View style={styles.filterRow}>
               <Text style={styles.filterLabel}>Agente:</Text>
               <ScrollView
@@ -1538,8 +1728,9 @@ export default function Requests() {
             </View>
           )}
 
-          {/* Filtro por cliente */}
-          {uniqueClients.length > 0 && (
+        {/* Agente: filtra por cliente. Admin conserva ambos filtros. */}
+        {(user?.rol === 'agent' || user?.rol === 'admin') &&
+          uniqueClients.length > 0 && (
             <View style={styles.filterRow}>
               <Text style={styles.filterLabel}>Cliente:</Text>
               <ScrollView
@@ -1576,27 +1767,50 @@ export default function Requests() {
             </View>
           )}
 
-          {/* Botón limpiar filtros */}
-          {(activeStatusFilters.length > 0 ||
-            activeAgentFilter ||
-            activeClientFilter) && (
-            <TouchableOpacity
-              style={styles.clearFiltersButton}
-              onPress={clearAllFilters}
-            >
-              <X size={14} color="#6b7280" />
-              <Text style={styles.clearFiltersText}>Limpiar filtros</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
+        {(activeStatusFilters.length > 0 ||
+          activeAgentFilter ||
+          activeClientFilter) && (
+          <TouchableOpacity
+            style={styles.clearFiltersButton}
+            onPress={clearAllFilters}
+          >
+            <X size={14} color="#6b7280" />
+            <Text style={styles.clearFiltersText}>Limpiar filtros</Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
       <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
         {filteredRequests.map(request => (
           <TouchableOpacity
             key={request.id}
             style={styles.requestCard}
-            onPress={() => setStatusChangeRequest(request)}
+            onPress={async () => {
+              setStatusChangeRequest(request);
+              const chatRoom = chatRooms.find(
+                room => room.request_id === request.id
+              );
+              if (chatRoom) {
+                // Marca como leído el chat relacionado al abrir la solicitud
+                await markMessagesAsRead(chatRoom.id);
+                // Marca como leído las notificaciones relacionadas con este chat
+                try {
+                  await supabaseClient
+                    .from('notifications')
+                    .update({ read: true })
+                    .match({
+                      user_id: user?.id,
+                      type: 'new_message',
+                      read: false,
+                    })
+                    .contains('data', {
+                      notification_event_key: `new_message:${chatRoom.id}:`,
+                    });
+                } catch (error) {
+                  console.error('Error marking notifications as read:', error);
+                }
+              }
+            }}
           >
             <View style={styles.requestHeader}>
               <View style={styles.statusAndAreaContainer}>
@@ -1707,6 +1921,17 @@ export default function Requests() {
 
             {/* Botones de acción */}
             <View style={styles.actionButtons}>
+              <TouchableOpacity
+                style={styles.detailButton}
+                onPress={e => {
+                  e.stopPropagation();
+                  setStatusChangeRequest(request);
+                }}
+              >
+                <FileText size={18} color="#1e40af" />
+                <Text style={styles.detailButtonText}>Detalle</Text>
+              </TouchableOpacity>
+
               {/* Botón Charlar */}
               <TouchableOpacity
                 style={styles.chatButton}
@@ -1719,20 +1944,16 @@ export default function Requests() {
                 <Text style={styles.chatButtonText}>Charlar</Text>
               </TouchableOpacity>
 
-              {/* Botón Eliminar (solo para solicitudes terminadas) */}
-              {(request.estatus === 'resuelto' ||
-                request.estatus === 'cerrado') && (
-                <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={e => {
-                    e.stopPropagation();
-                    handleDeleteRequest(request.id, request.titulo);
-                  }}
-                >
-                  <Trash2 size={18} color="#ffffff" />
-                  <Text style={styles.deleteButtonText}>Eliminar</Text>
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={e => {
+                  e.stopPropagation();
+                  handleDeleteRequest(request.id, request.titulo);
+                }}
+              >
+                <Trash2 size={18} color="#ffffff" />
+                <Text style={styles.deleteButtonText}>Eliminar</Text>
+              </TouchableOpacity>
             </View>
           </TouchableOpacity>
         ))}
@@ -1746,7 +1967,9 @@ export default function Requests() {
             </Text>
             <Text style={styles.emptySubtext}>
               {requests.length === 0
-                ? 'Toca el botón + para crear tu primera solicitud'
+                ? user?.rol === 'customer'
+                  ? 'Toca el botón + para crear tu primera solicitud'
+                  : 'Aún no hay solicitudes para tu bandeja'
                 : 'Intenta con otros filtros de búsqueda'}
             </Text>
           </View>
@@ -1807,7 +2030,7 @@ export default function Requests() {
               )}
             </View>
 
-            {agents.length > 0 && (
+            {agents.length > 0 ? (
               <View style={styles.formGroup}>
                 <Text style={styles.formLabel}>Agente Destino (Opcional)</Text>
                 <ScrollView
@@ -1852,6 +2075,19 @@ export default function Requests() {
                   ))}
                 </ScrollView>
               </View>
+            ) : (
+              user?.rol === 'customer' && (
+                <View style={styles.formGroup}>
+                  <Text style={styles.formLabel}>
+                    Agente Destino (Opcional)
+                  </Text>
+                  <View style={styles.emptyAgentsNotice}>
+                    <Text style={styles.emptyAgentsNoticeText}>
+                      No hay agentes activos sugeridos para tu zona.
+                    </Text>
+                  </View>
+                </View>
+              )
             )}
 
             <View style={styles.formGroup}>
@@ -2037,6 +2273,24 @@ export default function Requests() {
                         </Text>
                       </View>
                     </View>
+
+                    {canFinishSelectedRequest && (
+                      <TouchableOpacity
+                        style={styles.requestDetailFinishButton}
+                        onPress={() => {
+                          handleUpdateRequestStatus(
+                            statusChangeRequest.id,
+                            'resuelto'
+                          );
+                          setStatusChangeRequest(null);
+                        }}
+                      >
+                        <CheckCircle size={18} color="#ffffff" />
+                        <Text style={styles.requestDetailFinishButtonText}>
+                          Terminar solicitud
+                        </Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
 
                   <View style={styles.requestDetailSection}>
@@ -2056,19 +2310,23 @@ export default function Requests() {
                       Participantes
                     </Text>
 
-                    <View style={styles.requestDetailInfoCard}>
-                      <Text style={styles.requestDetailInfoLabel}>Cliente</Text>
-                      <Text style={styles.requestDetailInfoValue}>
-                        {statusChangeRequest.usuario
-                          ? `${getFullName(statusChangeRequest.usuario)}${statusChangeRequest.usuario.empresa ? ` - ${statusChangeRequest.usuario.empresa}` : ''}`
-                          : 'Sin información disponible'}
-                      </Text>
-                      {statusChangeRequest.usuario?.zona && (
-                        <Text style={styles.requestDetailInfoHint}>
-                          Zona: {statusChangeRequest.usuario.zona}
+                    {user?.rol !== 'customer' && (
+                      <View style={styles.requestDetailInfoCard}>
+                        <Text style={styles.requestDetailInfoLabel}>
+                          Cliente
                         </Text>
-                      )}
-                    </View>
+                        <Text style={styles.requestDetailInfoValue}>
+                          {statusChangeRequest.usuario
+                            ? `${getFullName(statusChangeRequest.usuario)}${statusChangeRequest.usuario.empresa ? ` - ${statusChangeRequest.usuario.empresa}` : ''}`
+                            : 'Sin información disponible'}
+                        </Text>
+                        {statusChangeRequest.usuario?.zona && (
+                          <Text style={styles.requestDetailInfoHint}>
+                            Zona: {statusChangeRequest.usuario.zona}
+                          </Text>
+                        )}
+                      </View>
+                    )}
 
                     <View style={styles.requestDetailInfoCard}>
                       <Text style={styles.requestDetailInfoLabel}>Agente</Text>
@@ -2175,7 +2433,7 @@ export default function Requests() {
                     </Text>
                   </TouchableOpacity>
 
-                  {canResolveSelectedRequest && (
+                  {canFinishSelectedRequest && (
                     <TouchableOpacity
                       style={[
                         styles.statusModalBtn,
@@ -2189,22 +2447,37 @@ export default function Requests() {
                         setStatusChangeRequest(null);
                       }}
                     >
-                      <View
-                        style={[
-                          styles.statusDot,
-                          { backgroundColor: '#ffffff' },
-                        ]}
-                      />
+                      <CheckCircle size={18} color="#ffffff" />
                       <Text
                         style={[
                           styles.statusModalBtnText,
                           styles.statusModalBtnTextPrimary,
                         ]}
                       >
-                        Marcar como Resuelto
+                        Terminado
                       </Text>
                     </TouchableOpacity>
                   )}
+
+                  <TouchableOpacity
+                    style={[styles.statusModalBtn, styles.statusModalBtnDanger]}
+                    onPress={() =>
+                      handleDeleteRequest(
+                        statusChangeRequest.id,
+                        statusChangeRequest.titulo
+                      )
+                    }
+                  >
+                    <Trash2 size={18} color="#ffffff" />
+                    <Text
+                      style={[
+                        styles.statusModalBtnText,
+                        styles.statusModalBtnTextPrimary,
+                      ]}
+                    >
+                      Eliminar
+                    </Text>
+                  </TouchableOpacity>
                 </View>
 
                 <TouchableOpacity
@@ -2511,11 +2784,32 @@ const styles = StyleSheet.create({
   },
   actionButtons: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
     marginTop: 12,
   },
+  detailButton: {
+    flex: 1,
+    minWidth: 110,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#eff6ff',
+    borderColor: '#bfdbfe',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    gap: 8,
+  },
+  detailButtonText: {
+    color: '#1e40af',
+    fontSize: 15,
+    fontFamily: 'Inter-SemiBold',
+  },
   chatButton: {
     flex: 1,
+    minWidth: 110,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -2536,6 +2830,8 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
   },
   deleteButton: {
+    flex: 1,
+    minWidth: 110,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -2552,7 +2848,7 @@ const styles = StyleSheet.create({
   },
   deleteButtonText: {
     color: '#ffffff',
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: 'Inter-SemiBold',
   },
   emptyState: {
@@ -2731,6 +3027,18 @@ const styles = StyleSheet.create({
   agentChipCategorySelected: {
     color: '#3b82f6',
   },
+  emptyAgentsNotice: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    padding: 14,
+  },
+  emptyAgentsNoticeText: {
+    fontSize: 13,
+    fontFamily: 'Inter-Regular',
+    color: '#6b7280',
+  },
   submitButton: {
     backgroundColor: '#1e40af',
     flexDirection: 'row',
@@ -2773,7 +3081,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     width: '100%',
     maxWidth: 420,
-    maxHeight: '85%',
+    height: Math.min(screenHeight * 0.82, 680),
+    maxHeight: '88%',
     overflow: 'hidden',
   },
   statusModalHeader: {
@@ -2817,7 +3126,8 @@ const styles = StyleSheet.create({
   statusModalScrollContent: {
     padding: 24,
     gap: 16,
-    paddingBottom: 12,
+    paddingBottom: 24,
+    flexGrow: 1,
   },
   requestDetailSummaryCard: {
     backgroundColor: '#f8fafc',
@@ -2874,6 +3184,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Inter-SemiBold',
     color: '#111827',
+  },
+  requestDetailFinishButton: {
+    minHeight: 46,
+    borderRadius: 12,
+    backgroundColor: '#1e40af',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+  },
+  requestDetailFinishButtonText: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#ffffff',
   },
   requestDetailSection: {
     gap: 12,
@@ -2994,6 +3319,10 @@ const styles = StyleSheet.create({
   statusModalBtnPrimary: {
     backgroundColor: '#2563eb',
     borderColor: '#2563eb',
+  },
+  statusModalBtnDanger: {
+    backgroundColor: '#ef4444',
+    borderColor: '#ef4444',
   },
   statusDot: {
     width: 10,

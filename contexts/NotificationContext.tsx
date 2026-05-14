@@ -8,6 +8,7 @@ import React, {
 } from 'react';
 import * as Notifications from 'expo-notifications';
 import { AppState, AppStateStatus, Platform } from 'react-native';
+import { useRouter } from 'expo-router';
 import { supabase, supabaseClient } from '@/lib/supabase';
 import { useAuth } from './AuthContext';
 
@@ -64,6 +65,7 @@ interface NotificationContextType {
     data?: any
   ): Promise<void>;
   markNotificationAsRead(id: string): void;
+  openNotification(notification: InAppNotification): void;
   markAllAsRead: () => void;
   clearNotifications: () => void;
   registerForPushNotifications: () => Promise<string | null>;
@@ -76,6 +78,7 @@ const NotificationContext = createContext<NotificationContextType | undefined>(
 
 const NOTIFICATION_DEDUPE_WINDOW_MS = 15000;
 const MAX_IN_APP_NOTIFICATIONS = 50;
+const EXPO_PUSH_ENDPOINT = 'https://exp.host/--/api/v2/push/send';
 
 const getNotificationData = (data?: any): Record<string, any> => {
   if (data && typeof data === 'object' && !Array.isArray(data)) {
@@ -99,6 +102,7 @@ const getNotificationEventKey = ({
   userId?: string;
 }) => {
   const normalizedData = getNotificationData(data);
+  const nestedData = getNotificationData(normalizedData.data);
   const normalizedType = normalizedData.type || type;
 
   if (normalizedData.notification_event_key) {
@@ -108,16 +112,32 @@ const getNotificationEventKey = ({
   const requestId =
     normalizedData.requestId ||
     normalizedData.request_id ||
-    normalizedData.data?.requestId ||
-    normalizedData.data?.request_id;
-  const requestStatus = normalizedData.newStatus || normalizedData.new_status;
+    nestedData.requestId ||
+    nestedData.request_id;
+  const requestStatus =
+    normalizedData.newStatus ||
+    normalizedData.new_status ||
+    nestedData.newStatus ||
+    nestedData.new_status;
   const chatRoomId =
     normalizedData.chatRoomId ||
     normalizedData.chat_room_id ||
     normalizedData.roomId ||
-    normalizedData.room_id;
-  const messageId = normalizedData.messageId || normalizedData.message_id;
-  const senderId = normalizedData.sender_id || normalizedData.senderId;
+    normalizedData.room_id ||
+    nestedData.chatRoomId ||
+    nestedData.chat_room_id ||
+    nestedData.roomId ||
+    nestedData.room_id;
+  const messageId =
+    normalizedData.messageId ||
+    normalizedData.message_id ||
+    nestedData.messageId ||
+    nestedData.message_id;
+  const senderId =
+    normalizedData.sender_id ||
+    normalizedData.senderId ||
+    nestedData.sender_id ||
+    nestedData.senderId;
 
   if (normalizedType === 'new_message') {
     if (messageId) {
@@ -137,11 +157,19 @@ const getNotificationEventKey = ({
     return `assignment:${userId || 'unknown'}:${requestId}`;
   }
 
-  if (requestId && normalizedData.action === 'request_created') {
+  if (
+    requestId &&
+    (normalizedData.action === 'request_created' ||
+      nestedData.action === 'request_created')
+  ) {
     return `request_created:${requestId}`;
   }
 
-  if (chatRoomId && normalizedData.action === 'chat_created') {
+  if (
+    chatRoomId &&
+    (normalizedData.action === 'chat_created' ||
+      nestedData.action === 'chat_created')
+  ) {
     return `chat_created:${chatRoomId}`;
   }
 
@@ -154,6 +182,58 @@ const getNotificationEventKey = ({
   }
 
   return `${type}:${title}:${body}`;
+};
+
+const getNotificationRoute = (type: string, data?: any): string | null => {
+  const normalizedData = getNotificationData(data);
+  const nestedData = getNotificationData(normalizedData.data);
+  const normalizedType = normalizedData.type || type;
+  const requestId =
+    normalizedData.requestId ||
+    normalizedData.request_id ||
+    nestedData.requestId ||
+    nestedData.request_id;
+  const chatRoomId =
+    normalizedData.roomId ||
+    normalizedData.room_id ||
+    normalizedData.chatRoomId ||
+    normalizedData.chat_room_id ||
+    nestedData.roomId ||
+    nestedData.room_id ||
+    nestedData.chatRoomId ||
+    nestedData.chat_room_id;
+  const action = normalizedData.action || nestedData.action;
+  const target =
+    normalizedData.target ||
+    normalizedData.module ||
+    nestedData.target ||
+    nestedData.module;
+
+  if (
+    normalizedType === 'new_message' ||
+    normalizedType === 'chat' ||
+    action === 'chat_created' ||
+    action === 'open_chat' ||
+    target === 'chat' ||
+    (chatRoomId && !requestId)
+  ) {
+    return chatRoomId ? `/chat/${chatRoomId}` : '/(tabs)/chat';
+  }
+
+  if (
+    normalizedType === 'request_update' ||
+    normalizedType === 'assignment' ||
+    normalizedType === 'request' ||
+    action === 'request_created' ||
+    action === 'open_request' ||
+    target === 'requests' ||
+    target === 'request' ||
+    requestId
+  ) {
+    return '/(tabs)/requests';
+  }
+
+  return null;
 };
 
 export const useNotifications = () => {
@@ -191,10 +271,43 @@ const sendWebNotification = (title: string, body: string) => {
   }
 };
 
+const sendExpoPushNotification = async (
+  token: string,
+  title: string,
+  body: string,
+  data?: any
+) => {
+  if (!token || !token.startsWith('ExponentPushToken[')) {
+    return;
+  }
+
+  const response = await fetch(EXPO_PUSH_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Accept-encoding': 'gzip, deflate',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      to: token,
+      sound: 'default',
+      title,
+      body,
+      data: getNotificationData(data),
+      priority: 'high',
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Expo push failed: ${response.status}`);
+  }
+};
+
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const { user } = useAuth();
+  const router = useRouter();
   const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
   const [notification, setNotification] =
     useState<Notifications.Notification | null>(null);
@@ -210,6 +323,17 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
   const recentOutboundNotificationKeys = useRef<Map<string, number>>(new Map());
 
   const unreadCount = inAppNotifications.filter(n => !n.read).length;
+
+  const navigateFromNotification = useCallback(
+    (type: string, data?: any) => {
+      const route = getNotificationRoute(type, data);
+
+      if (route) {
+        router.push(route as any);
+      }
+    },
+    [router]
+  );
 
   const pruneExpiredNotificationKeys = useCallback(
     (store: Map<string, number>) => {
@@ -300,6 +424,10 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
         return true;
       }
 
+      if (appStateRef.current === 'active') {
+        return true;
+      }
+
       if (Platform.OS === 'web') {
         sendWebNotification(
           notificationWithKey.title,
@@ -367,13 +495,44 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (user?.id) {
         try {
+          const { data: currentUserData } = await supabaseClient
+            .from('users')
+            .select('metadata')
+            .eq('id', user.id)
+            .single();
+
           const { error } = await supabaseClient
             .from('users')
-            .update({ metadata: { push_token: token } } as any)
+            .update({
+              metadata: {
+                ...(((currentUserData as any)?.metadata || {}) as Record<
+                  string,
+                  any
+                >),
+                push_token: token,
+                expo_push_token: token,
+                push_token_updated_at: new Date().toISOString(),
+              },
+            } as any)
             .eq('id', user.id);
 
           if (error) console.error('Error saving push token to DB:', error);
           else console.log('Push token guardado en DB con éxito');
+
+          await supabaseClient
+            .from('push_tokens')
+            .update({ is_active: false, updated_at: new Date().toISOString() })
+            .eq('user_id', user.id)
+            .neq('token', token);
+
+          await supabaseClient.from('push_tokens').insert({
+            user_id: user.id,
+            token,
+            platform: Platform.OS,
+            is_active: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          } as any);
         } catch (dbError) {
           console.error('Exception saving push token:', dbError);
         }
@@ -553,10 +712,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
         Notifications.addNotificationResponseReceivedListener(response => {
           console.log('El usuario interactuó con la notificación:', response);
 
-          const data = response.notification.request.content.data;
-          if (data?.roomId) {
-            // Ejemplo: router.push(`/chat/${data.roomId}`);
-          }
+          const { data } = response.notification.request.content;
+          const type = String(data?.type || 'info');
+          navigateFromNotification(type, data);
         });
     } else {
       requestWebNotificationPermission();
@@ -576,7 +734,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       }
     };
-  }, [user?.id]);
+  }, [navigateFromNotification, user?.id]);
 
   const sendDemoNotification = useCallback(
     async (
@@ -677,6 +835,52 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
         } else {
           console.log(`Notificación enviada a usuario ${userId}:`, title);
         }
+
+        try {
+          const [{ data: tokenRows }, { data: targetUser }] = await Promise.all(
+            [
+              supabaseClient
+                .from('push_tokens')
+                .select('token')
+                .eq('user_id', userId)
+                .eq('is_active', true)
+                .order('updated_at', { ascending: false })
+                .limit(3),
+              supabaseClient
+                .from('users')
+                .select('metadata')
+                .eq('id', userId)
+                .single(),
+            ]
+          );
+
+          const metadata = ((targetUser as any)?.metadata || {}) as Record<
+            string,
+            any
+          >;
+          const tokens = Array.from(
+            new Set(
+              [
+                ...(((tokenRows || []) as Array<{ token?: string }>).map(
+                  row => row.token
+                ) || []),
+                metadata.push_token,
+                metadata.expo_push_token,
+              ].filter(Boolean)
+            )
+          ) as string[];
+
+          await Promise.allSettled(
+            tokens.map(token =>
+              sendExpoPushNotification(token, title, body, {
+                ...normalizedData,
+                notification_event_key: eventKey,
+              })
+            )
+          );
+        } catch (pushError) {
+          console.error('Error sending Expo push notification:', pushError);
+        }
       } catch (error) {
         recentOutboundNotificationKeys.current.delete(outboundEventKey);
         console.error('Error sending notification to user:', error);
@@ -707,6 +911,14 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     })();
   }, []);
+
+  const openNotification = useCallback(
+    (nextNotification: InAppNotification) => {
+      markNotificationAsRead(nextNotification.id);
+      navigateFromNotification(nextNotification.type, nextNotification.data);
+    },
+    [markNotificationAsRead, navigateFromNotification]
+  );
 
   const markAllAsRead = useCallback(async () => {
     if (!user?.id) return;
@@ -743,6 +955,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
         sendLocalNotification,
         sendNotificationToUser,
         markNotificationAsRead,
+        openNotification,
         markAllAsRead,
         clearNotifications,
         registerForPushNotifications,

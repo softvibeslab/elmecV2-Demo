@@ -23,6 +23,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/contexts/ChatContext';
 import { supabase, supabaseClient } from '@/lib/supabase';
+import { isSameZone } from '@/utils/zone';
 
 interface User {
   id: string;
@@ -55,42 +56,28 @@ export default function AddZoneMembers({
   onMembersAdded,
 }: AddZoneMembersProps) {
   const { user } = useAuth();
-  const { createGroupChat, sendMessage } = useChat();
+  const { sendMessage } = useChat();
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [zoneUsers, setZoneUsers] = useState<User[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
 
-  // REGLA DE NEGOCIO: Solo se pueden agregar usuarios de la MISMA ZONA
-  // No hay opción de "Ver todos" - esto es obligatorio
-
-  // Cargar usuarios de la misma zona únicamente
   useEffect(() => {
-    if (visible && zona) {
+    if (visible) {
       loadUsers();
     }
   }, [visible, zona]);
 
   const loadUsers = async () => {
-    if (!zona) {
-      Alert.alert(
-        'Sin zona definida',
-        'No se puede agregar miembros sin una zona definida. Solo puedes agregar personas de tu misma zona.'
-      );
-      return;
-    }
-
     setLoading(true);
     try {
-      // REGLA DE NEGOCIO: Solo usuarios de la MISMA zona
       const { data, error } = await supabase
         .from('users')
         .select(
           'id, nombre, apellido_paterno, apellido_materno, rol, zona, categoria, empresa'
         )
         .eq('activo', true)
-        .eq('zona', zona) // OBLIGATORIO: misma zona
         .order('nombre', { ascending: true });
 
       if (error) {
@@ -99,9 +86,10 @@ export default function AddZoneMembers({
       }
 
       // Filtrar usuarios que ya están en el chat
-      const availableUsers = (data || []).filter(
-        (u: User) => !currentParticipants.includes(u.id) && u.id !== user?.id
-      );
+      const loadedUsers = (data || []) as User[];
+      const availableUsers = loadedUsers
+        .filter(u => !currentParticipants.includes(u.id) && u.id !== user?.id)
+        .filter(u => isSameZone(u.zona, zona));
 
       setZoneUsers(availableUsers);
     } catch (error) {
@@ -151,6 +139,14 @@ export default function AddZoneMembers({
   });
 
   const handleAddMembers = async () => {
+    if (!zona) {
+      Alert.alert(
+        'Zona requerida',
+        'Este chat necesita una zona definida para agregar miembros.'
+      );
+      return;
+    }
+
     if (selectedUsers.length === 0) {
       Alert.alert(
         'Selecciona usuarios',
@@ -174,7 +170,9 @@ export default function AddZoneMembers({
         .eq('id', chatRoomId)
         .single();
 
-      if (roomError || !currentRoom) {
+      const room = currentRoom as any;
+
+      if (roomError || !room) {
         throw new Error('No se pudo obtener información del chat');
       }
 
@@ -193,12 +191,9 @@ export default function AddZoneMembers({
           is_group: true,
           name: groupName,
           participants: allParticipants,
-          admin_ids:
-            currentRoom.admin_ids?.length > 0
-              ? currentRoom.admin_ids
-              : [user?.id],
+          admin_ids: room.admin_ids?.length > 0 ? room.admin_ids : [user?.id],
           metadata: {
-            ...currentRoom.metadata,
+            ...room.metadata,
             zona: zona,
             converted_to_group: true,
             converted_at: new Date().toISOString(),
@@ -267,23 +262,23 @@ export default function AddZoneMembers({
           </TouchableOpacity>
         </View>
 
-        {/* Info de zona - REGLA DE NEGOCIO: Solo misma zona */}
+        {/* Info de zona */}
         <View style={styles.zoneInfo}>
           <View style={styles.zoneInfoLeft}>
             <MapPin size={16} color="#1e40af" />
             <Text style={styles.zoneText}>
               {zona ? (
                 <>
-                  Solo usuarios de zona:{' '}
+                  Zona de referencia:{' '}
                   <Text style={styles.zoneName}>{zona}</Text>
                 </>
               ) : (
-                <Text style={styles.zoneWarning}>⚠️ Sin zona definida</Text>
+                <Text style={styles.zoneWarning}>Sin zona definida</Text>
               )}
             </Text>
           </View>
           <View style={styles.zoneBadge}>
-            <Text style={styles.zoneBadgeText}>🔒 Misma zona</Text>
+            <Text style={styles.zoneBadgeText}>Misma zona</Text>
           </View>
         </View>
 
@@ -331,9 +326,7 @@ export default function AddZoneMembers({
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#1e40af" />
-            <Text style={styles.loadingText}>
-              Cargando usuarios de la zona...
-            </Text>
+            <Text style={styles.loadingText}>Cargando usuarios...</Text>
           </View>
         ) : (
           <ScrollView style={styles.userList}>
@@ -346,7 +339,7 @@ export default function AddZoneMembers({
                 <Text style={styles.emptySubtitle}>
                   {searchQuery
                     ? 'No se encontraron usuarios con ese criterio'
-                    : 'No hay más usuarios en esta zona para agregar'}
+                    : 'No hay más usuarios de esta zona para agregar'}
                 </Text>
               </View>
             ) : (

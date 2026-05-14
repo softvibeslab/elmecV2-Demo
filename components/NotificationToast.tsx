@@ -150,7 +150,8 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({
 };
 
 export const NotificationManager: React.FC = () => {
-  const { inAppNotifications, markNotificationAsRead } = useNotifications();
+  const { inAppNotifications, markNotificationAsRead, openNotification } =
+    useNotifications();
   const [visibleNotifications, setVisibleNotifications] = useState<
     InAppNotification[]
   >([]);
@@ -180,18 +181,25 @@ export const NotificationManager: React.FC = () => {
     setVisibleNotifications(prev => prev.filter(n => n.id !== id));
   };
 
+  const handleOpen = (notification: InAppNotification) => {
+    openNotification(notification);
+    setVisibleNotifications(prev => prev.filter(n => n.id !== notification.id));
+  };
+
   return (
     <View style={styles.manager}>
       {visibleNotifications.map((notification, index) => (
-        <View
+        <TouchableOpacity
           key={notification.id}
           style={[styles.toastWrapper, { top: 60 + index * 90 }]}
+          activeOpacity={0.92}
+          onPress={() => handleOpen(notification)}
         >
           <NotificationToast
             notification={notification}
             onDismiss={handleDismiss}
           />
-        </View>
+        </TouchableOpacity>
       ))}
     </View>
   );

@@ -19,6 +19,7 @@ import { useNotifications } from '@/contexts/NotificationContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { User } from '@/types/supabase';
+import { isSameZone } from '@/utils/zone';
 import {
   Search,
   Filter,
@@ -52,10 +53,16 @@ export default function Directory() {
     'Soporte Técnico',
   ];
   const zones = ['Todas', 'Norte', 'Sur', 'Centro', 'Este', 'Oeste'];
+  const visibleZones = useMemo(() => {
+    if (currentUser?.rol === 'admin') return zones;
+    return ['Todas', currentUser?.zona].filter(Boolean) as string[];
+  }, [currentUser?.rol, currentUser?.zona]);
 
   useEffect(() => {
-    loadPersonnel();
-  }, []);
+    if (currentUser) {
+      loadPersonnel();
+    }
+  }, [currentUser?.id, currentUser?.rol, currentUser?.zona]);
 
   useEffect(() => {
     applyFilters();
@@ -79,10 +86,21 @@ export default function Directory() {
         return;
       }
 
-      // Filtrar el usuario actual en el frontend
-      const filteredData = ((data as User[]) || []).filter(
-        (person: User) => person.id !== currentUser?.id
-      );
+      const filteredData = ((data as User[]) || []).filter((person: User) => {
+        if (person.id === currentUser?.id) return false;
+        if (currentUser?.rol === 'admin') return true;
+        if (!isSameZone(person.zona, currentUser?.zona)) return false;
+
+        if (currentUser?.rol === 'customer') {
+          return person.rol === 'agent';
+        }
+
+        if (currentUser?.rol === 'agent') {
+          return person.rol === 'customer' || person.rol === 'agent';
+        }
+
+        return false;
+      });
       setPersonnel(filteredData);
     } catch (error) {
       console.error('Error loading personnel:', error);
@@ -109,8 +127,12 @@ export default function Directory() {
           .filter(Boolean)
           .join(' ')
           .toLowerCase();
-        const email = person.correo_electronico.toLowerCase();
-        const empresa = person.empresa.toLowerCase();
+        const email = (
+          person.correo_electronico ||
+          person.email ||
+          ''
+        ).toLowerCase();
+        const empresa = (person.empresa || '').toLowerCase();
 
         return (
           fullName.includes(query) ||
@@ -129,7 +151,9 @@ export default function Directory() {
 
     // Filtrar por zona
     if (selectedZone !== 'Todas') {
-      filtered = filtered.filter(person => person.zona === selectedZone);
+      filtered = filtered.filter(person =>
+        isSameZone(person.zona, selectedZone)
+      );
     }
 
     setFilteredPersonnel(filtered);
@@ -224,7 +248,9 @@ export default function Directory() {
 
   const getVendorPhoto = (person: User) => {
     // Intentar cargar la foto del vendedor basada en su email
-    const email = person.correo_electronico;
+    const email = person.correo_electronico || person.email;
+    if (!email) return null;
+
     const username = email.split('@')[0]; // e.g., "i.pineda"
 
     // Buscar en el mapa de fotos
@@ -488,7 +514,7 @@ export default function Directory() {
               showsHorizontalScrollIndicator={false}
               style={styles.filterScroll}
             >
-              {zones.map(zone => (
+              {visibleZones.map(zone => (
                 <TouchableOpacity
                   key={zone}
                   style={[

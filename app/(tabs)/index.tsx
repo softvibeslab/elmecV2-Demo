@@ -27,6 +27,12 @@ import {
 } from 'lucide-react-native';
 import { AppTourGuide } from '@/components/AppTourGuide';
 
+const getTourCompletedKey = (userId?: string) =>
+  `appTourCompleted:${userId || 'guest'}`;
+
+const getTourForceShowKey = (userId?: string) =>
+  `appTourForceShow:${userId || 'guest'}`;
+
 export default function Home() {
   const { user } = useAuth();
   const router = useRouter();
@@ -34,27 +40,57 @@ export default function Home() {
   // Tour guide state
   const [showTour, setShowTour] = useState(false);
   const [tourCompleted, setTourCompleted] = useState(false);
+  const roleLabel =
+    user?.rol === 'agent'
+      ? 'Agente'
+      : user?.rol === 'customer'
+        ? 'Cliente'
+        : 'Administrador';
 
   // Check if tour was completed
   useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
     const checkTourStatus = async () => {
-      const completed = await AsyncStorage.getItem('appTourCompleted');
+      const completed = await AsyncStorage.getItem(
+        getTourCompletedKey(user?.id)
+      );
       if (!completed) {
         // Show tour after 2 seconds
-        const timer = setTimeout(() => {
+        timer = setTimeout(() => {
           setShowTour(true);
         }, 2000);
-        return () => clearTimeout(timer);
       } else {
         setTourCompleted(true);
       }
     };
     checkTourStatus();
-  }, []);
+
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [user?.id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const checkForcedTour = async () => {
+        const forceShow = await AsyncStorage.getItem(
+          getTourForceShowKey(user?.id)
+        );
+
+        if (forceShow === 'true') {
+          await AsyncStorage.removeItem(getTourForceShowKey(user?.id));
+          setShowTour(true);
+        }
+      };
+
+      checkForcedTour();
+    }, [user?.id])
+  );
 
   const handleTourComplete = async () => {
     try {
-      await AsyncStorage.setItem('appTourCompleted', 'true');
+      await AsyncStorage.setItem(getTourCompletedKey(user?.id), 'true');
       setTourCompleted(true);
       setShowTour(false);
     } catch (error) {
@@ -213,7 +249,10 @@ export default function Home() {
             <Text style={styles.userName}>
               {user?.nombre} {user?.apellido_paterno}
             </Text>
-            <Text style={styles.userCompany}>{user?.empresa}</Text>
+            <Text style={styles.userCompany}>
+              {roleLabel}
+              {user?.empresa ? ` · ${user.empresa}` : ''}
+            </Text>
           </View>
           <View style={styles.headerActions}>
             {!tourCompleted && (
@@ -233,6 +272,11 @@ export default function Home() {
             </View>
           </View>
         </View>
+        <Image
+          source={require('@/assets/images/branding/truck.png')}
+          style={styles.headerTruck}
+          resizeMode="contain"
+        />
       </LinearGradient>
 
       <View style={styles.content}>
@@ -364,7 +408,7 @@ export default function Home() {
       {/* App Tour Guide */}
       <AppTourGuide
         visible={showTour}
-        onClose={() => setShowTour(false)}
+        onClose={handleTourComplete}
         onComplete={handleTourComplete}
       />
     </ScrollView>
@@ -436,6 +480,11 @@ const styles = StyleSheet.create({
   logo: {
     width: '100%',
     height: '100%',
+  },
+  headerTruck: {
+    width: '100%',
+    height: 120,
+    marginTop: 18,
   },
   content: {
     flex: 1,

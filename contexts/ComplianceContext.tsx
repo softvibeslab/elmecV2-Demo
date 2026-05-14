@@ -8,7 +8,7 @@ import React, {
 } from 'react';
 import { Platform } from 'react-native';
 import { useAuth } from './AuthContext';
-import { supabase } from '@/lib/supabase';
+import { supabaseClient } from '@/lib/supabase';
 
 // =====================================================
 // TYPES & INTERFACES
@@ -113,7 +113,7 @@ export interface UserOnboardingProgress {
   user_id: string;
   template_id: string | null;
   total_items: number;
-  completed_items: number;
+  completed_items: any[];
   progress_percentage: number;
   status: 'not_started' | 'in_progress' | 'completed' | 'failed';
   started_at: string | null;
@@ -200,12 +200,12 @@ interface ComplianceContextType {
   loadingOnboarding: boolean;
   fetchOnboardingTemplates: () => Promise<void>;
   fetchUserOnboardingProgress: (userId: string) => Promise<void>;
-  startOnboarding: () => Promise<void>;
+  startOnboarding: () => Promise<any>;
   completeOnboardingItem: (
     itemId: string,
     response: any,
     evidenceId?: string
-  ) => Promise<void>;
+  ) => Promise<any>;
 
   // SLA
   slaDefinitions: SLADefinition[];
@@ -223,7 +223,7 @@ interface ComplianceContextType {
     entityId: string,
     signatureBase64: string,
     legalText?: string
-  ) => Promise<void>;
+  ) => Promise<any>;
 }
 
 // =====================================================
@@ -286,14 +286,14 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
 
       setLoadingRequestFlow(true);
       try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
           .from('request_flow_compliance')
           .select('*')
           .eq('request_id', requestId)
           .single();
 
         if (error) throw error;
-        setRequestFlowData(data);
+        setRequestFlowData((data as RequestFlowCompliance) || null);
       } catch (error) {
         console.error('Error fetching request flow compliance:', error);
       } finally {
@@ -306,7 +306,7 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
   const updateRequestFlowStatus = useCallback(
     async (requestId: string, status: string, userId: string) => {
       try {
-        const { data, error } = await supabase.rpc(
+        const { data, error } = await supabaseClient.rpc(
           'update_request_flow_status',
           {
             p_request_id: requestId,
@@ -341,7 +341,7 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
 
       setLoadingActivity(true);
       try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
           .from('user_activity_log')
           .select('*')
           .eq('user_id', targetUserId)
@@ -349,7 +349,7 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
           .limit(limit);
 
         if (error) throw error;
-        setUserActivityLogs(data || []);
+        setUserActivityLogs((data as UserActivityLog[]) || []);
       } catch (error) {
         console.error('Error fetching user activity:', error);
       } finally {
@@ -369,7 +369,7 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
       if (!user) return;
 
       try {
-        const { error } = await supabase.rpc('log_user_activity', {
+        const { error } = await supabaseClient.rpc('log_user_activity', {
           p_user_id: user.id,
           p_activity_type: activityType,
           p_request_id: requestId || null,
@@ -392,14 +392,14 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
   const fetchComplianceEvidence = useCallback(async (requestId: string) => {
     setLoadingEvidence(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('compliance_evidence')
         .select('*')
         .eq('request_id', requestId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setComplianceEvidence(data || []);
+      setComplianceEvidence((data as ComplianceEvidence[]) || []);
     } catch (error) {
       console.error('Error fetching compliance evidence:', error);
     } finally {
@@ -412,7 +412,7 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
       if (!user) return;
 
       try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
           .from('compliance_evidence')
           .insert({
             ...evidenceData,
@@ -446,13 +446,13 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
   const fetchOnboardingTemplates = useCallback(async () => {
     setLoadingOnboarding(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('onboarding_templates')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setOnboardingTemplates(data || []);
+      setOnboardingTemplates((data as OnboardingTemplate[]) || []);
     } catch (error) {
       console.error('Error fetching onboarding templates:', error);
       // Load default templates if Supabase fails
@@ -475,6 +475,7 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
               item_order: 1,
               item_type: 'checkbox' as const,
               is_required: true,
+              evidence_required: false,
             },
             {
               id: 'basic-2',
@@ -483,6 +484,7 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
               item_order: 2,
               item_type: 'checkbox' as const,
               is_required: true,
+              evidence_required: false,
             },
             {
               id: 'basic-3',
@@ -491,6 +493,7 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
               item_order: 3,
               item_type: 'text_input' as const,
               is_required: true,
+              evidence_required: false,
             },
             {
               id: 'basic-4',
@@ -499,6 +502,7 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
               item_order: 4,
               item_type: 'signature' as const,
               is_required: true,
+              evidence_required: true,
             },
           ],
         },
@@ -520,6 +524,7 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
               item_order: 1,
               item_type: 'checkbox' as const,
               is_required: true,
+              evidence_required: false,
             },
             {
               id: 'sup-2',
@@ -528,6 +533,7 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
               item_order: 2,
               item_type: 'checkbox' as const,
               is_required: true,
+              evidence_required: false,
             },
             {
               id: 'sup-3',
@@ -536,6 +542,7 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
               item_order: 3,
               item_type: 'checkbox' as const,
               is_required: true,
+              evidence_required: false,
             },
             {
               id: 'sup-4',
@@ -544,6 +551,7 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
               item_order: 4,
               item_type: 'signature' as const,
               is_required: true,
+              evidence_required: true,
             },
           ],
         },
@@ -565,6 +573,7 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
               item_order: 1,
               item_type: 'checkbox' as const,
               is_required: true,
+              evidence_required: false,
             },
             {
               id: 'admin-2',
@@ -573,6 +582,7 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
               item_order: 2,
               item_type: 'checkbox' as const,
               is_required: true,
+              evidence_required: false,
             },
             {
               id: 'admin-3',
@@ -581,6 +591,7 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
               item_order: 3,
               item_type: 'checkbox' as const,
               is_required: true,
+              evidence_required: false,
             },
             {
               id: 'admin-4',
@@ -589,6 +600,7 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
               item_order: 4,
               item_type: 'checkbox' as const,
               is_required: true,
+              evidence_required: false,
             },
             {
               id: 'admin-5',
@@ -597,6 +609,7 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
               item_order: 5,
               item_type: 'signature' as const,
               is_required: true,
+              evidence_required: true,
             },
           ],
         },
@@ -610,7 +623,7 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
   const fetchUserOnboardingProgress = useCallback(async (userId: string) => {
     setLoadingOnboarding(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('user_onboarding_progress')
         .select('*, onboarding_templates(*)')
         .eq('user_id', userId)
@@ -620,7 +633,7 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
         // PGRST116 = not found, which is ok
         throw error;
       }
-      setUserOnboardingProgress(data);
+      setUserOnboardingProgress((data as UserOnboardingProgress) || null);
     } catch (error) {
       console.error('Error fetching onboarding progress:', error);
     } finally {
@@ -633,17 +646,12 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
 
     try {
       // Determine tier based on user role (using user.rol instead of user_metadata)
-      const tier =
-        user?.rol === 'admin'
-          ? 'admin'
-          : user?.rol === 'supervisor'
-            ? 'supervisor'
-            : 'basic';
+      const tier = user?.rol === 'admin' ? 'admin' : 'basic';
 
       // Try to get template from Supabase
       let template;
       try {
-        const { data: templates } = await supabase
+        const { data: templates } = await supabaseClient
           .from('onboarding_templates')
           .select('*')
           .eq('tier', tier)
@@ -668,7 +676,7 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
       // Try to create progress record in Supabase
       let progressData;
       try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
           .from('user_onboarding_progress')
           .insert({
             user_id: user.id,
@@ -688,13 +696,19 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
           id: `local-${Date.now()}`,
           user_id: user.id,
           template_id: template.id,
+          total_items: template.checklist_items?.length || 0,
+          progress_percentage: 0,
           status: 'in_progress',
           started_at: new Date().toISOString(),
+          completed_at: null,
+          last_accessed_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
           completed_items: [],
         };
       }
 
-      setUserOnboardingProgress(progressData);
+      setUserOnboardingProgress(progressData as UserOnboardingProgress);
       await logActivity('checklist_completed', {
         action: 'onboarding_started',
       });
@@ -713,7 +727,7 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
       try {
         // Try Supabase RPC function
         try {
-          const { data, error } = await supabase.rpc(
+          const { data, error } = await supabaseClient.rpc(
             'update_onboarding_progress',
             {
               p_user_id: user.id,
@@ -762,14 +776,14 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
   const fetchSLADefinitions = useCallback(async () => {
     setLoadingSLA(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('sla_definitions')
         .select('*')
         .eq('is_active', true)
         .order('priority_level', { ascending: false });
 
       if (error) throw error;
-      setSlaDefinitions(data || []);
+      setSlaDefinitions((data as SLADefinition[]) || []);
     } catch (error) {
       console.error('Error fetching SLA definitions:', error);
     } finally {
@@ -785,7 +799,7 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
     setLoadingDashboard(true);
     try {
       // Fetch request flow stats
-      const { data: flowData, error: flowError } = await supabase
+      const { data: flowData, error: flowError } = await supabaseClient
         .from('request_flow_compliance')
         .select('current_status');
 
@@ -806,7 +820,7 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
       };
 
       // Fetch SLA compliance
-      const { data: slaData, error: slaError } = await supabase
+      const { data: slaData, error: slaError } = await supabaseClient
         .from('request_flow_compliance')
         .select('sla_met');
 
@@ -827,7 +841,7 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      const { data: activityData, error: activityError } = await supabase
+      const { data: activityData, error: activityError } = await supabaseClient
         .from('user_activity_log')
         .select('user_id, created_at')
         .gte('created_at', thirtyDaysAgo.toISOString());
@@ -857,7 +871,7 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
       };
 
       // Calculate average durations
-      const { data: durationData, error: durationError } = await supabase
+      const { data: durationData, error: durationError } = await supabaseClient
         .from('request_flow_compliance')
         .select('approval_duration, execution_duration, total_duration')
         .eq('current_status', 'completed');
@@ -921,18 +935,20 @@ export const ComplianceProvider: React.FC<ComplianceProviderProps> = ({
       if (!user) return;
 
       try {
-        const { error } = await supabase.from('digital_signatures').insert({
-          user_id: user.id,
-          entity_type: entityType,
-          entity_id: entityId,
-          signature_base64: signatureBase64,
-          legal_text: legalText,
-          agreed_to_terms: true,
-          device_info: {
-            platform: Platform.OS,
-            userAgent: navigator.userAgent,
-          },
-        });
+        const { error } = await supabaseClient
+          .from('digital_signatures')
+          .insert({
+            user_id: user.id,
+            entity_type: entityType,
+            entity_id: entityId,
+            signature_base64: signatureBase64,
+            legal_text: legalText,
+            agreed_to_terms: true,
+            device_info: {
+              platform: Platform.OS,
+              userAgent: navigator.userAgent,
+            },
+          });
 
         if (error) throw error;
 

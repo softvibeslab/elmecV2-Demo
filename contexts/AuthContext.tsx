@@ -99,8 +99,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         );
         setSession(session);
 
-        if (session?.user && event !== 'TOKEN_REFRESHED') {
-          await loadUserProfile(session.user.id);
+        if (session?.user) {
+          if (
+            !user ||
+            user.id !== session.user.id ||
+            event !== 'TOKEN_REFRESHED'
+          ) {
+            await loadUserProfile(session.user.id);
+          } else {
+            setLoading(false);
+          }
         } else {
           console.log('🚪 Limpiando estado de usuario...');
           setUser(null);
@@ -165,20 +173,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         throw error;
       }
 
+      const profile = data as any;
+
       // Set user data
-      if (data.status_aprobacion === 'rechazado') {
+      if (profile.status_aprobacion === 'rechazado') {
         setLoading(false);
         throw new Error('Tu cuenta ha sido rechazada por el equipo de ELMEC.');
       }
 
-      if (data.status_aprobacion === 'pendiente' && data.rol === 'customer') {
+      if (
+        profile.status_aprobacion === 'pendiente' &&
+        profile.rol === 'customer'
+      ) {
         setLoading(false);
         throw new Error(
           'Tu cuenta está pendiente de aprobación. Te notificaremos una vez activa.'
         );
       }
 
-      setUser(data);
+      setUser(profile);
 
       // Update user online status (non-blocking)
       (supabase as any)

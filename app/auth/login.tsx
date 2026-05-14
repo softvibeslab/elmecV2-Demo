@@ -14,12 +14,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { Eye, EyeOff, ArrowLeft, Mail, Lock } from 'lucide-react-native';
-import { withErrorHandling } from '@/utils/errorHandler';
 
 export default function Login() {
-  // Datos demo pre-cargados para pruebas rápidas
-  const [email, setEmail] = useState('c.rosales@elmec.com.mx');
-  const [password, setPassword] = useState('abc321');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
@@ -151,18 +149,6 @@ export default function Login() {
               ¿Olvidaste tu contraseña?
             </Text>
           </TouchableOpacity>
-
-          {/* Registro oculto para demo */}
-        </View>
-
-        <View style={styles.testCredentials}>
-          <Text style={styles.testTitle}>Credenciales de prueba (ELMEC):</Text>
-          <Text style={styles.testText}>Contraseña: abc321</Text>
-          <Text style={styles.testText}>Usuarios válidos:</Text>
-          <Text style={styles.testText}>• c.rosales@elmec.com.mx</Text>
-          <Text style={styles.testText}>• alex.diaz@elmec.com.mx</Text>
-          <Text style={styles.testText}>• s.vazquez@elmec.com.mx</Text>
-          <Text style={styles.testText}>• i.munoz@elmec.com.mx</Text>
         </View>
       </ScrollView>
     </LinearGradient>
@@ -272,26 +258,6 @@ const styles = StyleSheet.create({
   registerLinkBold: {
     fontFamily: 'Inter-SemiBold',
     color: '#ffffff',
-  },
-  testCredentials: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 40,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  testTitle: {
-    fontSize: 14,
-    fontFamily: 'Inter-SemiBold',
-    color: '#ffffff',
-    marginBottom: 8,
-  },
-  testText: {
-    fontSize: 14,
-    fontFamily: 'Inter-Regular',
-    color: 'rgba(255, 255, 255, 0.9)',
-    marginBottom: 4,
   },
   loadingContainer: {
     flexDirection: 'row',

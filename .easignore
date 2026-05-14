@@ -1,0 +1,21 @@
+# Keep EAS uploads focused on the Expo project source.
+node_modules/
+.git/
+.expo/
+dist/
+web-build/
+build/
+coverage/
+logs/
+
+# Let EAS Build run prebuild from app.json instead of using stale native folders.
+android/
+ios/
+
+# Local deliverables and documentation assets are not needed for mobile builds.
+docs/
+screenshots/
+*.zip
+*.apk
+*.aab
+*.html

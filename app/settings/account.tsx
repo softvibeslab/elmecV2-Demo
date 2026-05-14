@@ -12,7 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'expo-router';
-import { supabase } from '@/lib/supabase';
+import { supabaseClient } from '@/lib/supabase';
 import {
   ArrowLeft,
   Save,
@@ -54,7 +54,7 @@ export default function AccountSettings() {
 
     setSaving(true);
     try {
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('users')
         .update({
           nombre: formData.nombre.trim(),

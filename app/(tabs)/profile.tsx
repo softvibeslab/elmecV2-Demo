@@ -8,6 +8,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { useRouter } from 'expo-router';
@@ -33,12 +34,19 @@ export default function Profile() {
   const {
     inAppNotifications,
     unreadCount,
-    markNotificationAsRead,
+    openNotification,
     markAllAsRead,
     clearNotifications,
-    sendDemoNotification,
   } = useNotifications();
   const router = useRouter();
+
+  const handleShowGuideAgain = async () => {
+    await AsyncStorage.setItem(
+      `appTourForceShow:${user?.id || 'guest'}`,
+      'true'
+    );
+    router.push('/(tabs)' as any);
+  };
 
   // Si es admin, mostrar dashboard
   if (user?.rol === 'admin') {
@@ -73,6 +81,13 @@ export default function Profile() {
       icon: Settings,
       color: '#6b7280',
       onPress: () => router.push('/settings/account'),
+    },
+    {
+      title: 'Guía de uso',
+      subtitle: 'Volver a ver el recorrido inicial',
+      icon: HelpCircle,
+      color: '#335686',
+      onPress: handleShowGuideAgain,
     },
     {
       title: 'Notificaciones',
@@ -199,76 +214,12 @@ export default function Profile() {
             </TouchableOpacity>
           </View>
 
-          {/* Demo Notifications Section */}
           <HealthCheck />
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
               Notificaciones ({unreadCount})
             </Text>
-
-            {/* Demo Notification Buttons */}
-            <View style={styles.demoContainer}>
-              <Text style={styles.demoTitle}>Demo de Notificaciones</Text>
-              <View style={styles.demoButtons}>
-                <TouchableOpacity
-                  style={[styles.demoButton, { backgroundColor: '#eff6ff' }]}
-                  onPress={() =>
-                    sendDemoNotification(
-                      'Información',
-                      'Esta es una notificación de información',
-                      'info'
-                    )
-                  }
-                >
-                  <Text style={[styles.demoButtonText, { color: '#3b82f6' }]}>
-                    Info
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.demoButton, { backgroundColor: '#ecfdf5' }]}
-                  onPress={() =>
-                    sendDemoNotification(
-                      'Éxito',
-                      'Operación completada correctamente',
-                      'success'
-                    )
-                  }
-                >
-                  <Text style={[styles.demoButtonText, { color: '#10b981' }]}>
-                    Éxito
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.demoButton, { backgroundColor: '#fffbeb' }]}
-                  onPress={() =>
-                    sendDemoNotification(
-                      'Advertencia',
-                      'Esto requiere tu atención',
-                      'warning'
-                    )
-                  }
-                >
-                  <Text style={[styles.demoButtonText, { color: '#f59e0b' }]}>
-                    Advertencia
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.demoButton, { backgroundColor: '#fef2f2' }]}
-                  onPress={() =>
-                    sendDemoNotification(
-                      'Error',
-                      'Ha ocurrido un problema',
-                      'error'
-                    )
-                  }
-                >
-                  <Text style={[styles.demoButtonText, { color: '#ef4444' }]}>
-                    Error
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
 
             {/* Notification List */}
             <View style={styles.notificationList}>
@@ -279,7 +230,7 @@ export default function Profile() {
                     styles.notificationItem,
                     !notification.read && styles.unreadNotification,
                   ]}
-                  onPress={() => markNotificationAsRead(notification.id)}
+                  onPress={() => openNotification(notification)}
                 >
                   <View style={styles.notificationContent}>
                     <Text style={styles.notificationTitle}>
@@ -522,39 +473,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Inter-Regular',
     color: '#9ca3af',
-  },
-  demoContainer: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  demoTitle: {
-    fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
-    color: '#111827',
-    marginBottom: 12,
-  },
-  demoButtons: {
-    flexDirection: 'row',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  demoButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    minWidth: 70,
-    alignItems: 'center',
-  },
-  demoButtonText: {
-    fontSize: 12,
-    fontFamily: 'Inter-SemiBold',
   },
   notificationList: {
     backgroundColor: '#ffffff',
